@@ -98,6 +98,7 @@ export function getClientScript() {
     };
 
     var periodCache = new Map();
+    var fearGreedCache = null;
     var activeFetchCtrl = null;
     var switchTimer = null;
     var refreshTimer = null;
@@ -710,6 +711,23 @@ export function getClientScript() {
       ].join("");
     }
 
+    function renderFearGreedLoading() {
+      var root = $("fearGreedCard");
+      if (!root) return;
+
+      root.innerHTML = [
+        '<div class="tile fgCard">',
+          '<div class="fgCardHead">',
+            '<div>',
+              '<div class="fgEyebrow">市场情绪</div>',
+              '<div class="fgTitle">CNN 恐惧贪婪指数</div>',
+            '</div>',
+          '</div>',
+          '<div class="fgEmpty">正在加载 CNN 恐惧贪婪指数…</div>',
+        '</div>'
+      ].join("");
+    }
+
     function applyData(q) {
       var byTicker = new Map((q.items || []).map(function (item) {
         return [item.tickerId, item];
@@ -736,8 +754,6 @@ export function getClientScript() {
         return tileHTML(item, q.period);
       }).join("");
       $("periodCN").textContent = "周期：" + (PERIOD_LABELS[q.period] || q.period);
-
-      renderFearGreedCard(q.cnnFearGreed || null);
       resizeCanvas();
     }
 
@@ -780,6 +796,54 @@ export function getClientScript() {
       }
       var q = await fetchPeriod(period, opts);
       return { q: q, fromCache: false };
+    }
+
+    async function fetchFearGreedData(options) {
+      var opts = options || {};
+      var controller = new AbortController();
+      var timer = setTimeout(function () {
+        controller.abort();
+      }, API_TIMEOUT_MS);
+
+      var res;
+      try {
+        res = await fetch("/api/fear-greed", {
+          cache: opts.force ? "no-store" : "default",
+          signal: controller.signal
+        });
+      } catch (error) {
+        if (controller.signal.aborted) {
+          throw new Error("CNN 面板请求超时（>" + (API_TIMEOUT_MS / 1000) + "秒）");
+        }
+        throw error;
+      } finally {
+        clearTimeout(timer);
+      }
+
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      var payload = await res.json();
+      if (!payload.ok) throw new Error(payload.error || "Fear greed API error");
+      fearGreedCache = payload.data || null;
+      return fearGreedCache;
+    }
+
+    async function loadFearGreed(options) {
+      var opts = options || {};
+
+      if (!opts.force && fearGreedCache) {
+        renderFearGreedCard(fearGreedCache);
+        return;
+      }
+
+      renderFearGreedLoading();
+
+      try {
+        var data = await fetchFearGreedData(opts);
+        renderFearGreedCard(data);
+      } catch (error) {
+        console.error("fear greed load failed:", error);
+        renderFearGreedCard(null);
+      }
     }
 
     function scheduleRender(period, options) {
@@ -920,6 +984,8 @@ export function getClientScript() {
       if (isPseudoFS()) exitPseudoFS();
     });
 
+    renderFearGreedLoading();
+    loadFearGreed({ force: false });
     scheduleRender(state.period, { force: false });
     startAutoRefresh();
   } catch (error) {

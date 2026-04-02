@@ -9,11 +9,16 @@
 
 import { API_MEM_TTL_MS, normalizePeriod } from "./config.js";
 import { corsHeaders, htmlResponse, jsonResponse } from "./lib/http.js";
+import { fetchCnnFearGreedSummary } from "./services/cnnFearGreed.js";
 import { buildQuotePayload } from "./services/quoteService.js";
 import { getClientScript } from "./ui/client.js";
 import { getHtml } from "./ui/html.js";
 
 const API_MEM_CACHE = globalThis.__API_MEM_CACHE__ ?? (globalThis.__API_MEM_CACHE__ = new Map());
+const FEAR_GREED_MEM_CACHE =
+  globalThis.__FEAR_GREED_MEM_CACHE__ ?? (globalThis.__FEAR_GREED_MEM_CACHE__ = new Map());
+const FEAR_GREED_MEM_TTL_MS = 5 * 60 * 1000;
+const FEAR_GREED_CACHE_SECONDS = 5 * 60;
 
 export default {
   async fetch(request, env, ctx) {
@@ -87,6 +92,68 @@ export default {
             "Content-Type": "application/json; charset=utf-8",
             ...corsHeaders(origin),
             "Cache-Control": "public, max-age=2, s-maxage=2",
+          },
+        });
+
+        ctx.waitUntil(caches.default.put(cacheKey, response.clone()));
+        return response;
+      } catch (error) {
+        return jsonResponse(
+          { ok: false, error: error?.message || String(error) },
+          origin,
+          502,
+          { cacheSeconds: 0 }
+        );
+      }
+    }
+
+    if (url.pathname === "/api/fear-greed") {
+      try {
+        const now = Date.now();
+        const memCached = FEAR_GREED_MEM_CACHE.get("summary");
+
+        if (memCached && now - memCached.at < FEAR_GREED_MEM_TTL_MS) {
+          return new Response(memCached.body, {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              ...corsHeaders(origin),
+              "Cache-Control": `public, max-age=${FEAR_GREED_CACHE_SECONDS}, s-maxage=${FEAR_GREED_CACHE_SECONDS}`,
+            },
+          });
+        }
+
+        const cacheKey = new Request(url.toString(), { method: "GET" });
+        const edgeHit = await caches.default.match(cacheKey);
+
+        if (edgeHit) {
+          const body = await edgeHit.text();
+          FEAR_GREED_MEM_CACHE.set("summary", { at: now, body });
+
+          return new Response(body, {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              ...corsHeaders(origin),
+              "Cache-Control": `public, max-age=${FEAR_GREED_CACHE_SECONDS}, s-maxage=${FEAR_GREED_CACHE_SECONDS}`,
+            },
+          });
+        }
+
+        const payload = {
+          ok: true,
+          data: await fetchCnnFearGreedSummary(),
+        };
+        const body = JSON.stringify(payload, null, 2);
+
+        FEAR_GREED_MEM_CACHE.set("summary", { at: now, body });
+
+        const response = new Response(body, {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            ...corsHeaders(origin),
+            "Cache-Control": `public, max-age=${FEAR_GREED_CACHE_SECONDS}, s-maxage=${FEAR_GREED_CACHE_SECONDS}`,
           },
         });
 

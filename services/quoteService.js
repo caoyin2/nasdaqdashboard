@@ -1,9 +1,9 @@
 /**
  * /api/quote 的核心聚合逻辑
  *
- * 把两个数据源拼在一起：
- * 1. Seeking Alpha 指数线图数据
- * 2. CNN 恐惧贪婪指数摘要
+ * 当前这个服务只负责指数图表数据。
+ * CNN 恐惧贪婪指数已经拆到独立接口 `/api/fear-greed`，
+ * 避免它跟随 1D 轮询一起重复刷新。
  */
 
 import { INDEXES, LINE_COLORS } from "../config.js";
@@ -15,15 +15,9 @@ import {
   pickFirstCloseFromBars,
   pickPrevCloseSmart,
 } from "../lib/time.js";
-import { fetchCnnFearGreedSummary } from "./cnnFearGreed.js";
 import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
 
 export async function buildQuotePayload(period) {
-  const cnnFearGreedPromise = fetchCnnFearGreedSummary().catch((error) => {
-    console.error("CNN fear&greed fetch failed:", error);
-    return null;
-  });
-
   const indexJobs = INDEXES.map(async (idx, i) => {
     const needYTDFor1D = period === "1D";
 
@@ -99,10 +93,7 @@ export async function buildQuotePayload(period) {
     };
   });
 
-  const [indexResults, cnnFearGreed] = await Promise.all([
-    Promise.allSettled(indexJobs),
-    cnnFearGreedPromise,
-  ]);
+  const indexResults = await Promise.allSettled(indexJobs);
 
   const items = indexResults
     .filter((result) => result.status === "fulfilled")
@@ -133,6 +124,5 @@ export async function buildQuotePayload(period) {
     period,
     asOfUTC,
     items,
-    cnnFearGreed,
   };
 }

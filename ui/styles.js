@@ -514,24 +514,26 @@ export function getStyles() {
       display:grid;
       gap: 12px;
       min-width: 0;
+      align-self: stretch;
     }
 
     .fgStats{
       display:grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
+      align-content: start;
     }
 
     .fgMetric{
       min-width: 0;
-      min-height: 74px;
-      padding: 12px 10px;
+      min-height: 78px;
+      padding: 14px 12px 12px;
       border-radius: 12px;
       background: rgba(255,255,255,.04);
       border: 1px solid rgba(31,43,61,.85);
       display:grid;
-      gap: 8px;
-      align-content: start;
+      gap: 6px;
+      align-content: center;
       justify-items:center;
       text-align:center;
     }
@@ -544,6 +546,7 @@ export function getStyles() {
       font-family: var(--mono);
       font-size: 11px;
       color: var(--muted);
+      line-height: 1.15;
       white-space: nowrap;
       max-width: 100%;
       overflow: hidden;
@@ -551,8 +554,8 @@ export function getStyles() {
     }
 
     .fgMetric b{
-      font-size: 18px;
-      line-height: 1.1;
+      font-size: 20px;
+      line-height: 1;
       color: rgba(240,246,255,.98);
       font-variant-numeric: tabular-nums;
     }
@@ -637,12 +640,11 @@ export function getStyles() {
       .fgTitle{ font-size: 16px; }
       .fgCardInner{ grid-template-columns: 1fr; }
       .fgStats{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-      .fgMetricMain{ grid-column: 1 / -1; }
       .fgGaugeText{ top: 52px; width: 72%; }
       .fgGaugeScore{ font-size: 30px; }
       .fgGaugeStatus{ font-size: 12px; }
       .fgScaleItem{ font-size: 11px; padding: 7px 4px; }
-      .fgMetric{ min-height: 70px; padding: 10px 8px; }
+      .fgMetric{ min-height: 74px; padding: 12px 8px 10px; gap: 5px; }
       .fgMetric span{ font-size: 11px; }
       .fgMetric b{ font-size: 18px; }
     }
