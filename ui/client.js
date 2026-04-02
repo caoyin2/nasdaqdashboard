@@ -88,6 +88,13 @@ export function getClientScript() {
 
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
+    var FEAR_GREED_PALETTE = [
+      { key: "extreme fear", label: "极度恐慌", color: "#ff5468", bandIndex: 0, maxExclusive: 25, lines: ["极度", "恐慌"] },
+      { key: "fear", label: "恐慌", color: "#ff9ea4", bandIndex: 1, maxExclusive: 45, lines: ["恐慌"] },
+      { key: "neutral", label: "中性", color: "#ffd449", bandIndex: 2, maxExclusive: 55, lines: ["中性"] },
+      { key: "greed", label: "贪婪", color: "#8be3a3", bandIndex: 3, maxExclusive: 75, lines: ["贪婪"] },
+      { key: "extreme greed", label: "极度贪婪", color: "#35ea72", bandIndex: 4, maxExclusive: 101, lines: ["极度", "贪婪"] }
+    ];
 
     var state = {
       items: [],
@@ -594,25 +601,29 @@ export function getClientScript() {
     }
 
     function fearGreedMeta(score, rating, ratingCN) {
-      var map = {
-        "extreme fear": { label: "极度恐慌", color: "#ff5468", bandIndex: 0 },
-        "fear": { label: "恐慌", color: "#ff9ea4", bandIndex: 1 },
-        "neutral": { label: "中性", color: "#ffd449", bandIndex: 2 },
-        "greed": { label: "贪婪", color: "#8be3a3", bandIndex: 3 },
-        "extreme greed": { label: "极度贪婪", color: "#35ea72", bandIndex: 4 }
-      };
-
       var key = String(rating || "").toLowerCase().trim();
-      if (map[key]) {
-        return { label: ratingCN || map[key].label, color: map[key].color, bandIndex: map[key].bandIndex };
+      var matchedByKey = FEAR_GREED_PALETTE.find(function (entry) {
+        return entry.key === key;
+      });
+
+      if (matchedByKey) {
+        return {
+          label: ratingCN || matchedByKey.label,
+          color: matchedByKey.color,
+          bandIndex: matchedByKey.bandIndex
+        };
       }
 
       if (Number.isFinite(score)) {
-        if (score < 25) return { label: ratingCN || "极度恐慌", color: "#ff5468", bandIndex: 0 };
-        if (score < 45) return { label: ratingCN || "恐慌", color: "#ff9ea4", bandIndex: 1 };
-        if (score < 55) return { label: ratingCN || "中性", color: "#ffd449", bandIndex: 2 };
-        if (score < 75) return { label: ratingCN || "贪婪", color: "#8be3a3", bandIndex: 3 };
-        return { label: ratingCN || "极度贪婪", color: "#35ea72", bandIndex: 4 };
+        var matchedByScore = FEAR_GREED_PALETTE.find(function (entry) {
+          return score < entry.maxExclusive;
+        }) || FEAR_GREED_PALETTE[FEAR_GREED_PALETTE.length - 1];
+
+        return {
+          label: ratingCN || matchedByScore.label,
+          color: matchedByScore.color,
+          bandIndex: matchedByScore.bandIndex
+        };
       }
 
       return { label: "暂无数据", color: "#94a3b8", bandIndex: null };
@@ -713,20 +724,20 @@ export function getClientScript() {
       var needleAngle = gaugeAngleForScore(value);
       var needlePoint = gaugePoint(cx, cy, needleLength, needleAngle);
       var sections = [
-        { start: 180, end: 135, lines: ["极度", "恐慌"], color: "#ff5468" },
-        { start: 135, end: 99, lines: ["恐慌"], color: "#ff9ea4" },
-        { start: 99, end: 81, lines: ["中性"], color: "#ffd449" },
-        { start: 81, end: 45, lines: ["贪婪"], color: "#8be3a3" },
-        { start: 45, end: 0, lines: ["极度", "贪婪"], color: "#35ea72" }
+        { start: 180, end: 135, palette: FEAR_GREED_PALETTE[0] },
+        { start: 135, end: 99, palette: FEAR_GREED_PALETTE[1] },
+        { start: 99, end: 81, palette: FEAR_GREED_PALETTE[2] },
+        { start: 81, end: 45, palette: FEAR_GREED_PALETTE[3] },
+        { start: 45, end: 0, palette: FEAR_GREED_PALETTE[4] }
       ];
 
       var sectionMarkup = sections.map(function (section, index) {
         var active = meta.bandIndex === index;
-        var fill = active ? hexToRgba(section.color, 0.28) : "rgba(255,255,255,.055)";
-        var stroke = active ? section.color : "rgba(255,255,255,.09)";
+        var fill = active ? hexToRgba(section.palette.color, 0.28) : "rgba(255,255,255,.055)";
+        var stroke = active ? section.palette.color : "rgba(255,255,255,.09)";
         return [
           '<path d="' + donutSegmentPath(cx, cy, outerR, innerR, section.start, section.end) + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="2"></path>',
-          buildGaugeSectionLabel(cx, cy, 138, section.start, section.end, section.lines, section.color, active)
+          buildGaugeSectionLabel(cx, cy, 138, section.start, section.end, section.palette.lines, section.palette.color, active)
         ].join("");
       }).join("");
 
