@@ -2,9 +2,9 @@
  * 首页样式
  *
  * 这次的 CNN 仪表盘结构是：
- * - 左侧半圆仪表盘
- * - 下方中文分段刻度（恐惧 / 中性 / 贪婪）
- * - 右侧四个关键数值卡片
+ * - 左侧五段半圆表盘
+ * - 底部中央分数显示
+ * - 右侧四个关键数值卡片（数值 + 状态）
  */
 
 import { DOWN_COLOR, UP_COLOR } from "../config.js";
@@ -381,24 +381,21 @@ export function getStyles() {
 
     .fgCardInner{
       display:grid;
-      grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1.18fr) minmax(0, .92fr);
       gap: 14px;
-      align-items: center;
+      align-items: stretch;
     }
 
     .fgGaugeWrap{
       min-width:0;
       width: 100%;
-      display:grid;
-      gap: 8px;
-      justify-items:center;
+      display:block;
     }
 
     .fgGaugeBox{
       position: relative;
-      width: min(100%, 220px);
+      width: min(100%, 360px);
       margin: 0 auto;
-      padding-top: 2px;
     }
 
     .fgGaugeSvg{
@@ -408,106 +405,61 @@ export function getStyles() {
       overflow: visible;
     }
 
-    .fgTrack{
+    .fgGaugeInnerArc{
       fill: none;
       stroke: rgba(255,255,255,.08);
-      stroke-width: 14;
-      stroke-linecap: round;
-    }
-
-    .fgZone{
-      fill: none;
-      stroke-width: 9;
-      stroke-linecap: round;
-      opacity: .36;
-    }
-
-    .fgZone1{ stroke: #ff5a76; }
-    .fgZone2{ stroke: #fb923c; }
-    .fgZone3{ stroke: #fbbf24; }
-    .fgZone4{ stroke: #22c55e; }
-    .fgZone5{ stroke: #14b8a6; }
-
-    .fgValueArc{
-      fill: none;
-      stroke-width: 14;
-      stroke-linecap: round;
-      filter: drop-shadow(0 0 10px rgba(255,255,255,.12));
+      stroke-width: 2;
     }
 
     .fgNeedle{
       stroke-linecap: round;
-      filter: drop-shadow(0 0 6px rgba(255,255,255,.18));
+      filter: drop-shadow(0 0 10px rgba(0,0,0,.35));
     }
 
-    .fgAxisLabel{
-      fill: rgba(138,160,198,.90);
+    .fgNeedleHubOuter{
+      filter: drop-shadow(0 0 12px rgba(0,0,0,.35));
+    }
+
+    .fgGaugeValueLabel{
+      fill: rgba(222,230,239,.72);
       font-size: 11px;
       font-family: var(--mono);
     }
 
-    .fgGaugeText{
+    .fgSectionLabel{
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .4px;
+    }
+
+    .fgGaugeCenter{
       position: absolute;
       left: 50%;
-      top: 54px;
+      bottom: 0;
       transform: translateX(-50%);
       text-align: center;
-      display: grid;
-      gap: 2px;
-      pointer-events: none;
-      width: 74%;
+      width: 128px;
+      height: 72px;
+      border-radius: 72px 72px 0 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)),
+        rgba(12,18,30,.95);
+      border: 1px solid rgba(255,255,255,.08);
+      border-bottom: 0;
+      display:grid;
+      place-items:center;
+      padding-top: 12px;
+      pointer-events:none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
     }
 
     .fgGaugeScore{
-      font-size: 32px;
+      font-size: 36px;
       line-height: 1;
       font-weight: 800;
       color: rgba(240,246,255,.98);
       font-variant-numeric: tabular-nums;
-    }
-
-    .fgGaugeStatus{
-      font-family: var(--mono);
-      font-size: 12px;
-      line-height: 1.25;
-      font-weight: 700;
-    }
-
-    .fgScale{
-      width: 100%;
-      display:grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: -2px;
-    }
-
-    .fgScaleItem{
-      text-align:center;
-      padding: 8px 6px;
-      border-radius: 10px;
-      font-family: var(--mono);
-      font-size: 11px;
-      border: 1px solid rgba(255,255,255,.08);
-      background: rgba(255,255,255,.04);
-      color: rgba(230,237,247,.86);
-    }
-
-    .fgScaleItem.fear{
-      color: #ff8ca0;
-      background: rgba(255,90,118,.10);
-      border-color: rgba(255,90,118,.18);
-    }
-
-    .fgScaleItem.neutral{
-      color: #ffd46b;
-      background: rgba(251,191,36,.10);
-      border-color: rgba(251,191,36,.18);
-    }
-
-    .fgScaleItem.greed{
-      color: #6ee7b7;
-      background: rgba(34,197,94,.10);
-      border-color: rgba(34,197,94,.18);
     }
 
     .fgData{
@@ -558,6 +510,17 @@ export function getStyles() {
       line-height: 1;
       color: rgba(240,246,255,.98);
       font-variant-numeric: tabular-nums;
+    }
+
+    .fgMetric em{
+      font-style: normal;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.2;
+      color: rgba(202,212,226,.88);
+      max-width: 100%;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
 
     .fgEmpty{
@@ -638,15 +601,16 @@ export function getStyles() {
       .fsBtn{ display:flex; }
 
       .fgTitle{ font-size: 16px; }
-      .fgCardInner{ grid-template-columns: 1fr; }
+      .fgCardInner{ grid-template-columns: 1fr; gap: 12px; }
       .fgStats{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-      .fgGaugeText{ top: 52px; width: 72%; }
-      .fgGaugeScore{ font-size: 30px; }
-      .fgGaugeStatus{ font-size: 12px; }
-      .fgScaleItem{ font-size: 11px; padding: 7px 4px; }
+      .fgGaugeBox{ width: min(100%, 330px); }
+      .fgGaugeCenter{ width: 118px; height: 66px; padding-top: 11px; }
+      .fgGaugeScore{ font-size: 32px; }
+      .fgSectionLabel{ font-size: 11px; }
       .fgMetric{ min-height: 74px; padding: 12px 8px 10px; gap: 5px; }
       .fgMetric span{ font-size: 11px; }
       .fgMetric b{ font-size: 18px; }
+      .fgMetric em{ font-size: 10px; }
     }
 
     @supports (-webkit-touch-callout: none) {

@@ -19,21 +19,75 @@ const CNN_HEADERS = {
 export function translateFearGreedRating(rating, score) {
   const key = String(rating || "").toLowerCase().trim();
 
-  if (key === "extreme fear") return "极度恐惧";
-  if (key === "fear") return "恐惧";
+  if (key === "extreme fear") return "极度恐慌";
+  if (key === "fear") return "恐慌";
   if (key === "neutral") return "中性";
   if (key === "greed") return "贪婪";
   if (key === "extreme greed") return "极度贪婪";
 
   if (Number.isFinite(score)) {
-    if (score < 25) return "极度恐惧";
-    if (score < 45) return "恐惧";
+    if (score < 25) return "极度恐慌";
+    if (score < 45) return "恐慌";
     if (score < 55) return "中性";
     if (score < 75) return "贪婪";
     return "极度贪婪";
   }
 
   return "暂无数据";
+}
+
+export function getFearGreedBucket(score) {
+  if (!Number.isFinite(score)) {
+    return {
+      score: null,
+      rating: null,
+      ratingCN: "暂无数据",
+      bandIndex: null,
+    };
+  }
+
+  if (score < 25) {
+    return {
+      score,
+      rating: "extreme fear",
+      ratingCN: "极度恐慌",
+      bandIndex: 0,
+    };
+  }
+
+  if (score < 45) {
+    return {
+      score,
+      rating: "fear",
+      ratingCN: "恐慌",
+      bandIndex: 1,
+    };
+  }
+
+  if (score < 55) {
+    return {
+      score,
+      rating: "neutral",
+      ratingCN: "中性",
+      bandIndex: 2,
+    };
+  }
+
+  if (score < 75) {
+    return {
+      score,
+      rating: "greed",
+      ratingCN: "贪婪",
+      bandIndex: 3,
+    };
+  }
+
+  return {
+    score,
+    rating: "extreme greed",
+    ratingCN: "极度贪婪",
+    bandIndex: 4,
+  };
 }
 
 export async function fetchCnnFearGreedSummary() {
@@ -72,14 +126,20 @@ export async function fetchCnnFearGreedSummary() {
   const timestamp = typeof fg?.timestamp === "string" ? fg.timestamp : null;
   const timestampMs = timestamp ? Date.parse(timestamp) : NaN;
 
+  const currentBucket = getFearGreedBucket(score);
+  const previous1WeekBucket = getFearGreedBucket(previous1Week);
+  const previous1MonthBucket = getFearGreedBucket(previous1Month);
+  const previous1YearBucket = getFearGreedBucket(previous1Year);
+
   return {
     score: Number.isFinite(score) ? score : null,
-    rating: typeof fg?.rating === "string" ? fg.rating : null,
+    rating: typeof fg?.rating === "string" ? fg.rating : currentBucket.rating,
     ratingCN: translateFearGreedRating(fg?.rating, score),
+    bandIndex: currentBucket.bandIndex,
     timestamp,
     asOfUTC: Number.isFinite(timestampMs) ? fmtUTC(timestampMs) : null,
-    previous1Week: Number.isFinite(previous1Week) ? previous1Week : null,
-    previous1Month: Number.isFinite(previous1Month) ? previous1Month : null,
-    previous1Year: Number.isFinite(previous1Year) ? previous1Year : null,
+    previous1Week: previous1WeekBucket,
+    previous1Month: previous1MonthBucket,
+    previous1Year: previous1YearBucket,
   };
 }

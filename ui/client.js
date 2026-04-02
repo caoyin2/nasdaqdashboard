@@ -595,69 +595,163 @@ export function getClientScript() {
 
     function fearGreedMeta(score, rating, ratingCN) {
       var map = {
-        "extreme fear": { label: "极度恐惧", color: "#ff5a76" },
-        "fear": { label: "恐惧", color: "#fb923c" },
-        "neutral": { label: "中性", color: "#fbbf24" },
-        "greed": { label: "贪婪", color: "#22c55e" },
-        "extreme greed": { label: "极度贪婪", color: "#14b8a6" }
+        "extreme fear": { label: "极度恐慌", color: "#ff5a76", bandIndex: 0 },
+        "fear": { label: "恐慌", color: "#fb923c", bandIndex: 1 },
+        "neutral": { label: "中性", color: "#fbbf24", bandIndex: 2 },
+        "greed": { label: "贪婪", color: "#22c55e", bandIndex: 3 },
+        "extreme greed": { label: "极度贪婪", color: "#14b8a6", bandIndex: 4 }
       };
 
       var key = String(rating || "").toLowerCase().trim();
       if (map[key]) {
-        return { label: ratingCN || map[key].label, color: map[key].color };
+        return { label: ratingCN || map[key].label, color: map[key].color, bandIndex: map[key].bandIndex };
       }
 
       if (Number.isFinite(score)) {
-        if (score < 25) return { label: ratingCN || "极度恐惧", color: "#ff5a76" };
-        if (score < 45) return { label: ratingCN || "恐惧", color: "#fb923c" };
-        if (score < 55) return { label: ratingCN || "中性", color: "#fbbf24" };
-        if (score < 75) return { label: ratingCN || "贪婪", color: "#22c55e" };
-        return { label: ratingCN || "极度贪婪", color: "#14b8a6" };
+        if (score < 25) return { label: ratingCN || "极度恐慌", color: "#ff5a76", bandIndex: 0 };
+        if (score < 45) return { label: ratingCN || "恐慌", color: "#fb923c", bandIndex: 1 };
+        if (score < 55) return { label: ratingCN || "中性", color: "#fbbf24", bandIndex: 2 };
+        if (score < 75) return { label: ratingCN || "贪婪", color: "#22c55e", bandIndex: 3 };
+        return { label: ratingCN || "极度贪婪", color: "#14b8a6", bandIndex: 4 };
       }
 
-      return { label: "暂无数据", color: "#94a3b8" };
+      return { label: "暂无数据", color: "#94a3b8", bandIndex: null };
     }
 
-    function buildFearGreedGauge(score, color, label) {
-      var value = clamp(Number.isFinite(score) ? score : 0, 0, 100);
-      var angle = 180 - value * 1.8;
+    function hexToRgba(hex, alpha) {
+      var clean = String(hex || "").replace("#", "");
+      if (clean.length !== 6) return "rgba(255,255,255," + alpha + ")";
+      return "rgba(" +
+        parseInt(clean.slice(0, 2), 16) + "," +
+        parseInt(clean.slice(2, 4), 16) + "," +
+        parseInt(clean.slice(4, 6), 16) + "," + alpha + ")";
+    }
+
+    function gaugeAngleForScore(score) {
+      return 180 - clamp(score, 0, 100) * 1.8;
+    }
+
+    function gaugePoint(cx, cy, radius, angle) {
       var rad = angle * Math.PI / 180;
-      var cx = 110;
-      var cy = 115;
-      var len = 68;
-      var px = cx + Math.cos(rad) * len;
-      var py = cy - Math.sin(rad) * len;
+      return {
+        x: cx + Math.cos(rad) * radius,
+        y: cy - Math.sin(rad) * radius
+      };
+    }
+
+    function donutSegmentPath(cx, cy, outerR, innerR, startAngle, endAngle) {
+      var outerStart = gaugePoint(cx, cy, outerR, startAngle);
+      var outerEnd = gaugePoint(cx, cy, outerR, endAngle);
+      var innerEnd = gaugePoint(cx, cy, innerR, endAngle);
+      var innerStart = gaugePoint(cx, cy, innerR, startAngle);
+
+      return [
+        "M", outerStart.x.toFixed(2), outerStart.y.toFixed(2),
+        "A", outerR, outerR, 0, 0, 1, outerEnd.x.toFixed(2), outerEnd.y.toFixed(2),
+        "L", innerEnd.x.toFixed(2), innerEnd.y.toFixed(2),
+        "A", innerR, innerR, 0, 0, 0, innerStart.x.toFixed(2), innerStart.y.toFixed(2),
+        "Z"
+      ].join(" ");
+    }
+
+    function buildGaugeDots(cx, cy, radius) {
+      var dots = [];
+
+      for (var score = 0; score <= 100; score += 5) {
+        var angle = gaugeAngleForScore(score);
+        var point = gaugePoint(cx, cy, radius, angle);
+        var dotRadius = score % 25 === 0 ? 2.4 : 1.55;
+        dots.push(
+          '<circle cx="' + point.x.toFixed(2) + '" cy="' + point.y.toFixed(2) + '" r="' + dotRadius + '" fill="rgba(210,218,230,.58)"></circle>'
+        );
+      }
+
+      return dots.join("");
+    }
+
+    function buildGaugeScaleValues(cx, cy, radius) {
+      return [0, 25, 50, 75, 100].map(function (value) {
+        var angle = gaugeAngleForScore(value);
+        var point = gaugePoint(cx, cy, radius, angle);
+        return '<text class="fgGaugeValueLabel" x="' + point.x.toFixed(2) + '" y="' + point.y.toFixed(2) + '" text-anchor="middle">' + value + '</text>';
+      }).join("");
+    }
+
+    function buildGaugeSectionLabel(cx, cy, radius, startAngle, endAngle, lines, active) {
+      var midAngle = (startAngle + endAngle) / 2;
+      var point = gaugePoint(cx, cy, radius, midAngle);
+      var rotation = 90 - midAngle;
+      var fill = active ? "rgba(243,247,252,.96)" : "rgba(206,214,225,.82)";
+      var spans = "";
+
+      if (lines.length === 1) {
+        spans = '<tspan x="' + point.x.toFixed(2) + '" dy="0">' + lines[0] + '</tspan>';
+      } else {
+        spans =
+          '<tspan x="' + point.x.toFixed(2) + '" dy="-0.48em">' + lines[0] + '</tspan>' +
+          '<tspan x="' + point.x.toFixed(2) + '" dy="1.05em">' + lines[1] + '</tspan>';
+      }
+
+      return '<text class="fgSectionLabel" fill="' + fill + '" x="' + point.x.toFixed(2) + '" y="' + point.y.toFixed(2) + '" text-anchor="middle" transform="rotate(' + rotation.toFixed(2) + ' ' + point.x.toFixed(2) + ' ' + point.y.toFixed(2) + ')">' + spans + '</text>';
+    }
+
+    function buildFearGreedGauge(score, meta) {
+      var value = clamp(Number.isFinite(score) ? score : 0, 0, 100);
+      var cx = 180;
+      var cy = 194;
+      var outerR = 160;
+      var innerR = 110;
+      var needleLength = 118;
+      var needleAngle = gaugeAngleForScore(value);
+      var needlePoint = gaugePoint(cx, cy, needleLength, needleAngle);
+      var sections = [
+        { start: 180, end: 135, lines: ["极度", "恐慌"] },
+        { start: 135, end: 99, lines: ["恐慌"] },
+        { start: 99, end: 81, lines: ["中性"] },
+        { start: 81, end: 45, lines: ["贪婪"] },
+        { start: 45, end: 0, lines: ["极度", "贪婪"] }
+      ];
+
+      var sectionMarkup = sections.map(function (section, index) {
+        var active = meta.bandIndex === index;
+        var fill = active ? hexToRgba(meta.color, 0.28) : "rgba(255,255,255,.055)";
+        var stroke = active ? meta.color : "rgba(255,255,255,.09)";
+        return [
+          '<path d="' + donutSegmentPath(cx, cy, outerR, innerR, section.start, section.end) + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="2"></path>',
+          buildGaugeSectionLabel(cx, cy, 138, section.start, section.end, section.lines, active)
+        ].join("");
+      }).join("");
 
       return [
         '<div class="fgGaugeWrap">',
           '<div class="fgGaugeBox">',
-            '<svg class="fgGaugeSvg" viewBox="0 0 220 140" aria-hidden="true">',
-              '<path class="fgTrack" d="M25 115 A85 85 0 0 1 195 115" pathLength="100"></path>',
-              '<path class="fgZone fgZone1" d="M25 115 A85 85 0 0 1 195 115" pathLength="100" stroke-dasharray="25 75" stroke-dashoffset="0"></path>',
-              '<path class="fgZone fgZone2" d="M25 115 A85 85 0 0 1 195 115" pathLength="100" stroke-dasharray="20 80" stroke-dashoffset="-25"></path>',
-              '<path class="fgZone fgZone3" d="M25 115 A85 85 0 0 1 195 115" pathLength="100" stroke-dasharray="10 90" stroke-dashoffset="-45"></path>',
-              '<path class="fgZone fgZone4" d="M25 115 A85 85 0 0 1 195 115" pathLength="100" stroke-dasharray="20 80" stroke-dashoffset="-55"></path>',
-              '<path class="fgZone fgZone5" d="M25 115 A85 85 0 0 1 195 115" pathLength="100" stroke-dasharray="25 75" stroke-dashoffset="-75"></path>',
-              '<path class="fgValueArc" d="M25 115 A85 85 0 0 1 195 115" pathLength="100" stroke="' + color + '" stroke-dasharray="' + value + ' 100"></path>',
-              '<line class="fgNeedle" x1="' + cx + '" y1="' + cy + '" x2="' + px + '" y2="' + py + '" stroke="' + color + '" stroke-width="4"></line>',
-              '<circle cx="' + cx + '" cy="' + cy + '" r="7" fill="' + color + '"></circle>',
-              '<circle cx="' + cx + '" cy="' + cy + '" r="3" fill="rgba(9,13,22,.92)"></circle>',
-              '<text x="25" y="134" class="fgAxisLabel" text-anchor="start">0</text>',
-              '<text x="68" y="100" class="fgAxisLabel" text-anchor="middle">25</text>',
-              '<text x="110" y="36" class="fgAxisLabel" text-anchor="middle">50</text>',
-              '<text x="152" y="100" class="fgAxisLabel" text-anchor="middle">75</text>',
-              '<text x="195" y="134" class="fgAxisLabel" text-anchor="end">100</text>',
+            '<svg class="fgGaugeSvg" viewBox="0 0 360 220" aria-hidden="true">',
+              sectionMarkup,
+              '<path class="fgGaugeInnerArc" d="M68 194 A112 112 0 0 1 292 194"></path>',
+              buildGaugeDots(cx, cy, 96),
+              buildGaugeScaleValues(cx, cy, 82),
+              '<line class="fgNeedle" x1="' + cx + '" y1="' + cy + '" x2="' + needlePoint.x.toFixed(2) + '" y2="' + needlePoint.y.toFixed(2) + '" stroke="' + meta.color + '" stroke-width="6"></line>',
+              '<circle class="fgNeedleHubOuter" cx="' + cx + '" cy="' + cy + '" r="10" fill="' + meta.color + '"></circle>',
+              '<circle class="fgNeedleHubInner" cx="' + cx + '" cy="' + cy + '" r="4" fill="rgba(9,13,22,.96)"></circle>',
             '</svg>',
-            '<div class="fgGaugeText">',
+            '<div class="fgGaugeCenter">',
               '<div class="fgGaugeScore">' + fmt1(score) + '</div>',
-              '<div class="fgGaugeStatus" style="color:' + color + '">' + esc(label) + '</div>',
             '</div>',
           '</div>',
-          '<div class="fgScale">',
-            '<div class="fgScaleItem fear">恐惧</div>',
-            '<div class="fgScaleItem neutral">中性</div>',
-            '<div class="fgScaleItem greed">贪婪</div>',
-          '</div>',
+        '</div>'
+      ].join("");
+    }
+
+    function buildFearGreedMetric(title, point, extraClass) {
+      var metricClass = "fgMetric" + (extraClass ? (" " + extraClass) : "");
+      var score = point && Number.isFinite(point.score) ? fmt1(point.score) : "--";
+      var status = point && point.ratingCN ? point.ratingCN : "暂无数据";
+
+      return [
+        '<div class="' + metricClass + '">',
+          '<span>' + esc(title) + '</span>',
+          '<b>' + score + '</b>',
+          '<em>' + esc(status) + '</em>',
         '</div>'
       ].join("");
     }
@@ -682,7 +776,8 @@ export function getClientScript() {
       }
 
       var meta = fearGreedMeta(data.score, data.rating, data.ratingCN);
-      var gaugeHtml = buildFearGreedGauge(data.score, meta.color, meta.label);
+      var gaugeHtml = buildFearGreedGauge(data.score, meta);
+      var currentPoint = { score: data.score, ratingCN: meta.label };
 
       root.innerHTML = [
         '<div class="tile fgCard">',
@@ -697,13 +792,10 @@ export function getClientScript() {
             gaugeHtml,
             '<div class="fgData">',
               '<div class="fgStats">',
-                '<div class="fgMetric fgMetricMain">',
-                  '<span>最新</span>',
-                  '<b>' + fmt1(data.score) + '</b>',
-                '</div>',
-                '<div class="fgMetric"><span>一周前</span><b>' + fmt1(data.previous1Week) + '</b></div>',
-                '<div class="fgMetric"><span>一月前</span><b>' + fmt1(data.previous1Month) + '</b></div>',
-                '<div class="fgMetric"><span>一年前</span><b>' + fmt1(data.previous1Year) + '</b></div>',
+                buildFearGreedMetric("最新", currentPoint, "fgMetricMain"),
+                buildFearGreedMetric("一周前", data.previous1Week),
+                buildFearGreedMetric("一月前", data.previous1Month),
+                buildFearGreedMetric("一年前", data.previous1Year),
               '</div>',
             '</div>',
           '</div>',
@@ -874,7 +966,7 @@ export function getClientScript() {
       if (state.period !== "1D") return;
       refreshTimer = setInterval(function () {
         scheduleRender(state.period, { force: true });
-      }, 20000);
+      }, 30000);
     }
 
     document.addEventListener("visibilitychange", function () {
