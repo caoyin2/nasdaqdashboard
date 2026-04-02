@@ -421,9 +421,11 @@ export function getStyles() {
     }
 
     .fgGaugeValueLabel{
-      fill: rgba(222,230,239,.72);
-      font-size: 11px;
+      fill: rgba(232,238,245,.82);
+      font-size: 12px;
+      font-weight: 700;
       font-family: var(--mono);
+      letter-spacing: .2px;
     }
 
     .fgSectionLabel{
@@ -431,6 +433,7 @@ export function getStyles() {
       font-size: 12px;
       font-weight: 700;
       letter-spacing: .4px;
+      text-shadow: 0 1px 10px rgba(0,0,0,.22);
     }
 
     .fgGaugeCenter{
@@ -458,8 +461,9 @@ export function getStyles() {
       font-size: 36px;
       line-height: 1;
       font-weight: 800;
-      color: rgba(240,246,255,.98);
+      color: var(--fg-current-accent, rgba(240,246,255,.98));
       font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 18px rgba(0,0,0,.25);
     }
 
     .fgData{
@@ -481,17 +485,22 @@ export function getStyles() {
       min-height: 78px;
       padding: 14px 12px 12px;
       border-radius: 12px;
-      background: rgba(255,255,255,.04);
-      border: 1px solid rgba(31,43,61,.85);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)),
+        var(--fg-accent-soft, rgba(255,255,255,.02));
+      border: 1px solid var(--fg-accent-border, rgba(31,43,61,.85));
       display:grid;
       gap: 6px;
       align-content: center;
       justify-items:center;
       text-align:center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
     }
 
     .fgMetricMain{
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.05),
+        0 0 0 1px rgba(255,255,255,.02);
     }
 
     .fgMetric span{
@@ -508,8 +517,9 @@ export function getStyles() {
     .fgMetric b{
       font-size: 20px;
       line-height: 1;
-      color: rgba(240,246,255,.98);
+      color: var(--fg-accent, rgba(240,246,255,.98));
       font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 18px var(--fg-accent-soft, transparent);
     }
 
     .fgMetric em{
@@ -517,7 +527,8 @@ export function getStyles() {
       font-family: var(--mono);
       font-size: 11px;
       line-height: 1.2;
-      color: rgba(202,212,226,.88);
+      color: var(--fg-accent, rgba(202,212,226,.88));
+      font-weight: 700;
       max-width: 100%;
       white-space: normal;
       overflow-wrap: anywhere;
@@ -607,6 +618,7 @@ export function getStyles() {
       .fgGaugeCenter{ width: 118px; height: 66px; padding-top: 11px; }
       .fgGaugeScore{ font-size: 32px; }
       .fgSectionLabel{ font-size: 11px; }
+      .fgGaugeValueLabel{ font-size: 11px; }
       .fgMetric{ min-height: 74px; padding: 12px 8px 10px; gap: 5px; }
       .fgMetric span{ font-size: 11px; }
       .fgMetric b{ font-size: 18px; }

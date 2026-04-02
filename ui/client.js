@@ -670,18 +670,26 @@ export function getClientScript() {
     }
 
     function buildGaugeScaleValues(cx, cy, radius) {
-      return [0, 25, 50, 75, 100].map(function (value) {
-        var angle = gaugeAngleForScore(value);
-        var point = gaugePoint(cx, cy, radius, angle);
-        return '<text class="fgGaugeValueLabel" x="' + point.x.toFixed(2) + '" y="' + point.y.toFixed(2) + '" text-anchor="middle">' + value + '</text>';
+      var points = [
+        { value: 0, x: cx - 106, y: cy - 2, anchor: "start" },
+        { value: 25, point: gaugePoint(cx, cy, radius, 135), anchor: "middle" },
+        { value: 50, point: gaugePoint(cx, cy, radius - 2, 90), anchor: "middle" },
+        { value: 75, point: gaugePoint(cx, cy, radius, 45), anchor: "middle" },
+        { value: 100, x: cx + 106, y: cy - 2, anchor: "end" }
+      ];
+
+      return points.map(function (entry) {
+        var x = entry.point ? entry.point.x : entry.x;
+        var y = entry.point ? entry.point.y : entry.y;
+        return '<text class="fgGaugeValueLabel" x="' + x.toFixed(2) + '" y="' + y.toFixed(2) + '" text-anchor="' + entry.anchor + '" dominant-baseline="middle">' + entry.value + '</text>';
       }).join("");
     }
 
-    function buildGaugeSectionLabel(cx, cy, radius, startAngle, endAngle, lines, active) {
+    function buildGaugeSectionLabel(cx, cy, radius, startAngle, endAngle, lines, color, active) {
       var midAngle = (startAngle + endAngle) / 2;
       var point = gaugePoint(cx, cy, radius, midAngle);
       var rotation = 90 - midAngle;
-      var fill = active ? "rgba(243,247,252,.96)" : "rgba(206,214,225,.82)";
+      var fill = active ? color : hexToRgba(color, 0.72);
       var spans = "";
 
       if (lines.length === 1) {
@@ -705,26 +713,26 @@ export function getClientScript() {
       var needleAngle = gaugeAngleForScore(value);
       var needlePoint = gaugePoint(cx, cy, needleLength, needleAngle);
       var sections = [
-        { start: 180, end: 135, lines: ["极度", "恐慌"] },
-        { start: 135, end: 99, lines: ["恐慌"] },
-        { start: 99, end: 81, lines: ["中性"] },
-        { start: 81, end: 45, lines: ["贪婪"] },
-        { start: 45, end: 0, lines: ["极度", "贪婪"] }
+        { start: 180, end: 135, lines: ["极度", "恐慌"], color: "#ff5468" },
+        { start: 135, end: 99, lines: ["恐慌"], color: "#ff9ea4" },
+        { start: 99, end: 81, lines: ["中性"], color: "#ffd449" },
+        { start: 81, end: 45, lines: ["贪婪"], color: "#8be3a3" },
+        { start: 45, end: 0, lines: ["极度", "贪婪"], color: "#35ea72" }
       ];
 
       var sectionMarkup = sections.map(function (section, index) {
         var active = meta.bandIndex === index;
-        var fill = active ? hexToRgba(meta.color, 0.28) : "rgba(255,255,255,.055)";
-        var stroke = active ? meta.color : "rgba(255,255,255,.09)";
+        var fill = active ? hexToRgba(section.color, 0.28) : "rgba(255,255,255,.055)";
+        var stroke = active ? section.color : "rgba(255,255,255,.09)";
         return [
           '<path d="' + donutSegmentPath(cx, cy, outerR, innerR, section.start, section.end) + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="2"></path>',
-          buildGaugeSectionLabel(cx, cy, 138, section.start, section.end, section.lines, active)
+          buildGaugeSectionLabel(cx, cy, 138, section.start, section.end, section.lines, section.color, active)
         ].join("");
       }).join("");
 
       return [
         '<div class="fgGaugeWrap">',
-          '<div class="fgGaugeBox">',
+          '<div class="fgGaugeBox" style="--fg-current-accent:' + meta.color + ';">',
             '<svg class="fgGaugeSvg" viewBox="0 0 360 220" aria-hidden="true">',
               sectionMarkup,
               '<path class="fgGaugeInnerArc" d="M68 194 A112 112 0 0 1 292 194"></path>',
@@ -746,9 +754,17 @@ export function getClientScript() {
       var metricClass = "fgMetric" + (extraClass ? (" " + extraClass) : "");
       var score = point && Number.isFinite(point.score) ? fmt1(point.score) : "--";
       var status = point && point.ratingCN ? point.ratingCN : "暂无数据";
+      var pointMeta = fearGreedMeta(
+        point && Number.isFinite(point.score) ? point.score : NaN,
+        point ? point.rating : null,
+        point ? point.ratingCN : null
+      );
+      var accent = pointMeta.color;
+      var accentSoft = hexToRgba(accent, 0.15);
+      var accentBorder = hexToRgba(accent, 0.22);
 
       return [
-        '<div class="' + metricClass + '">',
+        '<div class="' + metricClass + '" style="--fg-accent:' + accent + ';--fg-accent-soft:' + accentSoft + ';--fg-accent-border:' + accentBorder + ';">',
           '<span>' + esc(title) + '</span>',
           '<b>' + score + '</b>',
           '<em>' + esc(status) + '</em>',
@@ -777,7 +793,7 @@ export function getClientScript() {
 
       var meta = fearGreedMeta(data.score, data.rating, data.ratingCN);
       var gaugeHtml = buildFearGreedGauge(data.score, meta);
-      var currentPoint = { score: data.score, ratingCN: meta.label };
+      var currentPoint = { score: data.score, rating: data.rating, ratingCN: meta.label };
 
       root.innerHTML = [
         '<div class="tile fgCard">',
