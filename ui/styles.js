@@ -381,15 +381,16 @@ export function getStyles() {
 
     .fgCardInner{
       display:grid;
-      grid-template-columns: 230px 1fr;
+      grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
       gap: 14px;
       align-items: center;
     }
 
     .fgGaugeWrap{
       min-width:0;
+      width: 100%;
       display:grid;
-      gap: 10px;
+      gap: 8px;
       justify-items:center;
     }
 
@@ -397,6 +398,7 @@ export function getStyles() {
       position: relative;
       width: min(100%, 220px);
       margin: 0 auto;
+      padding-top: 2px;
     }
 
     .fgGaugeSvg{
@@ -447,17 +449,17 @@ export function getStyles() {
     .fgGaugeText{
       position: absolute;
       left: 50%;
-      top: 74px;
+      top: 54px;
       transform: translateX(-50%);
       text-align: center;
       display: grid;
-      gap: 4px;
+      gap: 2px;
       pointer-events: none;
-      width: 100%;
+      width: 74%;
     }
 
     .fgGaugeScore{
-      font-size: 34px;
+      font-size: 32px;
       line-height: 1;
       font-weight: 800;
       color: rgba(240,246,255,.98);
@@ -466,7 +468,8 @@ export function getStyles() {
 
     .fgGaugeStatus{
       font-family: var(--mono);
-      font-size: 13px;
+      font-size: 12px;
+      line-height: 1.25;
       font-weight: 700;
     }
 
@@ -475,6 +478,7 @@ export function getStyles() {
       display:grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
+      margin-top: -2px;
     }
 
     .fgScaleItem{
@@ -482,7 +486,7 @@ export function getStyles() {
       padding: 8px 6px;
       border-radius: 10px;
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 11px;
       border: 1px solid rgba(255,255,255,.08);
       background: rgba(255,255,255,.04);
       color: rgba(230,237,247,.86);
@@ -520,14 +524,16 @@ export function getStyles() {
 
     .fgMetric{
       min-width: 0;
-      min-height: 78px;
-      padding: 12px;
+      min-height: 74px;
+      padding: 12px 10px;
       border-radius: 12px;
       background: rgba(255,255,255,.04);
       border: 1px solid rgba(31,43,61,.85);
       display:grid;
       gap: 8px;
       align-content: start;
+      justify-items:center;
+      text-align:center;
     }
 
     .fgMetricMain{
@@ -536,12 +542,16 @@ export function getStyles() {
 
     .fgMetric span{
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
+      white-space: nowrap;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .fgMetric b{
-      font-size: 20px;
+      font-size: 18px;
       line-height: 1.1;
       color: rgba(240,246,255,.98);
       font-variant-numeric: tabular-nums;
@@ -626,9 +636,15 @@ export function getStyles() {
 
       .fgTitle{ font-size: 16px; }
       .fgCardInner{ grid-template-columns: 1fr; }
-      .fgStats{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .fgStats{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
       .fgMetricMain{ grid-column: 1 / -1; }
-      .fgGaugeText{ top: 76px; }
+      .fgGaugeText{ top: 52px; width: 72%; }
+      .fgGaugeScore{ font-size: 30px; }
+      .fgGaugeStatus{ font-size: 12px; }
+      .fgScaleItem{ font-size: 11px; padding: 7px 4px; }
+      .fgMetric{ min-height: 70px; padding: 10px 8px; }
+      .fgMetric span{ font-size: 11px; }
+      .fgMetric b{ font-size: 18px; }
     }
 
     @supports (-webkit-touch-callout: none) {
@@ -636,4 +652,3 @@ export function getStyles() {
     }
   `;
 }
-

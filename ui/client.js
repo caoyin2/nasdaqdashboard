@@ -625,7 +625,7 @@ export function getClientScript() {
       var cy = 115;
       var len = 68;
       var px = cx + Math.cos(rad) * len;
-      var py = cy + Math.sin(rad) * len;
+      var py = cy - Math.sin(rad) * len;
 
       return [
         '<div class="fgGaugeWrap">',
@@ -698,7 +698,7 @@ export function getClientScript() {
               '<div class="fgStats">',
                 '<div class="fgMetric fgMetricMain">',
                   '<span>最新</span>',
-                  '<b style="color:' + meta.color + '">' + fmt1(data.score) + '</b>',
+                  '<b>' + fmt1(data.score) + '</b>',
                 '</div>',
                 '<div class="fgMetric"><span>一周前</span><b>' + fmt1(data.previous1Week) + '</b></div>',
                 '<div class="fgMetric"><span>一月前</span><b>' + fmt1(data.previous1Month) + '</b></div>',
