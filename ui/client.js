@@ -15,7 +15,19 @@
  */
 
 export function getClientScript() {
-  return `(${clientMain.toString()})();`;
+  return `(() => {
+${clientMain.toString()}
+  try {
+    clientMain();
+  } catch (error) {
+    console.error("app bootstrap failed:", error);
+    const status = document.getElementById("status");
+    if (status) {
+      status.textContent = error?.message || "页面初始化失败";
+      status.className = "status err";
+    }
+  }
+})();`;
 }
 
 function clientMain() {

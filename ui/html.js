@@ -1,13 +1,14 @@
 /**
  * 首页 HTML 模板。
  *
- * 这个文件只负责输出页面骨架，不处理业务数据。
- * 页面里的动态内容由前端脚本在浏览器端填充：
- * - 指数折线图
- * - CNN 恐惧贪婪指数仪表盘
- * - 右侧指数卡片
+ * 页面结构保持简单：
+ * - 样式继续内联，避免额外一次 CSS 请求
+ * - 前端逻辑改成独立的 /app.js 请求，不再内联到 HTML
  *
- * 这样拆分后，后续如果只想改布局或文案，只需要改这个文件。
+ * 这样做的好处：
+ * - 避免内联脚本串联和转义问题
+ * - 浏览器控制台报错会直接落到 /app.js，定位更清楚
+ * - 每次部署后更容易确认脚本是否更新
  */
 
 import {
@@ -17,24 +18,16 @@ import {
   PERIOD_LABELS,
   UP_COLOR,
 } from "../config.js";
-import { getClientScript } from "./client.js";
 import { getStyles } from "./styles.js";
 
 /**
- * 把 JSON 安全地嵌入到 HTML 中，避免被当作标签解析。
+ * 把 JSON 安全嵌入到 HTML，避免被浏览器当作标签或脚本片段解析。
  */
 function safeJsonForHtml(data) {
   return JSON.stringify(data)
     .replace(/</g, "\\u003c")
     .replace(/>/g, "\\u003e")
     .replace(/&/g, "\\u0026");
-}
-
-/**
- * 防止内联脚本中出现 </script> 时提前结束脚本标签。
- */
-function safeInlineScript(js) {
-  return js.replace(/<\/script/gi, "<\\/script");
 }
 
 export function getHtml() {
@@ -121,7 +114,7 @@ export function getHtml() {
   </div>
 
   <script id="app-config" type="application/json">${safeJsonForHtml(appConfig)}</script>
-  <script>${safeInlineScript(getClientScript())}</script>
+  <script src="/app.js"></script>
 </body>
 </html>`;
 }

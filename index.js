@@ -10,6 +10,7 @@
 import { API_MEM_TTL_MS, normalizePeriod } from "./config.js";
 import { corsHeaders, htmlResponse, jsonResponse } from "./lib/http.js";
 import { buildQuotePayload } from "./services/quoteService.js";
+import { getClientScript } from "./ui/client.js";
 import { getHtml } from "./ui/html.js";
 
 const API_MEM_CACHE = globalThis.__API_MEM_CACHE__ ?? (globalThis.__API_MEM_CACHE__ = new Map());
@@ -28,7 +29,17 @@ export default {
     }
 
     if (url.pathname === "/") {
-      return htmlResponse(getHtml(), 60);
+      return htmlResponse(getHtml(), 0);
+    }
+
+    if (url.pathname === "/app.js") {
+      return new Response(getClientScript(), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/javascript; charset=utf-8",
+          "Cache-Control": "no-store",
+        },
+      });
     }
 
     if (url.pathname === "/api/quote") {
@@ -94,4 +105,3 @@ export default {
     return new Response("Not Found", { status: 404 });
   },
 };
-
