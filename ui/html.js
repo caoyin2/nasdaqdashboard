@@ -78,7 +78,6 @@ export function getHtml() {
         </div>
       </div>
 
-      <div class="asof" id="asOf">--</div>
     </div>
 
     <div class="grid">

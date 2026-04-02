@@ -856,14 +856,6 @@ export function getClientScript() {
 
       state.items = items;
       rebuildTimes();
-
-      var latestMs = items.reduce(function (maxMs, item) {
-        return Number.isFinite(item.latestT) ? Math.max(maxMs, item.latestT) : maxMs;
-      }, -Infinity);
-
-      $("asOf").textContent = Number.isFinite(latestMs)
-        ? ("截至 " + fmtBJ(latestMs))
-        : "--";
       $("idxCards").innerHTML = items.map(function (item) {
         return tileHTML(item, q.period);
       }).join("");
