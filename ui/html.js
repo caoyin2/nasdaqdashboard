@@ -1,7 +1,13 @@
 /**
- * 首页 HTML 模板
+ * 首页 HTML 模板。
  *
- * 这里集中管理页面结构。
+ * 这个文件只负责输出页面骨架，不处理业务数据。
+ * 页面里的动态内容由前端脚本在浏览器端填充：
+ * - 指数折线图
+ * - CNN 恐惧贪婪指数仪表盘
+ * - 右侧指数卡片
+ *
+ * 这样拆分后，后续如果只想改布局或文案，只需要改这个文件。
  */
 
 import {
@@ -14,6 +20,9 @@ import {
 import { getClientScript } from "./client.js";
 import { getStyles } from "./styles.js";
 
+/**
+ * 把 JSON 安全地嵌入到 HTML 中，避免被当作标签解析。
+ */
 function safeJsonForHtml(data) {
   return JSON.stringify(data)
     .replace(/</g, "\\u003c")
@@ -21,8 +30,11 @@ function safeJsonForHtml(data) {
     .replace(/&/g, "\\u0026");
 }
 
+/**
+ * 防止内联脚本中出现 </script> 时提前结束脚本标签。
+ */
 function safeInlineScript(js) {
-  return js.replace(/<\/script/gi, "<\\\\/script");
+  return js.replace(/<\/script/gi, "<\\/script");
 }
 
 export function getHtml() {
@@ -38,8 +50,10 @@ export function getHtml() {
     downColor: DOWN_COLOR,
   };
 
-  const NASDAQ_LOGO_URL = "https://companieslogo.com/img/orig/NDAQ-0d58bfbc.svg?t=1740420328&download=true";
-  const NASDAQ_FAVICON_URL = "https://www.nasdaq.com/sites/acquia.prod/files/favicon.ico";
+  const NASDAQ_LOGO_URL =
+    "https://companieslogo.com/img/orig/NDAQ-0d58bfbc.svg?t=1740420328&download=true";
+  const NASDAQ_FAVICON_URL =
+    "https://www.nasdaq.com/sites/acquia.prod/files/favicon.ico";
 
   return `<!doctype html>
 <html lang="zh-CN">
@@ -77,7 +91,7 @@ export function getHtml() {
     <div class="grid">
       <div class="card chart chartCard" id="chartCard">
         <div class="fsHint" id="fsHint">
-          已进入“全屏模式”。iPhone Safari 不支持强制锁横屏，请手动旋转设备；再次点击右上角按钮退出。
+          已进入全屏模式。iPhone Safari 不支持强制锁横屏，请手动旋转设备；再次点击右上角按钮退出。
         </div>
 
         <button class="fsBtn" id="fsBtn" aria-label="全屏横屏查看">
@@ -111,4 +125,3 @@ export function getHtml() {
 </body>
 </html>`;
 }
-

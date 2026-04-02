@@ -1,11 +1,17 @@
 /**
- * 浏览器端脚本
+ * 浏览器端脚本。
  *
- * 包含：
- * 1. 指数折线图绘制
- * 2. 周期切换
- * 3. CNN 恐惧贪婪指数仪表盘渲染
- * 4. 移动端全屏逻辑
+ * 这个文件负责：
+ * 1. 向 Worker 的 /api/quote 拉数据
+ * 2. 绘制左侧折线图
+ * 3. 渲染右侧指数卡片
+ * 4. 渲染 CNN 恐惧贪婪指数仪表盘
+ * 5. 处理移动端全屏逻辑
+ *
+ * 设计原则：
+ * - 前端不直接依赖后端模块，只通过 /api/quote 交互
+ * - 页面配置通过 HTML 注入的 JSON 传入
+ * - UI 逻辑尽量集中，方便后续继续让 GPT 改样式或交互
  */
 
 export function getClientScript() {
@@ -25,6 +31,7 @@ function clientMain() {
 
   function setStatus(text, type = "ok") {
     const el = $("status");
+    if (!el) return;
     el.textContent = text;
     el.className = "status " + (type === "err" ? "err" : "ok");
   }
@@ -49,6 +56,9 @@ function clientMain() {
     return Math.max(min, Math.min(max, n));
   }
 
+  /**
+   * tooltip 统一展示北京时间，和用户直觉一致。
+   */
   const dtfBJ = new Intl.DateTimeFormat("zh-CN", {
     timeZone: "Asia/Shanghai",
     year: "numeric",
@@ -64,7 +74,12 @@ function clientMain() {
   }
 
   const canvas = $("c");
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas ? canvas.getContext("2d") : null;
+
+  if (!canvas || !ctx) {
+    return;
+  }
+
   let DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
 
   const state = {
@@ -81,8 +96,11 @@ function clientMain() {
   function rebuildTimes() {
     const set = new Set();
     for (const item of state.items) {
-      for (const point of item.line || []) set.add(point.t);
+      for (const point of item.line || []) {
+        set.add(point.t);
+      }
     }
+
     state.times = Array.from(set).sort((a, b) => a - b);
     state.timeIndex = new Map(state.times.map((t, i) => [t, i]));
   }
@@ -148,7 +166,7 @@ function clientMain() {
     if (state.times.length < 2) return false;
     const a = new Date(state.times[0]);
     const b = new Date(state.times[state.times.length - 1]);
-    return b - a > 36 * 3600 * 1000;
+    return (b - a) > 36 * 3600 * 1000;
   }
 
   function measureEndLabelMaxWidth(font) {
@@ -269,7 +287,7 @@ function clientMain() {
     if (!state.items.length || state.times.length < 2) {
       ctx.save();
       ctx.fillStyle = "rgba(230,237,247,.55)";
-      ctx.font = (14 * DPR) + "px ui-monospace";
+      ctx.font = `${14 * DPR}px ui-monospace`;
       ctx.textAlign = "center";
       ctx.fillText("暂无数据", W / 2, H / 2);
       ctx.restore();
@@ -284,8 +302,8 @@ function clientMain() {
     const padB = 30 * DPR;
 
     const mono = getComputedStyle(document.documentElement).getPropertyValue("--mono").trim();
-    const axisFont = (11 * DPR) + "px " + mono;
-    const labelFont = (12 * DPR) + "px " + mono;
+    const axisFont = `${11 * DPR}px ${mono}`;
+    const labelFont = `${12 * DPR}px ${mono}`;
 
     const maxLabelTextW = measureEndLabelMaxWidth(labelFont);
     const maxLabelBoxW = Math.max(44 * DPR, maxLabelTextW + 14 * DPR);
@@ -297,6 +315,7 @@ function clientMain() {
     const range = pctRange();
     const minP = range.min;
     const maxP = range.max;
+
     const yOf = (pct) => padT + (maxP - pct) * (plotH / (maxP - minP || 1));
     const xStep = plotW / (state.times.length - 1);
     const xOf = (i) => padL + i * xStep;
@@ -419,7 +438,7 @@ function clientMain() {
       const hh = String(d.getUTCHours()).padStart(2, "0");
       const mi = String(d.getUTCMinutes()).padStart(2, "0");
 
-      ctx.fillText(multiDay ? (mm + "-" + dd) : (hh + ":" + mi), x, padT + plotH + 6 * DPR);
+      ctx.fillText(multiDay ? `${mm}-${dd}` : `${hh}:${mi}`, x, padT + plotH + 6 * DPR);
     }
 
     ctx.restore();
@@ -440,7 +459,7 @@ function clientMain() {
         ctx.stroke();
 
         const rows = [];
-        rows.push("时间： " + fmtBJ(state.hoverTime));
+        rows.push("时间：" + fmtBJ(state.hoverTime));
 
         for (const item of state.items) {
           const p = item.map?.get(state.hoverTime);
@@ -454,7 +473,7 @@ function clientMain() {
             ctx.fill();
           }
 
-          rows.push(item.nameCN + "： " + p.close.toFixed(4) + "（" + signPct(p.pct) + "）");
+          rows.push(`${item.nameCN}：${p.close.toFixed(4)}（${signPct(p.pct)}）`);
         }
 
         ctx.font = labelFont;
@@ -466,7 +485,9 @@ function clientMain() {
         const maxX = padL + plotW - w;
 
         let bxTry = x + 12 * DPR;
-        if (bxTry + w > padL + plotW) bxTry = x - 12 * DPR - w;
+        if (bxTry + w > padL + plotW) {
+          bxTry = x - 12 * DPR - w;
+        }
 
         let bx;
         if (maxX < minX) bx = minX;
@@ -483,6 +504,7 @@ function clientMain() {
         ctx.fillStyle = "rgba(230,237,247,.95)";
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
+
         for (let j = 0; j < rows.length; j++) {
           ctx.fillText(rows[j], bx + pad, by + pad + j * 16 * DPR);
         }
@@ -506,7 +528,7 @@ function clientMain() {
     const padB = 30 * DPR;
 
     const mono = getComputedStyle(document.documentElement).getPropertyValue("--mono").trim();
-    const labelFont = (12 * DPR) + "px " + mono;
+    const labelFont = `${12 * DPR}px ${mono}`;
     const maxLabelTextW = measureEndLabelMaxWidth(labelFont);
     const maxLabelBoxW = Math.max(44 * DPR, maxLabelTextW + 14 * DPR);
     const padR = isMobile ? Math.max(68 * DPR, maxLabelBoxW + 26 * DPR) : 150 * DPR;
@@ -514,7 +536,9 @@ function clientMain() {
     const plotW = W - padL - padR;
     const plotH = canvas.height - padT - padB;
 
-    if (x < padL || x > padL + plotW || y < padT || y > padT + plotH) return null;
+    if (x < padL || x > padL + plotW || y < padT || y > padT + plotH) {
+      return null;
+    }
 
     const xStep = plotW / (state.times.length - 1);
     const i = Math.round((x - padL) / xStep);
@@ -659,6 +683,7 @@ function clientMain() {
 
   function renderFearGreedCard(data) {
     const root = $("fearGreedCard");
+    if (!root) return;
 
     if (!data || !Number.isFinite(data.score)) {
       root.innerHTML = `
@@ -886,7 +911,9 @@ function clientMain() {
   async function tryLockLandscape() {
     try {
       const o = screen.orientation;
-      if (o && o.lock) await o.lock("landscape");
+      if (o && o.lock) {
+        await o.lock("landscape");
+      }
     } catch (error) {
       console.debug("orientation lock failed:", error?.message || error);
     }
@@ -925,4 +952,3 @@ function clientMain() {
   scheduleRender(state.period, { force: false });
   startAutoRefresh();
 }
-
