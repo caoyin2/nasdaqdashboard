@@ -689,7 +689,7 @@ export function getClientScript() {
       var midAngle = (startAngle + endAngle) / 2;
       var point = gaugePoint(cx, cy, radius, midAngle);
       var rotation = 90 - midAngle;
-      var fill = active ? color : hexToRgba(color, 0.72);
+      var fill = active ? "rgba(248,250,252,.98)" : "rgba(236,241,247,.88)";
       var spans = "";
 
       if (lines.length === 1) {
@@ -857,7 +857,13 @@ export function getClientScript() {
       state.items = items;
       rebuildTimes();
 
-      $("asOf").textContent = q.asOfUTC ? ("截至 " + q.asOfUTC) : "--";
+      var latestMs = items.reduce(function (maxMs, item) {
+        return Number.isFinite(item.latestT) ? Math.max(maxMs, item.latestT) : maxMs;
+      }, -Infinity);
+
+      $("asOf").textContent = Number.isFinite(latestMs)
+        ? ("截至 " + fmtBJ(latestMs))
+        : "--";
       $("idxCards").innerHTML = items.map(function (item) {
         return tileHTML(item, q.period);
       }).join("");
