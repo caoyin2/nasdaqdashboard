@@ -92,6 +92,7 @@ function clientMain() {
 
   const periodCache = new Map();
   let activeFetchCtrl = null;
+  const API_TIMEOUT_MS = 15000;
 
   function rebuildTimes() {
     const set = new Set();
@@ -777,10 +778,26 @@ function clientMain() {
     if (activeFetchCtrl) activeFetchCtrl.abort();
     activeFetchCtrl = new AbortController();
 
-    const res = await fetch("/api/quote?p=" + encodeURIComponent(period), {
-      cache: opts.force ? "no-store" : "default",
-      signal: activeFetchCtrl.signal,
-    });
+    const timer = setTimeout(() => {
+      if (activeFetchCtrl) {
+        activeFetchCtrl.abort("api timeout");
+      }
+    }, API_TIMEOUT_MS);
+
+    let res;
+    try {
+      res = await fetch("/api/quote?p=" + encodeURIComponent(period), {
+        cache: opts.force ? "no-store" : "default",
+        signal: activeFetchCtrl.signal,
+      });
+    } catch (error) {
+      if (activeFetchCtrl.signal.aborted) {
+        throw new Error(`接口请求超时（>${API_TIMEOUT_MS / 1000}秒）`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (!res.ok) throw new Error("HTTP " + res.status);
 
@@ -823,7 +840,7 @@ function clientMain() {
     } catch (error) {
       if (error?.name === "AbortError") return;
       console.error(error);
-      setStatus("加载失败", "err");
+      setStatus(error?.message || "加载失败", "err");
     }
   }
 

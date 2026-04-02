@@ -99,10 +99,24 @@ export async function buildQuotePayload(period) {
     };
   });
 
-  const [items, cnnFearGreed] = await Promise.all([
-    Promise.all(indexJobs),
+  const [indexResults, cnnFearGreed] = await Promise.all([
+    Promise.allSettled(indexJobs),
     cnnFearGreedPromise,
   ]);
+
+  const items = indexResults
+    .filter((result) => result.status === "fulfilled")
+    .map((result) => result.value);
+
+  for (const result of indexResults) {
+    if (result.status === "rejected") {
+      console.error("Index fetch failed:", result.reason);
+    }
+  }
+
+  if (items.length === 0) {
+    throw new Error("All index upstream requests failed");
+  }
 
   let asOfUTC = null;
   let latestMs = -Infinity;
@@ -122,4 +136,3 @@ export async function buildQuotePayload(period) {
     cnnFearGreed,
   };
 }
-
