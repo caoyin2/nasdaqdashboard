@@ -595,11 +595,11 @@ export function getClientScript() {
 
     function fearGreedMeta(score, rating, ratingCN) {
       var map = {
-        "extreme fear": { label: "极度恐慌", color: "#ff5a76", bandIndex: 0 },
-        "fear": { label: "恐慌", color: "#fb923c", bandIndex: 1 },
-        "neutral": { label: "中性", color: "#fbbf24", bandIndex: 2 },
-        "greed": { label: "贪婪", color: "#22c55e", bandIndex: 3 },
-        "extreme greed": { label: "极度贪婪", color: "#14b8a6", bandIndex: 4 }
+        "extreme fear": { label: "极度恐慌", color: "#ff5468", bandIndex: 0 },
+        "fear": { label: "恐慌", color: "#ff9ea4", bandIndex: 1 },
+        "neutral": { label: "中性", color: "#ffd449", bandIndex: 2 },
+        "greed": { label: "贪婪", color: "#8be3a3", bandIndex: 3 },
+        "extreme greed": { label: "极度贪婪", color: "#35ea72", bandIndex: 4 }
       };
 
       var key = String(rating || "").toLowerCase().trim();
@@ -608,11 +608,11 @@ export function getClientScript() {
       }
 
       if (Number.isFinite(score)) {
-        if (score < 25) return { label: ratingCN || "极度恐慌", color: "#ff5a76", bandIndex: 0 };
-        if (score < 45) return { label: ratingCN || "恐慌", color: "#fb923c", bandIndex: 1 };
-        if (score < 55) return { label: ratingCN || "中性", color: "#fbbf24", bandIndex: 2 };
-        if (score < 75) return { label: ratingCN || "贪婪", color: "#22c55e", bandIndex: 3 };
-        return { label: ratingCN || "极度贪婪", color: "#14b8a6", bandIndex: 4 };
+        if (score < 25) return { label: ratingCN || "极度恐慌", color: "#ff5468", bandIndex: 0 };
+        if (score < 45) return { label: ratingCN || "恐慌", color: "#ff9ea4", bandIndex: 1 };
+        if (score < 55) return { label: ratingCN || "中性", color: "#ffd449", bandIndex: 2 };
+        if (score < 75) return { label: ratingCN || "贪婪", color: "#8be3a3", bandIndex: 3 };
+        return { label: ratingCN || "极度贪婪", color: "#35ea72", bandIndex: 4 };
       }
 
       return { label: "暂无数据", color: "#94a3b8", bandIndex: null };
