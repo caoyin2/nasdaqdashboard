@@ -137,18 +137,22 @@ export async function getSearchMeta(symbol, env, options = {}) {
   if (!normalizedSymbol) return null;
 
   const allowFetch = options.allowFetch !== false;
+  const cached = SEARCH_META_MEM_CACHE.get(normalizedSymbol) || null;
 
-  if (SEARCH_META_MEM_CACHE.has(normalizedSymbol)) {
-    return SEARCH_META_MEM_CACHE.get(normalizedSymbol);
+  if (cached?.tickerId) {
+    return cached;
   }
 
   const fromKv = await readSearchMetaFromKv(env, normalizedSymbol);
-  if (fromKv) return fromKv;
+  if (fromKv?.tickerId) return fromKv;
 
   if (allowFetch) {
     const live = await fetchLiveSearchMeta(normalizedSymbol, env);
     if (live) return live;
   }
+
+  if (fromKv) return fromKv;
+  if (cached) return cached;
 
   const fallback = buildFallbackMeta(normalizedSymbol);
   if (fallback) {
