@@ -70,8 +70,9 @@ export async function readSearchMetaFromKv(env, symbol) {
   }
 
   try {
-    const value = await kv.get(key, "json");
-    if (value && typeof value === "object") {
+    const raw = await kv.get(key);
+    if (raw != null) {
+      const value = JSON.parse(raw);
       const normalized = {
         symbol: normalizeSymbol(value.symbol || symbol),
         tickerId: Number.isFinite(+value.tickerId) ? +value.tickerId : null,
