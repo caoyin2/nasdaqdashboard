@@ -10,6 +10,7 @@
 import { API_MEM_TTL_MS, normalizePeriod } from "./config.js";
 import { corsHeaders, htmlResponse, jsonResponse } from "./lib/http.js";
 import { fetchCnnFearGreedSummary } from "./services/cnnFearGreed.js";
+import { buildIndexWeightsPayload } from "./services/indexWeightsService.js";
 import { buildQuotePayload } from "./services/quoteService.js";
 import { buildStarTechPayload } from "./services/starTechService.js";
 import { getClientScript } from "./ui/client.js";
@@ -20,12 +21,16 @@ const FEAR_GREED_MEM_CACHE =
   globalThis.__FEAR_GREED_MEM_CACHE__ ?? (globalThis.__FEAR_GREED_MEM_CACHE__ = new Map());
 const STAR_TECH_MEM_CACHE =
   globalThis.__STAR_TECH_MEM_CACHE__ ?? (globalThis.__STAR_TECH_MEM_CACHE__ = new Map());
+const INDEX_WEIGHTS_MEM_CACHE =
+  globalThis.__INDEX_WEIGHTS_MEM_CACHE__ ?? (globalThis.__INDEX_WEIGHTS_MEM_CACHE__ = new Map());
 const FEAR_GREED_MEM_TTL_MS = 5 * 60 * 1000;
 const FEAR_GREED_CACHE_SECONDS = 5 * 60;
 const STAR_TECH_CACHE = {
   "1D": { memTtlMs: 25 * 1000, cacheSeconds: 25 },
   default: { memTtlMs: 10 * 60 * 1000, cacheSeconds: 10 * 60 },
 };
+const INDEX_WEIGHTS_MEM_TTL_MS = 12 * 60 * 60 * 1000;
+const INDEX_WEIGHTS_CACHE_SECONDS = 12 * 60 * 60;
 
 export default {
   async fetch(request, env, ctx) {
@@ -223,6 +228,67 @@ export default {
             "Content-Type": "application/json; charset=utf-8",
             ...corsHeaders(origin),
             "Cache-Control": `public, max-age=${policy.cacheSeconds}, s-maxage=${policy.cacheSeconds}`,
+          },
+        });
+
+        ctx.waitUntil(caches.default.put(cacheKey, response.clone()));
+        return response;
+      } catch (error) {
+        return jsonResponse(
+          { ok: false, error: error?.message || String(error) },
+          origin,
+          502,
+          { cacheSeconds: 0 }
+        );
+      }
+    }
+
+    if (url.pathname === "/api/index-weights") {
+      try {
+        const indexCode = String(url.searchParams.get("index") || "NDXTMC").toUpperCase();
+        const now = Date.now();
+        const memKey = `weights:${indexCode}`;
+        const memCached = INDEX_WEIGHTS_MEM_CACHE.get(memKey);
+
+        if (memCached && now - memCached.at < INDEX_WEIGHTS_MEM_TTL_MS) {
+          return new Response(memCached.body, {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              ...corsHeaders(origin),
+              "Cache-Control": `public, max-age=${INDEX_WEIGHTS_CACHE_SECONDS}, s-maxage=${INDEX_WEIGHTS_CACHE_SECONDS}`,
+            },
+          });
+        }
+
+        const cacheKey = new Request(url.toString(), { method: "GET" });
+        const edgeHit = await caches.default.match(cacheKey);
+
+        if (edgeHit) {
+          const body = await edgeHit.text();
+          INDEX_WEIGHTS_MEM_CACHE.set(memKey, { at: now, body });
+
+          return new Response(body, {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              ...corsHeaders(origin),
+              "Cache-Control": `public, max-age=${INDEX_WEIGHTS_CACHE_SECONDS}, s-maxage=${INDEX_WEIGHTS_CACHE_SECONDS}`,
+            },
+          });
+        }
+
+        const payload = await buildIndexWeightsPayload(indexCode);
+        const body = JSON.stringify(payload, null, 2);
+
+        INDEX_WEIGHTS_MEM_CACHE.set(memKey, { at: now, body });
+
+        const response = new Response(body, {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            ...corsHeaders(origin),
+            "Cache-Control": `public, max-age=${INDEX_WEIGHTS_CACHE_SECONDS}, s-maxage=${INDEX_WEIGHTS_CACHE_SECONDS}`,
           },
         });
 

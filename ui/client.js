@@ -127,9 +127,23 @@ export function getClientScript() {
       touched: false,
       mobileVisible: false
     };
+    var weightsState = {
+      activeIndex: "NDXTMC",
+      cache: new Map(),
+      fetchCtrl: null,
+      statusText: "\u8fdb\u5165\u9762\u677f\u540e\u52a0\u8f7d\u6700\u65b0\u7533\u8d4e\u6e05\u5355\u6743\u91cd",
+      statusType: "ok",
+      touched: false
+    };
     var activeFetchCtrl = null;
     var switchTimer = null;
     var refreshTimer = null;
+
+    function getPanelTitle(page) {
+      if (page === "stars") return "\u9762\u677f\uff1a\u660e\u661f\u79d1\u6280\u516c\u53f8";
+      if (page === "weights") return "\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd";
+      return "\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f";
+    }
 
     function rebuildTimes() {
       var set = new Set();
@@ -920,14 +934,28 @@ export function getClientScript() {
         var currentRect = node.getBoundingClientRect();
 
         if (!previous) {
-          node.style.transition = "none";
-          node.style.opacity = "0";
-          node.style.transform = "translateY(12px) scale(0.985)";
-          requestAnimationFrame(function () {
-            node.style.transition = "transform 380ms cubic-bezier(0.22,1,0.36,1), opacity 260ms ease";
-            node.style.opacity = "1";
-            node.style.transform = "translate(0, 0) scale(1)";
-          });
+          if (node.animate) {
+            node.animate(
+              [
+                { opacity: 0, transform: "translateY(12px) scale(0.985)" },
+                { opacity: 1, transform: "translateY(0) scale(1)" }
+              ],
+              {
+                duration: 320,
+                easing: "cubic-bezier(0.22,1,0.36,1)",
+                fill: "both"
+              }
+            );
+          } else {
+            node.style.transition = "none";
+            node.style.opacity = "0";
+            node.style.transform = "translateY(12px) scale(0.985)";
+            requestAnimationFrame(function () {
+              node.style.transition = "transform 380ms cubic-bezier(0.22,1,0.36,1), opacity 260ms ease";
+              node.style.opacity = "1";
+              node.style.transform = "translate(0, 0) scale(1)";
+            });
+          }
           return;
         }
 
@@ -935,13 +963,27 @@ export function getClientScript() {
         var deltaY = previous.top - currentRect.top;
         if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) return;
 
-        node.style.transition = "none";
-        node.style.transform = "translate(" + deltaX + "px," + deltaY + "px)";
+        if (node.animate) {
+          node.animate(
+            [
+              { transform: "translate(" + deltaX + "px," + deltaY + "px)" },
+              { transform: "translate(0, 0)" }
+            ],
+            {
+              duration: 420,
+              easing: "cubic-bezier(0.22,1,0.36,1)",
+              fill: "both"
+            }
+          );
+        } else {
+          node.style.transition = "none";
+          node.style.transform = "translate(" + deltaX + "px," + deltaY + "px)";
 
-        requestAnimationFrame(function () {
-          node.style.transition = "transform 420ms cubic-bezier(0.22,1,0.36,1)";
-          node.style.transform = "translate(0, 0)";
-        });
+          requestAnimationFrame(function () {
+            node.style.transition = "transform 420ms cubic-bezier(0.22,1,0.36,1)";
+            node.style.transform = "translate(0, 0)";
+          });
+        }
       });
     }
 
@@ -1015,6 +1057,137 @@ export function getClientScript() {
       requestAnimationFrame(function () {
         animateStarCards(root, previousPositions);
       });
+    }
+
+    function formatBasketDate(ymd) {
+      var text = String(ymd || "");
+      if (!/^\\d{8}$/.test(text)) return "--";
+      return text.slice(0, 4) + "-" + text.slice(4, 6) + "-" + text.slice(6, 8);
+    }
+
+    function weightCardHTML(item, maxWeight) {
+      var safeMax = Number.isFinite(maxWeight) && maxWeight > 0 ? maxWeight : 1;
+      var widthPct = clamp((item.weightPct / safeMax) * 100, 10, 100);
+
+      return [
+        '<article class="weightCard">',
+          '<div class="weightCardTop">',
+            '<div class="weightIconWrap">',
+              item.iconLight
+                ? '<img class="weightIcon" src="' + esc(item.iconLight) + '" alt="' + esc(item.nameEn) + '" loading="lazy" />'
+                : '<div class="weightIcon" aria-hidden="true"></div>',
+            '</div>',
+            '<div class="weightName">' + esc(item.nameEn || item.symbol) + '</div>',
+          '</div>',
+          '<div class="weightValue">',
+            '<span>Weight</span>',
+            '<strong>' + fmt(item.weightPct, 2) + '%</strong>',
+          '</div>',
+          '<div class="weightBar">',
+            '<div class="weightBarFill" style="width:' + widthPct.toFixed(2) + '%"></div>',
+          '</div>',
+        '</article>'
+      ].join("");
+    }
+
+    function renderWeightsPanel() {
+      var root = $("indexWeightsPanel");
+      if (!root) return;
+
+      var cached = weightsState.cache.get(weightsState.activeIndex);
+      var items = cached && cached.items ? cached.items.slice() : null;
+      var maxWeight = items && items.length ? items[0].weightPct : 0;
+      var statusClass = weightsState.statusType === "err" ? "err" : "ok";
+      var listHtml = items && items.length
+        ? '<div class="weightsList">' + items.map(function (item) { return weightCardHTML(item, maxWeight); }).join("") + '</div>'
+        : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u53ea\u4f1a\u52a0\u8f7d\u4e00\u6b21\u6700\u65b0\u7533\u8d4e\u6e05\u5355\uff0c\u5e76\u5c06\u7ed3\u679c\u7f13\u5b58\u5728 Worker \u548c\u6d4f\u89c8\u5668\u4e2d\u3002<br />\u5f53\u524d\u4ec5\u5c55\u793a NDXTMC \u6307\u6570\u6743\u91cd\u3002</div>';
+
+      root.innerHTML = [
+        '<div class="card weightsPanel">',
+          '<div class="weightsHead">',
+            '<div class="weightsTitle">',
+              '<span>\u6839\u636e\u6700\u65b0\u7533\u8d4e\u6e05\u5355\u63a8\u5bfc\u6210\u5206\u80a1\u6743\u91cd</span>',
+              '<strong>\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd</strong>',
+            '</div>',
+            '<div class="weightsMeta">',
+              '<div class="' + statusClass + '">' + esc(weightsState.statusText) + '</div>',
+              '<div>\u6307\u6570\uff1a<strong>' + esc(weightsState.activeIndex) + '</strong></div>',
+              '<div>\u6e05\u5355\u65e5\u671f\uff1a<strong>' + esc(cached ? formatBasketDate(cached.basketDate) : "--") + '</strong></div>',
+            '</div>',
+          '</div>',
+          listHtml,
+        '</div>'
+      ].join("");
+    }
+
+    async function fetchIndexWeights(indexCode, options) {
+      var opts = options || {};
+      if (weightsState.fetchCtrl) {
+        weightsState.fetchCtrl.abort();
+      }
+
+      var controller = new AbortController();
+      var timedOut = false;
+      weightsState.fetchCtrl = controller;
+      var timer = setTimeout(function () {
+        timedOut = true;
+        controller.abort();
+      }, API_TIMEOUT_MS);
+
+      try {
+        var res = await fetch("/api/index-weights?index=" + encodeURIComponent(indexCode), {
+          cache: opts.force ? "no-store" : "default",
+          signal: controller.signal
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        var payload = await res.json();
+        if (!payload.ok) throw new Error(payload.error || "Index weights API error");
+        return payload;
+      } catch (error) {
+        if (controller.signal.aborted && !timedOut) {
+          return null;
+        }
+        if (timedOut) {
+          throw new Error("科技类指数权重请求超时（15秒）");
+        }
+        throw error;
+      } finally {
+        clearTimeout(timer);
+        if (weightsState.fetchCtrl === controller) {
+          weightsState.fetchCtrl = null;
+        }
+      }
+    }
+
+    async function loadIndexWeights(indexCode, options) {
+      var opts = options || {};
+      weightsState.activeIndex = indexCode;
+      weightsState.touched = true;
+
+      if (!opts.force && weightsState.cache.has(indexCode)) {
+        weightsState.statusText = "已使用缓存的最新申赎清单";
+        weightsState.statusType = "ok";
+        renderWeightsPanel();
+        return;
+      }
+
+      weightsState.statusText = "正在加载最新申赎清单和公司图标...";
+      weightsState.statusType = "ok";
+      renderWeightsPanel();
+
+      try {
+        var payload = await fetchIndexWeights(indexCode, opts);
+        if (!payload) return;
+        weightsState.cache.set(indexCode, payload);
+        weightsState.statusText = "已缓存最新申赎清单";
+        weightsState.statusType = "ok";
+        renderWeightsPanel();
+      } catch (error) {
+        console.error("index weights load failed:", error);
+        weightsState.statusText = error && error.message ? error.message : "科技类指数权重加载失败";
+        weightsState.statusType = "err";
+        renderWeightsPanel();
+      }
     }
 
     async function fetchStarPeriod(period, options) {
@@ -1125,21 +1298,24 @@ export function getClientScript() {
 
       if (wrap) {
         wrap.classList.toggle("stars-active", page === "stars");
+        wrap.classList.toggle("weights-active", page === "weights");
       }
 
       if (periodLabel) {
-        periodLabel.textContent = page === "stars"
-          ? "\u9762\u677f\uff1a\u660e\u661f\u79d1\u6280\u516c\u53f8"
-          : "\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f";
+        periodLabel.textContent = getPanelTitle(page);
       }
 
       starsState.mobileVisible = page === "stars";
 
       if (page === "stars" && !starsState.touched) {
         loadStarPeriod(starsState.period, { force: false });
-      } else {
-        startStarAutoRefresh();
       }
+
+      if (page === "weights" && !weightsState.touched) {
+        loadIndexWeights(weightsState.activeIndex, { force: false });
+      }
+
+      startStarAutoRefresh();
     }
 
     function applyData(q) {
@@ -1165,9 +1341,7 @@ export function getClientScript() {
       $("idxCards").innerHTML = items.map(function (item) {
         return tileHTML(item, q.period);
       }).join("");
-      $("periodCN").textContent = state.page === "stars"
-        ? "\u9762\u677f\uff1a\u660e\u661f\u79d1\u6280\u516c\u53f8"
-        : "\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f";
+      $("periodCN").textContent = getPanelTitle(state.page);
       resizeCanvas();
     }
 
@@ -1421,6 +1595,7 @@ export function getClientScript() {
 
     renderFearGreedLoading();
     renderStarPanel();
+    renderWeightsPanel();
     loadFearGreed({ force: false });
     setActivePage("overview");
     scheduleRender(state.period, { force: false });

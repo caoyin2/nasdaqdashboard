@@ -874,6 +874,189 @@ export function getStyles() {
       font-size: 13px;
     }
 
+    .weightsPanel{
+      padding: 18px;
+      display:grid;
+      gap: 14px;
+      background:
+        radial-gradient(900px 320px at 0% 0%, rgba(53,234,114,.08), transparent 58%),
+        radial-gradient(900px 320px at 100% 0%, rgba(0,224,255,.08), transparent 58%),
+        linear-gradient(180deg, rgba(10,15,26,.88), rgba(12,18,30,.78));
+    }
+
+    .weightsHead{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 16px;
+    }
+
+    .weightsTitle{
+      display:grid;
+      gap: 4px;
+    }
+
+    .weightsTitle strong{
+      font-size: 22px;
+      line-height: 1.1;
+      color: rgba(244,247,252,.98);
+    }
+
+    .weightsTitle span{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .weightsMeta{
+      display:grid;
+      justify-items:end;
+      gap: 6px;
+      text-align:right;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .weightsMeta strong{
+      color: rgba(244,247,252,.98);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .weightsMeta .ok{ color: rgba(0,224,255,.85); }
+    .weightsMeta .err{ color: rgba(255,77,109,.90); }
+
+    .weightsList{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .weightCard{
+      position: relative;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid rgba(31,43,61,.85);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
+        rgba(13,20,32,.76);
+      padding: 14px;
+      display:grid;
+      gap: 12px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+    }
+
+    .weightCard::after{
+      content:"";
+      position:absolute;
+      inset:auto -16% -46% auto;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: rgba(53,234,114,.12);
+      filter: blur(10px);
+      pointer-events:none;
+    }
+
+    .weightCardTop{
+      position: relative;
+      z-index: 1;
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .weightIconWrap{
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+      display:grid;
+      place-items:center;
+      flex: 0 0 auto;
+    }
+
+    .weightIcon{
+      width: 26px;
+      height: 26px;
+      object-fit: contain;
+      display:block;
+      filter: brightness(2.12) saturate(1.34) contrast(1.12);
+    }
+
+    .weightName{
+      min-width: 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(244,247,252,.98);
+      line-height: 1.2;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .weightValue{
+      position: relative;
+      z-index: 1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      font-family: var(--mono);
+    }
+
+    .weightValue span{
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .weightValue strong{
+      font-size: 20px;
+      line-height: 1;
+      color: rgba(53,234,114,.96);
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 18px rgba(53,234,114,.16);
+    }
+
+    .weightBar{
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.05);
+    }
+
+    .weightBarFill{
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, rgba(0,224,255,.92), rgba(53,234,114,.96));
+      box-shadow: 0 0 18px rgba(53,234,114,.18);
+    }
+
+    .weightsEmpty{
+      min-height: 220px;
+      border-radius: 14px;
+      border: 1px dashed rgba(31,43,61,.85);
+      background: rgba(255,255,255,.03);
+      display:grid;
+      place-items:center;
+      text-align:center;
+      padding: 20px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
     @media (max-width: 980px){
       body{ padding: 12px; }
 
@@ -982,6 +1165,54 @@ export function getStyles() {
       .starGrid{
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
+      }
+
+      .weightsPanel{
+        padding: 14px;
+        gap: 12px;
+      }
+
+      .weightsHead{
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .weightsTitle strong{
+        font-size: 18px;
+      }
+
+      .weightsMeta{
+        justify-items: start;
+        text-align: left;
+      }
+
+      .weightsList{
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .weightCard{
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .weightIconWrap{
+        width: 40px;
+        height: 40px;
+      }
+
+      .weightIcon{
+        width: 24px;
+        height: 24px;
+        filter: brightness(2.24) saturate(1.38) contrast(1.14);
+      }
+
+      .weightName{
+        font-size: 13px;
+      }
+
+      .weightValue strong{
+        font-size: 18px;
       }
 
       .starCard{
