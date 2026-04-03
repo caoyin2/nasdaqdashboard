@@ -685,6 +685,7 @@ export function getStyles() {
       display:grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
+      align-items: stretch;
     }
 
     .starCard{
@@ -699,6 +700,7 @@ export function getStyles() {
       display:grid;
       gap: 12px;
       box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+      will-change: transform, opacity;
     }
 
     .starCard::after{
@@ -756,8 +758,9 @@ export function getStyles() {
       width: 42px;
       height: 42px;
       border-radius: 12px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
       display:grid;
       place-items:center;
       flex: 0 0 auto;
@@ -768,6 +771,7 @@ export function getStyles() {
       height: 24px;
       object-fit: contain;
       display:block;
+      filter: brightness(1.55) saturate(1.18) contrast(1.08);
     }
 
     .starNameBox{
@@ -987,19 +991,45 @@ export function getStyles() {
       .starIcon{
         width: 22px;
         height: 22px;
+        filter: brightness(1.68) saturate(1.2) contrast(1.1);
       }
 
       .starName{
         font-size: 13px;
+        white-space: normal;
+        overflow: hidden;
+        text-overflow: clip;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        line-height: 1.2;
       }
 
       .starDeltaChip{
         padding: 6px 8px;
         font-size: 11px;
+        justify-self: start;
+        width: fit-content;
+        max-width: none;
       }
 
       .starPriceValue{
         font-size: 24px;
+      }
+
+      .starCardTop{
+        display:grid;
+        grid-template-columns: 1fr;
+        align-items: start;
+        gap: 10px;
+      }
+
+      .starIdentity{
+        align-items: flex-start;
+      }
+
+      .starNameBox{
+        gap: 3px;
       }
     }
 

@@ -121,7 +121,7 @@ export function getClientScript() {
       cache: new Map(),
       fetchCtrl: null,
       refreshTimer: null,
-      statusText: "点击周期按钮后加载",
+      statusText: "\u70b9\u51fb\u5468\u671f\u6309\u94ae\u540e\u52a0\u8f7d",
       statusType: "ok",
       ready: false,
       touched: false,
@@ -879,10 +879,76 @@ export function getClientScript() {
       return "flat";
     }
 
+    function starSortScore(item) {
+      return Number.isFinite(item && item.changePct) ? item.changePct : -Infinity;
+    }
+
+    function sortStarItems(items) {
+      return (items || []).slice().sort(function (a, b) {
+        var pctDelta = starSortScore(b) - starSortScore(a);
+        if (Math.abs(pctDelta) > 1e-9) return pctDelta;
+
+        var changeDelta = (Number.isFinite(b && b.change) ? b.change : -Infinity) - (Number.isFinite(a && a.change) ? a.change : -Infinity);
+        if (Math.abs(changeDelta) > 1e-9) return changeDelta;
+
+        return String(a && a.symbol || "").localeCompare(String(b && b.symbol || ""));
+      });
+    }
+
+    function captureStarPositions(root) {
+      var positions = new Map();
+      if (!root) return positions;
+
+      root.querySelectorAll(".starCard[data-symbol]").forEach(function (node) {
+        var rect = node.getBoundingClientRect();
+        positions.set(node.getAttribute("data-symbol"), {
+          left: rect.left,
+          top: rect.top
+        });
+      });
+
+      return positions;
+    }
+
+    function animateStarCards(root, previousPositions) {
+      if (!root || !previousPositions || !previousPositions.size) return;
+      if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+      root.querySelectorAll(".starCard[data-symbol]").forEach(function (node) {
+        var symbol = node.getAttribute("data-symbol");
+        var previous = previousPositions.get(symbol);
+        var currentRect = node.getBoundingClientRect();
+
+        if (!previous) {
+          node.style.transition = "none";
+          node.style.opacity = "0";
+          node.style.transform = "translateY(12px) scale(0.985)";
+          requestAnimationFrame(function () {
+            node.style.transition = "transform 380ms cubic-bezier(0.22,1,0.36,1), opacity 260ms ease";
+            node.style.opacity = "1";
+            node.style.transform = "translate(0, 0) scale(1)";
+          });
+          return;
+        }
+
+        var deltaX = previous.left - currentRect.left;
+        var deltaY = previous.top - currentRect.top;
+        if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) return;
+
+        node.style.transition = "none";
+        node.style.transform = "translate(" + deltaX + "px," + deltaY + "px)";
+
+        requestAnimationFrame(function () {
+          node.style.transition = "transform 420ms cubic-bezier(0.22,1,0.36,1)";
+          node.style.transform = "translate(0, 0)";
+        });
+      });
+    }
+
     function starCardHTML(item) {
       var tone = starToneClass(item);
       return [
-        '<article class="starCard ' + tone + '">',
+        '<article class="starCard ' + tone + '" data-symbol="' + esc(item.symbol) + '">',
           '<div class="starCardTop">',
             '<div class="starIdentity">',
               '<div class="starIconWrap">',
@@ -898,11 +964,11 @@ export function getClientScript() {
           '<div class="starBody">',
             '<div class="starPrice">',
               '<div class="starPriceValue">' + fmtPrice(item.lastClose) + '</div>',
-              '<div class="starPeriodTag">' + esc(item.baseLabel || "起点") + '</div>',
+              '<div class="starPeriodTag">' + esc(item.baseLabel || "\u8d77\u70b9") + '</div>',
             '</div>',
             '<div class="starMetrics">',
-              '<div>基准</div><div>' + fmtPrice(item.baseClose) + '</div>',
-              '<div>涨跌</div><div><strong>' + signPrice(item.change) + '</strong></div>',
+              '<div>\u57fa\u51c6</div><div>' + fmtPrice(item.baseClose) + '</div>',
+              '<div>\u6da8\u8dcc</div><div><strong>' + signPrice(item.change) + '</strong></div>',
             '</div>',
           '</div>',
         '</article>'
@@ -913,37 +979,42 @@ export function getClientScript() {
       var root = $("starTechPanel");
       if (!root) return;
 
+      var previousPositions = captureStarPositions(root);
       var periodLabel = PERIOD_LABELS[starsState.period] || starsState.period;
       var cached = starsState.cache.get(starsState.period);
-      var items = cached && cached.items ? cached.items : null;
+      var items = cached && cached.items ? sortStarItems(cached.items) : null;
       var statusClass = starsState.statusType === "err" ? "err" : "ok";
       var gridHtml = items && items.length
         ? '<div class="starGrid">' + items.map(starCardHTML).join("") + '</div>'
-        : '<div class="starPanelEmpty">点击上方周期按钮后加载对应数据。<br />为了控制请求量，明星科技面板不会在页面初始时一次性读取全部周期。</div>';
+        : '<div class="starPanelEmpty">\u70b9\u51fb\u4e0a\u65b9\u5468\u671f\u6309\u94ae\u540e\u52a0\u8f7d\u5bf9\u5e94\u6570\u636e\u3002<br />\u4e3a\u4e86\u63a7\u5236\u8bf7\u6c42\u91cf\uff0c\u660e\u661f\u79d1\u6280\u516c\u53f8\u9762\u677f\u4e0d\u4f1a\u5728\u9875\u9762\u521d\u59cb\u65f6\u4e00\u6b21\u6027\u8bfb\u53d6\u5168\u90e8\u5468\u671f\u3002</div>';
 
       root.innerHTML = [
         '<div class="card starPanel">',
           '<div class="starPanelHead">',
             '<div class="starPanelTitle">',
-              '<span>第二页 / 明星科技公司</span>',
-              '<strong>明星科技公司股价面板</strong>',
+              '<span>\u6309\u5468\u671f\u67e5\u770b\u660e\u661f\u79d1\u6280\u516c\u53f8\u80a1\u4ef7\u8868\u73b0</span>',
+              '<strong>\u660e\u661f\u79d1\u6280\u516c\u53f8</strong>',
             '</div>',
             '<div class="starPeriodSeg" id="starPeriodSeg">',
-              '<button data-star-p="1D"' + (starsState.period === "1D" ? ' class="active"' : "") + '>1日</button>',
-              '<button data-star-p="5D"' + (starsState.period === "5D" ? ' class="active"' : "") + '>5日</button>',
-              '<button data-star-p="1M"' + (starsState.period === "1M" ? ' class="active"' : "") + '>1月</button>',
-              '<button data-star-p="6M"' + (starsState.period === "6M" ? ' class="active"' : "") + '>6月</button>',
-              '<button data-star-p="YTD"' + (starsState.period === "YTD" ? ' class="active"' : "") + '>年初至今</button>',
-              '<button data-star-p="1Y"' + (starsState.period === "1Y" ? ' class="active"' : "") + '>1年</button>',
+              '<button data-star-p="1D"' + (starsState.period === "1D" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1D"]) + '</button>',
+              '<button data-star-p="5D"' + (starsState.period === "5D" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["5D"]) + '</button>',
+              '<button data-star-p="1M"' + (starsState.period === "1M" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1M"]) + '</button>',
+              '<button data-star-p="6M"' + (starsState.period === "6M" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["6M"]) + '</button>',
+              '<button data-star-p="YTD"' + (starsState.period === "YTD" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["YTD"]) + '</button>',
+              '<button data-star-p="1Y"' + (starsState.period === "1Y" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1Y"]) + '</button>',
             '</div>',
           '</div>',
           '<div class="starPanelMeta">',
             '<div class="starPanelMetaText ' + statusClass + '">' + esc(starsState.statusText) + '</div>',
-            '<div class="starPanelMetaText">当前周期：' + esc(periodLabel) + '</div>',
+            '<div class="starPanelMetaText">\u5f53\u524d\u5468\u671f\uff1a' + esc(periodLabel) + '</div>',
           '</div>',
           gridHtml,
         '</div>'
       ].join("");
+
+      requestAnimationFrame(function () {
+        animateStarCards(root, previousPositions);
+      });
     }
 
     async function fetchStarPeriod(period, options) {
@@ -993,14 +1064,14 @@ export function getClientScript() {
       starsState.touched = true;
 
       if (!opts.force && starsState.cache.has(period)) {
-        starsState.statusText = "已使用缓存数据";
+        starsState.statusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u6570\u636e";
         starsState.statusType = "ok";
         renderStarPanel();
         startStarAutoRefresh();
         return;
       }
 
-      starsState.statusText = "正在加载 " + (PERIOD_LABELS[period] || period) + " 数据…";
+      starsState.statusText = "\u6b63\u5728\u52a0\u8f7d " + (PERIOD_LABELS[period] || period) + " \u6570\u636e...";
       starsState.statusType = "ok";
       renderStarPanel();
 
@@ -1008,12 +1079,14 @@ export function getClientScript() {
         var payload = await fetchStarPeriod(period, opts);
         if (!payload) return;
         starsState.cache.set(period, payload);
-        starsState.statusText = period === "1D" ? "1日数据每30秒自动刷新一次" : "已缓存当前周期数据";
+        starsState.statusText = period === "1D"
+          ? "1\u65e5\u6570\u636e\u6bcf30\u79d2\u81ea\u52a8\u5237\u65b0\u4e00\u6b21"
+          : "\u5df2\u7f13\u5b58\u5f53\u524d\u5468\u671f\u6570\u636e";
         starsState.statusType = "ok";
         renderStarPanel();
       } catch (error) {
         console.error("star tech load failed:", error);
-        starsState.statusText = error && error.message ? error.message : "明星科技面板加载失败";
+        starsState.statusText = error && error.message ? error.message : "\u660e\u661f\u79d1\u6280\u516c\u53f8\u9762\u677f\u52a0\u8f7d\u5931\u8d25";
         starsState.statusType = "err";
         renderStarPanel();
       }
@@ -1063,8 +1136,8 @@ export function getClientScript() {
 
       if (periodLabel) {
         periodLabel.textContent = isDesktopPageMode() && page === "stars"
-          ? "页面：明星科技"
-          : "周期：" + (PERIOD_LABELS[state.period] || state.period);
+          ? "\u9762\u677f\uff1a\u660e\u661f\u79d1\u6280\u516c\u53f8"
+          : "\u5468\u671f\uff1a" + (PERIOD_LABELS[state.period] || state.period);
       }
 
       if (page === "stars" && !starsState.touched) {
@@ -1098,8 +1171,8 @@ export function getClientScript() {
         return tileHTML(item, q.period);
       }).join("");
       $("periodCN").textContent = isDesktopPageMode() && state.page === "stars"
-        ? "页面：明星科技"
-        : "周期：" + (PERIOD_LABELS[q.period] || q.period);
+        ? "\u9762\u677f\uff1a\u660e\u661f\u79d1\u6280\u516c\u53f8"
+        : "\u5468\u671f\uff1a" + (PERIOD_LABELS[q.period] || q.period);
       resizeCanvas();
     }
 

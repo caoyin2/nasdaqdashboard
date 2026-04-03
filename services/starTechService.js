@@ -22,7 +22,7 @@ function buildStarCard(period, company, periodBars, ytdBars) {
   const lastClose = lastBar?.close;
 
   let baseClose = null;
-  let baseLabel = period === "1D" ? "昨收" : "起点";
+  const baseLabel = period === "1D" ? "\u6628\u6536" : "\u8d77\u70b9";
 
   if (period === "1D") {
     baseClose = pickPrevCloseSmart(ytdBars, periodBars);

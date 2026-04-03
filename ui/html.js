@@ -63,8 +63,8 @@ export function getHtml() {
     </div>
 
     <div class="pageSeg" id="pageSeg" aria-label="桌面分页">
-      <button class="active" data-page="overview">第一页</button>
-      <button data-page="stars">第二页</button>
+      <button class="active" data-page="overview">科技类指数信息</button>
+      <button data-page="stars">明星科技公司</button>
     </div>
 
     <div class="pages" id="pages">
@@ -86,7 +86,7 @@ export function getHtml() {
             </div>
 
             <div class="footer">
-              <div class="status ok" id="status">加载中…</div>
+              <div class="status ok" id="status">加载中...</div>
               <div id="hint">悬浮或拖动查看数据（北京时间）</div>
             </div>
           </div>
