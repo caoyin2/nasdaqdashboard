@@ -18,8 +18,9 @@ import {
   pickPrevCloseSmart,
 } from "../lib/time.js";
 import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
+import { getSearchMetaBatch } from "./searchMetaStore.js";
 
-function buildStarCard(period, company, bars1D, periodBarsRaw, ytdBars) {
+function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars) {
   const last1DBar = getLastBar(bars1D);
   const latestClose = last1DBar?.close;
 
@@ -49,10 +50,10 @@ function buildStarCard(period, company, bars1D, periodBarsRaw, ytdBars) {
     : null;
 
   return {
-    tickerId: company.tickerId,
+    tickerId: meta.tickerId,
     symbol: company.symbol,
     nameCN: company.nameCN,
-    icon: company.icon,
+    icon: meta.iconLight || null,
     period,
     baseLabel,
     lastClose: Number.isFinite(lastClose) ? lastClose : null,
@@ -62,18 +63,29 @@ function buildStarCard(period, company, bars1D, periodBarsRaw, ytdBars) {
   };
 }
 
-export async function buildStarTechPayload(period) {
+export async function buildStarTechPayload(period, env) {
+  const metaMap = await getSearchMetaBatch(
+    STAR_TECH_COMPANIES.map((company) => company.symbol),
+    env,
+    { allowFetch: true }
+  );
+
   const jobs = STAR_TECH_COMPANIES.map(async (company) => {
+    const meta = metaMap.get(company.symbol);
+    if (!meta?.tickerId) {
+      throw new Error(`Missing tickerId for ${company.symbol}`);
+    }
+
     const needYTDFor1D = period === "1D";
-    const oneDayPromise = fetchSeekingAlphaPeriod("1D", company.tickerId);
+    const oneDayPromise = fetchSeekingAlphaPeriod("1D", meta.tickerId);
     const periodPromise = period === "1D"
       ? oneDayPromise
-      : fetchSeekingAlphaPeriod(period, company.tickerId);
+      : fetchSeekingAlphaPeriod(period, meta.tickerId);
 
     const [oneDayRaw, periodRaw, ytdRaw] = await Promise.all([
       oneDayPromise,
       periodPromise,
-      needYTDFor1D ? fetchSeekingAlphaPeriod("YTD", company.tickerId) : Promise.resolve(null),
+      needYTDFor1D ? fetchSeekingAlphaPeriod("YTD", meta.tickerId) : Promise.resolve(null),
     ]);
 
     const bars1D = parseBarsFromAttributes(oneDayRaw?.attributes);
@@ -84,7 +96,7 @@ export async function buildStarTechPayload(period) {
       throw new Error(`No bars for ${company.symbol} ${period}`);
     }
 
-    return buildStarCard(period, company, bars1D, periodBarsRaw, ytdBars);
+    return buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars);
   });
 
   const results = [];

@@ -33,6 +33,120 @@ const STAR_TECH_CACHE = {
 const INDEX_WEIGHTS_MEM_TTL_MS = 12 * 60 * 60 * 1000;
 const INDEX_WEIGHTS_CACHE_SECONDS = 12 * 60 * 60;
 
+function getKvBinding(env) {
+  const kv = env?.NasdaqDashboard;
+  if (!kv || typeof kv.get !== "function" || typeof kv.put !== "function") {
+    return null;
+  }
+  return kv;
+}
+
+async function handleKvRoute(request, url, origin, env) {
+  const kv = getKvBinding(env);
+  if (!kv) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "KV binding NasdaqDashboard is not configured on this Worker",
+      },
+      origin,
+      500,
+      { cacheSeconds: 0 }
+    );
+  }
+
+  if (request.method === "GET") {
+    const key = url.searchParams.get("key");
+    const prefix = url.searchParams.get("prefix");
+
+    if (key) {
+      const raw = await kv.get(key);
+      if (raw == null) {
+        return jsonResponse({ ok: true, found: false, key }, origin, 200, { cacheSeconds: 0 });
+      }
+
+      let value = raw;
+      try {
+        value = JSON.parse(raw);
+      } catch {
+        value = raw;
+      }
+
+      return jsonResponse({ ok: true, found: true, key, value }, origin, 200, { cacheSeconds: 0 });
+    }
+
+    if (prefix != null) {
+      const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit") || "50", 10) || 50));
+      const listed = await kv.list({ prefix, limit });
+      return jsonResponse(
+        {
+          ok: true,
+          prefix,
+          keys: listed.keys.map((item) => ({
+            name: item.name,
+            expiration: item.expiration ?? null,
+            metadata: item.metadata ?? null,
+          })),
+          listComplete: listed.list_complete,
+          cursor: listed.cursor || null,
+        },
+        origin,
+        200,
+        { cacheSeconds: 0 }
+      );
+    }
+
+    return jsonResponse(
+      { ok: false, error: "Provide either ?key=... or ?prefix=..." },
+      origin,
+      400,
+      { cacheSeconds: 0 }
+    );
+  }
+
+  if (request.method === "POST") {
+    let payload;
+    try {
+      payload = await request.json();
+    } catch {
+      return jsonResponse({ ok: false, error: "Invalid JSON body" }, origin, 400, { cacheSeconds: 0 });
+    }
+
+    const key = String(payload?.key || "").trim();
+    if (!key) {
+      return jsonResponse({ ok: false, error: "Missing key" }, origin, 400, { cacheSeconds: 0 });
+    }
+
+    const value = typeof payload.value === "string" ? payload.value : JSON.stringify(payload.value);
+    const options = {};
+    if (payload.expirationTtl != null) {
+      options.expirationTtl = payload.expirationTtl;
+    }
+    if (payload.metadata != null) {
+      options.metadata = payload.metadata;
+    }
+
+    await kv.put(key, value, options);
+
+    return jsonResponse({ ok: true, key, written: true }, origin, 200, { cacheSeconds: 0 });
+  }
+
+  if (request.method === "DELETE") {
+    const key = String(url.searchParams.get("key") || "").trim();
+    if (!key) {
+      return jsonResponse({ ok: false, error: "Missing key" }, origin, 400, { cacheSeconds: 0 });
+    }
+
+    await kv.delete(key);
+    return jsonResponse({ ok: true, key, deleted: true }, origin, 200, { cacheSeconds: 0 });
+  }
+
+  return new Response("Method Not Allowed", {
+    status: 405,
+    headers: corsHeaders(origin),
+  });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -40,6 +154,10 @@ export default {
 
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders(origin) });
+    }
+
+    if (url.pathname === "/api/kv") {
+      return handleKvRoute(request, url, origin, env);
     }
 
     if (request.method !== "GET") {
@@ -218,7 +336,7 @@ export default {
           });
         }
 
-        const payload = await buildStarTechPayload(period);
+        const payload = await buildStarTechPayload(period, env);
         const body = JSON.stringify(payload, null, 2);
 
         STAR_TECH_MEM_CACHE.set(memKey, { at: now, body });
@@ -279,7 +397,7 @@ export default {
           });
         }
 
-        const payload = await buildIndexWeightsPayload(indexCode);
+        const payload = await buildIndexWeightsPayload(indexCode, env);
         const body = JSON.stringify(payload, null, 2);
 
         INDEX_WEIGHTS_MEM_CACHE.set(memKey, { at: now, body });

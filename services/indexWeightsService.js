@@ -1,17 +1,5 @@
-/**
- * Build the payload for the "科技类指数权重" panel.
- *
- * Current scope:
- * - only supports NDXTMC
- * - derives constituent weights from the latest available ETF basket TXT
- * - enriches each symbol via Seeking Alpha search results
- *
- * Weight formula:
- *   constituent_weight = 申购替代金额 / 申赎现金
- */
-
-import { fetchSeekingAlphaSearch } from "./seekingAlpha.js";
 import { INDEX_WEIGHTS_FALLBACK_META } from "./indexWeightsFallback.js";
+import { getSearchMetaBatch } from "./searchMetaStore.js";
 
 const SHENZHEN_TZ = "Asia/Shanghai";
 const ETF_BASKET_LOOKBACK_DAYS = 45;
@@ -22,9 +10,6 @@ const ETF_INDEX_CONFIG = {
     title: "纳指科技市值加权（NDXTMC）",
   },
 };
-
-const SEARCH_META_CACHE =
-  globalThis.__INDEX_WEIGHT_SEARCH_META_CACHE__ ?? (globalThis.__INDEX_WEIGHT_SEARCH_META_CACHE__ = new Map());
 
 function fmtDateYmd(date) {
   const y = date.getUTCFullYear();
@@ -101,7 +86,7 @@ async function fetchLatestBasket(indexCode) {
     const candidate = getShanghaiDate(-offset);
     const ymd = fmtDateYmd(candidate);
     const result = await fetchBasketText(config.etfCode, ymd);
-    if (result && result.text) {
+    if (result?.text) {
       return result;
     }
   }
@@ -159,21 +144,23 @@ function parseBasketRows(text) {
     throw new Error("Basket TXT missing composition section");
   }
 
-  const parsedRows = rows.map((line) => {
-    const columns = line.split(/\s{2,}/).map((part) => part.trim()).filter(Boolean);
-    if (columns.length < 6) {
-      return null;
-    }
+  const parsedRows = rows
+    .map((line) => {
+      const columns = line.split(/\s{2,}/).map((part) => part.trim()).filter(Boolean);
+      if (columns.length < 6) {
+        return null;
+      }
 
-    return {
-      code: columns[0],
-      name: columns[1],
-      shares: parseShares(columns[2]),
-      purchaseAmount: parseAmount(columns[columns.length - 3]),
-      redemptionAmount: parseAmount(columns[columns.length - 2]),
-      market: columns[columns.length - 1],
-    };
-  }).filter(Boolean);
+      return {
+        code: columns[0],
+        name: columns[1],
+        shares: parseShares(columns[2]),
+        purchaseAmount: parseAmount(columns[columns.length - 3]),
+        redemptionAmount: parseAmount(columns[columns.length - 2]),
+        market: columns[columns.length - 1],
+      };
+    })
+    .filter(Boolean);
 
   const cashRow = parsedRows.find((row) => row.code === "159900");
   if (!cashRow || !Number.isFinite(cashRow.purchaseAmount) || cashRow.purchaseAmount <= 0) {
@@ -197,71 +184,41 @@ function parseBasketRows(text) {
   };
 }
 
-async function fetchSearchMeta(symbol) {
-  if (SEARCH_META_CACHE.has(symbol)) {
-    return SEARCH_META_CACHE.get(symbol);
-  }
+async function enrichItems(items, env) {
+  const metaMap = await getSearchMetaBatch(
+    items.map((item) => item.symbol),
+    env,
+    { allowFetch: true }
+  );
 
-  const fallback = INDEX_WEIGHTS_FALLBACK_META[symbol];
-  let meta = {
-    symbol,
-    nameEn: fallback?.nameEn || symbol,
-    iconLight: fallback?.iconLight || null,
-    slug: fallback?.slug || symbol.toLowerCase(),
-  };
+  return items
+    .map((item) => {
+      const fallback = INDEX_WEIGHTS_FALLBACK_META[item.symbol];
+      const meta = metaMap.get(item.symbol);
 
-  try {
-    const payload = await fetchSeekingAlphaSearch(symbol);
-    const top = payload?.symbols?.[0];
-
-    if (top) {
-      meta = {
-        symbol,
-        nameEn: String(top.content || symbol).replace(/<[^>]+>/g, ""),
-        iconLight: top.image?.light || null,
-        slug: top.slug || symbol.toLowerCase(),
+      return {
+        symbol: item.symbol,
+        nameEn: meta?.nameEn || fallback?.nameEn || item.symbol,
+        iconLight: meta?.iconLight || fallback?.iconLight || null,
+        slug: meta?.slug || fallback?.slug || item.symbol.toLowerCase(),
+        shares: item.shares,
+        purchaseAmount: item.purchaseAmount,
+        weightPct: item.weightPct,
       };
-    }
-  } catch (error) {
-    console.error(`Index weights search failed for ${symbol}:`, error);
-  }
-
-  SEARCH_META_CACHE.set(symbol, meta);
-  return meta;
+    })
+    .sort((a, b) => b.weightPct - a.weightPct);
 }
 
-async function enrichItems(items) {
-  const results = [];
-  const batchSize = 6;
-
-  for (let i = 0; i < items.length; i += batchSize) {
-    const batch = items.slice(i, i + batchSize);
-    const settled = await Promise.allSettled(
-      batch.map(async (item) => {
-        const meta = await fetchSearchMeta(item.symbol);
-        return {
-          symbol: item.symbol,
-          nameEn: meta.nameEn,
-          iconLight: meta.iconLight,
-          slug: meta.slug,
-          shares: item.shares,
-          purchaseAmount: item.purchaseAmount,
-          weightPct: item.weightPct,
-        };
-      })
-    );
-
-    for (const result of settled) {
-      if (result.status === "fulfilled") {
-        results.push(result.value);
-      }
-    }
-  }
-
-  return results.sort((a, b) => b.weightPct - a.weightPct);
+export async function getLatestIndexWeightSymbols(indexCode = "NDXTMC") {
+  const latestBasket = await fetchLatestBasket(indexCode);
+  const parsed = parseBasketRows(latestBasket.text);
+  return {
+    basketDate: latestBasket.ymd,
+    symbols: parsed.items.map((item) => item.symbol),
+  };
 }
 
-export async function buildIndexWeightsPayload(indexCode = "NDXTMC") {
+export async function buildIndexWeightsPayload(indexCode = "NDXTMC", env) {
   const config = ETF_INDEX_CONFIG[indexCode];
   if (!config) {
     throw new Error(`Unsupported index code: ${indexCode}`);
@@ -269,7 +226,7 @@ export async function buildIndexWeightsPayload(indexCode = "NDXTMC") {
 
   const latestBasket = await fetchLatestBasket(indexCode);
   const parsed = parseBasketRows(latestBasket.text);
-  const enrichedItems = await enrichItems(parsed.items);
+  const enrichedItems = await enrichItems(parsed.items, env);
 
   return {
     ok: true,
