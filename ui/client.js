@@ -1098,8 +1098,7 @@ export function getClientScript() {
       if (document.hidden) return false;
       if (starsState.period !== "1D") return false;
       if (!starsState.cache.has("1D")) return false;
-      if (isDesktopPageMode()) return state.page === "stars";
-      return starsState.mobileVisible;
+      return state.page === "stars";
     }
 
     function startStarAutoRefresh() {
@@ -1131,14 +1130,16 @@ export function getClientScript() {
       }
 
       if (wrap) {
-        wrap.classList.toggle("desktop-stars-active", isDesktopPageMode() && page === "stars");
+        wrap.classList.toggle("stars-active", page === "stars");
       }
 
       if (periodLabel) {
-        periodLabel.textContent = isDesktopPageMode() && page === "stars"
+        periodLabel.textContent = page === "stars"
           ? "\u9762\u677f\uff1a\u660e\u661f\u79d1\u6280\u516c\u53f8"
           : "\u5468\u671f\uff1a" + (PERIOD_LABELS[state.period] || state.period);
       }
+
+      starsState.mobileVisible = page === "stars";
 
       if (page === "stars" && !starsState.touched) {
         loadStarPeriod(starsState.period, { force: false });
@@ -1170,7 +1171,7 @@ export function getClientScript() {
       $("idxCards").innerHTML = items.map(function (item) {
         return tileHTML(item, q.period);
       }).join("");
-      $("periodCN").textContent = isDesktopPageMode() && state.page === "stars"
+      $("periodCN").textContent = state.page === "stars"
         ? "\u9762\u677f\uff1a\u660e\u661f\u79d1\u6280\u516c\u53f8"
         : "\u5468\u671f\uff1a" + (PERIOD_LABELS[q.period] || q.period);
       resizeCanvas();
@@ -1348,24 +1349,6 @@ export function getClientScript() {
         if (!period) return;
         loadStarPeriod(period, { force: false });
       });
-
-      if (!isDesktopPageMode() && "IntersectionObserver" in window) {
-        var starObserver = new IntersectionObserver(function (entries) {
-          entries.forEach(function (entry) {
-            if (entry.isIntersecting) {
-              starsState.mobileVisible = true;
-              if (!starsState.touched) {
-                loadStarPeriod(starsState.period, { force: false });
-              } else {
-                startStarAutoRefresh();
-              }
-            }
-          });
-        }, { rootMargin: "120px 0px" });
-        starObserver.observe(starTechPanel);
-      } else if (!isDesktopPageMode()) {
-        starsState.mobileVisible = true;
-      }
     }
 
     var chartCard = $("chartCard");
@@ -1445,12 +1428,7 @@ export function getClientScript() {
     });
 
     window.addEventListener("resize", function () {
-      if (!isDesktopPageMode()) {
-        starsState.mobileVisible = true;
-        if (!starsState.touched) {
-          loadStarPeriod(starsState.period, { force: false });
-        }
-      }
+      starsState.mobileVisible = state.page === "stars";
       startStarAutoRefresh();
     });
 

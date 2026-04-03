@@ -144,7 +144,7 @@ export function getStyles() {
       box-shadow: inset 0 0 0 1px rgba(0,174,239,.25);
     }
 
-    .wrap.desktop-stars-active .seg{
+    .wrap.stars-active .seg{
       opacity: .42;
       pointer-events: none;
     }
@@ -771,7 +771,7 @@ export function getStyles() {
       height: 24px;
       object-fit: contain;
       display:block;
-      filter: brightness(1.55) saturate(1.18) contrast(1.08);
+      filter: brightness(1.78) saturate(1.24) contrast(1.12);
     }
 
     .starNameBox{
@@ -931,11 +931,18 @@ export function getStyles() {
       }
 
       .pageSeg{
-        display:none;
+        display:flex;
+        width: 100%;
+        justify-content: flex-start;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        padding: 5px;
       }
 
-      .page{
-        display:block;
+      .pageSeg button{
+        flex: 0 0 auto;
+        padding: 9px 14px;
       }
 
       .card.info{ order: 1; }
@@ -991,7 +998,7 @@ export function getStyles() {
       .starIcon{
         width: 22px;
         height: 22px;
-        filter: brightness(1.68) saturate(1.2) contrast(1.1);
+        filter: brightness(1.9) saturate(1.28) contrast(1.14);
       }
 
       .starName{
