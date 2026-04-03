@@ -1002,6 +1002,22 @@ export function getStyles() {
       min-width: 0;
     }
 
+    .weightRankBadge{
+      flex: 0 0 auto;
+      min-width: 38px;
+      padding: 7px 8px;
+      border-radius: 999px;
+      background: rgba(0,224,255,.12);
+      border: 1px solid rgba(0,224,255,.22);
+      color: rgba(156,231,255,.98);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      text-align: center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
     .weightIconWrap{
       width: 44px;
       height: 44px;
@@ -1232,6 +1248,12 @@ export function getStyles() {
       .weightCard{
         padding: 12px;
         gap: 10px;
+      }
+
+      .weightRankBadge{
+        min-width: 34px;
+        padding: 6px 7px;
+        font-size: 11px;
       }
 
       .weightIconWrap{
