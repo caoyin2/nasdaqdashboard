@@ -71,6 +71,8 @@ async function main() {
   const latestSp500Weights = await getLatestIndexWeightSymbols("SP500-45");
   const latestNdxWeights = await getLatestIndexWeightSymbols("NDX");
   const symbols = unique([
+    "SPGI",
+    "NDAQ",
     ...STAR_TECH_COMPANIES.map((item) => item.symbol),
     ...latestNdxtmcWeights.symbols,
     ...latestSp500Weights.symbols,

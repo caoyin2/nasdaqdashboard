@@ -16,8 +16,21 @@ import {
   pickPrevCloseSmart,
 } from "../lib/time.js";
 import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
+import { getSearchMetaBatch } from "./searchMetaStore.js";
 
-export async function buildQuotePayload(period) {
+export async function buildQuotePayload(period, env) {
+  const iconSymbols = Array.from(
+    new Set(
+      INDEXES
+        .map((idx) => String(idx.iconSymbol || "").trim().toUpperCase())
+        .filter(Boolean)
+    )
+  );
+
+  const searchMetaMap = await getSearchMetaBatch(iconSymbols, env, {
+    allowFetch: true,
+  });
+
   const indexJobs = INDEXES.map(async (idx, i) => {
     const needYTDFor1D = period === "1D";
 
@@ -84,6 +97,10 @@ export async function buildQuotePayload(period) {
       symbol: idx.symbol,
       nameCN: idx.nameCN,
       color: LINE_COLORS[i % LINE_COLORS.length],
+      iconSymbol: idx.iconSymbol || null,
+      iconLight: idx.iconSymbol
+        ? (searchMetaMap.get(String(idx.iconSymbol).toUpperCase())?.iconLight || null)
+        : null,
       latestT: Number.isFinite(latestT) ? latestT : null,
       lastClose: Number.isFinite(lastClose) ? lastClose : null,
       cardBaseClose: Number.isFinite(baseClose) ? baseClose : null,

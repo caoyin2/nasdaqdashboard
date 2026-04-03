@@ -7,9 +7,24 @@ export const CNN_FG_UPSTREAM = "https://production.dataviz.cnn.io/index/fearandg
 export const MARKET_TZ = "America/New_York";
 
 export const INDEXES = [
-  { tickerId: 766533, symbol: "SP500-45", nameCN: "\u6807\u666e500\u4fe1\u606f\u79d1\u6280\uff08SP500-45\uff09" },
-  { tickerId: 770752, symbol: "NDXTMC", nameCN: "\u7eb3\u65af\u8fbe\u514b\u79d1\u6280\u5e02\u503c\u52a0\u6743\uff08NDXTMC\uff09" },
-  { tickerId: 590407, symbol: "NDX", nameCN: "\u7eb3\u65af\u8fbe\u514b100\uff08NDX\uff09" },
+  {
+    tickerId: 766533,
+    symbol: "SP500-45",
+    nameCN: "\u6807\u666e500\u4fe1\u606f\u79d1\u6280\uff08SP500-45\uff09",
+    iconSymbol: "SPGI",
+  },
+  {
+    tickerId: 770752,
+    symbol: "NDXTMC",
+    nameCN: "\u7eb3\u65af\u8fbe\u514b\u79d1\u6280\u5e02\u503c\u52a0\u6743\uff08NDXTMC\uff09",
+    iconSymbol: "NDAQ",
+  },
+  {
+    tickerId: 590407,
+    symbol: "NDX",
+    nameCN: "\u7eb3\u65af\u8fbe\u514b100\uff08NDX\uff09",
+    iconSymbol: "NDAQ",
+  },
 ];
 
 export const STAR_TECH_COMPANIES = [

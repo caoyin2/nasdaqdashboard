@@ -667,21 +667,30 @@ export function getClientScript() {
       var cls = (Number.isFinite(item.cardChg) ? item.cardChg >= 0 : true) ? "up" : "down";
 
       return [
-        '<div class="tile">',
-          '<div class="tileHead">',
-            '<div class="nameRow">',
-              '<span class="dot" style="background:' + item.color + '"></span>',
-              '<div class="name" title="' + esc(item.nameCN) + '">' + esc(item.nameCN) + '</div>',
+        '<article class="idxTile">',
+          '<div class="idxTileTop">',
+            '<div class="idxIdentity">',
+              '<div class="idxIconWrap">',
+                item.iconLight
+                  ? '<img class="idxIcon" src="' + esc(item.iconLight) + '" alt="' + esc(item.nameCN) + '" loading="lazy" data-search-symbol="' + esc(item.iconSymbol || item.symbol) + '" data-search-refresh-state="idle" />'
+                  : '<span class="idxDot" style="background:' + item.color + '"></span>',
+              '</div>',
+              '<div class="idxTitleBox">',
+                '<div class="idxName" title="' + esc(item.nameCN) + '">' + esc(item.nameCN) + '</div>',
+                '<div class="idxSymbol">' + esc(item.symbol) + '</div>',
+              '</div>',
             '</div>',
-            '<div class="sym">' + esc(item.symbol) + '</div>',
           '</div>',
-          '<div class="kv">',
-            '<div>\u6700\u65b0</div><div><b>' + fmt(item.lastClose, 4) + '</b></div>',
+          '<div class="idxMainValue">',
+            '<strong>' + fmt(item.lastClose, 4) + '</strong>',
+            '<span>\u6700\u65b0</span>',
+          '</div>',
+          '<div class="idxMetrics">',
             '<div>' + baseLabel + '</div><div>' + fmt(item.cardBaseClose, 4) + '</div>',
             '<div>' + chgLabel + '</div><div class="' + cls + '">' + signNum(item.cardChg, 4) + '</div>',
             '<div>' + pctLabel + '</div><div class="' + cls + '">' + signPct(item.cardChgPct) + '</div>',
           '</div>',
-        '</div>'
+        '</article>'
       ].join("");
     }
 
@@ -1396,6 +1405,8 @@ export function getClientScript() {
         return Object.assign({}, meta, {
           line: line,
           map: new Map(line.map(function (p) { return [p.t, p]; })),
+          iconSymbol: item.iconSymbol || meta.iconSymbol || item.symbol,
+          iconLight: item.iconLight || null,
           lastClose: item.lastClose,
           cardBaseClose: item.cardBaseClose,
           cardChg: item.cardChg,

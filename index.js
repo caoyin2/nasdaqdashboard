@@ -249,7 +249,7 @@ export default {
           });
         }
 
-        const payload = await buildQuotePayload(period);
+        const payload = await buildQuotePayload(period, env);
         const body = JSON.stringify(payload, null, 2);
 
         API_MEM_CACHE.set(period, { at: now, body });

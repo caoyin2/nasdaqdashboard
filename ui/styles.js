@@ -388,6 +388,146 @@ export function getStyles() {
       font-variant-numeric: tabular-nums;
     }
 
+    #idxCards{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .idxTile{
+      position: relative;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid rgba(31,43,61,.85);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
+        rgba(13,20,32,.76);
+      padding: 16px;
+      display:grid;
+      gap: 14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+    }
+
+    .idxTile::after{
+      content:"";
+      position:absolute;
+      inset:auto -18% -42% auto;
+      width: 128px;
+      height: 128px;
+      border-radius: 50%;
+      background: rgba(64,156,255,.16);
+      filter: blur(10px);
+      pointer-events:none;
+    }
+
+    .idxTileTop{
+      position: relative;
+      z-index: 1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .idxIdentity{
+      display:flex;
+      align-items:center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .idxIconWrap{
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+      display:grid;
+      place-items:center;
+      flex: 0 0 auto;
+    }
+
+    .idxIcon{
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      display:block;
+      filter: brightness(2.34) saturate(1.42) contrast(1.14);
+    }
+
+    .idxDot{
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display:block;
+      box-shadow: 0 0 0 4px rgba(255,255,255,.06);
+    }
+
+    .idxTitleBox{
+      min-width: 0;
+      display:grid;
+      gap: 4px;
+    }
+
+    .idxName{
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(244,247,252,.98);
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .idxSymbol{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: .4px;
+    }
+
+    .idxMainValue{
+      position: relative;
+      z-index: 1;
+      display:grid;
+      gap: 6px;
+    }
+
+    .idxMainValue strong{
+      font-size: 32px;
+      line-height: 1;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: rgba(244,247,252,.98);
+    }
+
+    .idxMainValue span{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .idxMetrics{
+      position: relative;
+      z-index: 1;
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px 14px;
+      font-family: var(--mono);
+      font-size: 13px;
+      align-items: baseline;
+      color: rgba(168,184,210,.94);
+    }
+
+    .idxMetrics > div:nth-child(2n){
+      text-align: right;
+      justify-self: end;
+      font-variant-numeric: tabular-nums;
+    }
+
     .up{ color: var(--up) !important; }
     .down{ color: var(--down) !important; }
 
@@ -1220,6 +1360,47 @@ export function getStyles() {
       .starGrid{
         grid-template-columns: 1fr;
         gap: 10px;
+      }
+
+      #idxCards{
+        gap: 10px;
+      }
+
+      .idxTile{
+        padding: 14px;
+        gap: 12px;
+      }
+
+      .idxTileTop{
+        gap: 12px;
+      }
+
+      .idxIdentity{
+        gap: 12px;
+      }
+
+      .idxIconWrap{
+        width: 46px;
+        height: 46px;
+      }
+
+      .idxIcon{
+        width: 28px;
+        height: 28px;
+        filter: brightness(2.44) saturate(1.45) contrast(1.16);
+      }
+
+      .idxName{
+        font-size: 14px;
+      }
+
+      .idxMainValue strong{
+        font-size: 28px;
+      }
+
+      .idxMetrics{
+        font-size: 12px;
+        gap: 7px 12px;
       }
 
       .weightsPanel{
