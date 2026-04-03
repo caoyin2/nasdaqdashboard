@@ -22,7 +22,7 @@ const INDEX_WEIGHT_CONFIG = {
     source: "ishares",
     indexCode: "SP500-45",
     title: "\u6807\u666e500\u4fe1\u606f\u79d1\u6280\uff08SP500-45\uff09",
-    showDataDate: false,
+    showDataDate: true,
     allowLiveSearch: true,
     productPageUrl: ISHARES_SP50045_PRODUCT_URL,
   },
@@ -30,7 +30,7 @@ const INDEX_WEIGHT_CONFIG = {
     source: "ishares",
     indexCode: "NDX",
     title: "\u7eb3\u65af\u8fbe\u514b100\uff08NDX\uff09",
-    showDataDate: false,
+    showDataDate: true,
     allowLiveSearch: true,
     productPageUrl: ISHARES_NDX_PRODUCT_URL,
   },
@@ -361,7 +361,7 @@ export async function getLatestIndexWeightSymbols(indexCode = "NDXTMC") {
   const items = parseIsharesRows(holdings.payload);
   return {
     basketDate: holdings.basketDate,
-    showDataDate: false,
+    showDataDate: true,
     symbols: items.map((item) => item.symbol),
   };
 }

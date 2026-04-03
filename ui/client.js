@@ -141,7 +141,7 @@ export function getClientScript() {
 
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
-    var INDEX_WEIGHTS_API_VERSION = "20260403g";
+    var INDEX_WEIGHTS_API_VERSION = "20260403h";
     var WEIGHTS_INDEX_OPTIONS = [
       { code: "NDXTMC", label: "\\u7eb3\\u65af\\u8fbe\\u514b\\u79d1\\u6280\\u5e02\\u503c\\u52a0\\u6743" },
       { code: "SP500-45", label: "\\u6807\\u666e500\\u4fe1\\u606f\\u79d1\\u6280" },
