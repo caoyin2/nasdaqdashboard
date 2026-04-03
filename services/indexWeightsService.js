@@ -7,7 +7,7 @@ const ETF_INDEX_CONFIG = {
   NDXTMC: {
     etfCode: "159509",
     indexCode: "NDXTMC",
-    title: "纳指科技市值加权（NDXTMC）",
+    title: "\u7eb3\u65af\u8fbe\u514b\u79d1\u6280\u5e02\u503c\u52a0\u6743\uff08NDXTMC\uff09",
   },
 };
 
@@ -108,14 +108,14 @@ function extractCompositionLines(text) {
     const compact = line.trim();
 
     if (!inSection) {
-      if (compact === "组合信息内容") {
+      if (compact === "\u7ec4\u5408\u4fe1\u606f\u5185\u5bb9") {
         inSection = true;
       }
       continue;
     }
 
     if (!seenHeader) {
-      if (compact.startsWith("证券代码")) {
+      if (compact.startsWith("\u8bc1\u5238\u4ee3\u7801")) {
         seenHeader = true;
       }
       continue;

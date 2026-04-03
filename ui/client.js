@@ -1125,7 +1125,6 @@ export function getClientScript() {
             '<div class="weightName">' + esc(item.nameEn || item.symbol) + '</div>',
           '</div>',
           '<div class="weightValue">',
-            '<span>Weight</span>',
             '<strong>' + fmt(item.weightPct, 2) + '%</strong>',
           '</div>',
           '<div class="weightBar">',
@@ -1143,6 +1142,7 @@ export function getClientScript() {
       var items = cached && cached.items ? cached.items.slice() : null;
       var maxWeight = items && items.length ? items[0].weightPct : 0;
       var statusClass = weightsState.statusType === "err" ? "err" : "ok";
+      var indexTitle = cached && cached.title ? cached.title : weightsState.activeIndex;
       var listHtml = items && items.length
         ? '<div class="weightsList">' + items.map(function (item) { return weightCardHTML(item, maxWeight); }).join("") + '</div>'
         : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u53ea\u4f1a\u52a0\u8f7d\u4e00\u6b21\u6700\u65b0\u7533\u8d4e\u6e05\u5355\uff0c\u5e76\u5c06\u7ed3\u679c\u7f13\u5b58\u5728 Worker \u548c\u6d4f\u89c8\u5668\u4e2d\u3002<br />\u5f53\u524d\u4ec5\u5c55\u793a NDXTMC \u6307\u6570\u6743\u91cd\u3002</div>';
@@ -1156,7 +1156,7 @@ export function getClientScript() {
             '</div>',
             '<div class="weightsMeta">',
               '<div class="' + statusClass + '">' + esc(weightsState.statusText) + '</div>',
-              '<div>\u6307\u6570\uff1a<strong>' + esc(weightsState.activeIndex) + '</strong></div>',
+              '<div>\u6307\u6570\uff1a<strong>' + esc(indexTitle) + '</strong></div>',
               '<div>\u6e05\u5355\u65e5\u671f\uff1a<strong>' + esc(cached ? formatBasketDate(cached.basketDate) : "--") + '</strong></div>',
             '</div>',
           '</div>',
