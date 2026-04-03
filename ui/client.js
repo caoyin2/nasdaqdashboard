@@ -1133,8 +1133,8 @@ export function getClientScript() {
 
       return [
         '<article class="weightCard">',
+          '<div class="weightRankBadge">' + esc(String(rank)) + '</div>',
           '<div class="weightCardTop">',
-            '<div class="weightRankBadge">#' + esc(String(rank)) + '</div>',
             '<div class="weightIconWrap">',
               item.iconLight
                 ? '<img class="weightIcon" src="' + esc(item.iconLight) + '" alt="' + esc(item.nameEn) + '" loading="lazy" data-search-symbol="' + esc(item.symbol) + '" data-search-refresh-state="idle" />'

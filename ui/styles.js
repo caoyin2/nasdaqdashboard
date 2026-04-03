@@ -1000,12 +1000,16 @@ export function getStyles() {
       align-items:center;
       gap: 12px;
       min-width: 0;
+      padding-right: 46px;
     }
 
     .weightRankBadge{
-      flex: 0 0 auto;
-      min-width: 38px;
-      padding: 7px 8px;
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 2;
+      min-width: 34px;
+      padding: 7px 9px;
       border-radius: 999px;
       background: rgba(0,224,255,.12);
       border: 1px solid rgba(0,224,255,.22);
@@ -1016,6 +1020,7 @@ export function getStyles() {
       line-height: 1;
       text-align: center;
       box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+      pointer-events: none;
     }
 
     .weightIconWrap{
@@ -1250,9 +1255,15 @@ export function getStyles() {
         gap: 10px;
       }
 
+      .weightCardTop{
+        padding-right: 42px;
+      }
+
       .weightRankBadge{
-        min-width: 34px;
-        padding: 6px 7px;
+        top: 10px;
+        right: 10px;
+        min-width: 30px;
+        padding: 6px 8px;
         font-size: 11px;
       }
 
