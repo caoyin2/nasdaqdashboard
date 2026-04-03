@@ -11,6 +11,7 @@
  */
 
 import { fetchSeekingAlphaSearch } from "./seekingAlpha.js";
+import { INDEX_WEIGHTS_FALLBACK_META } from "./indexWeightsFallback.js";
 
 const SHENZHEN_TZ = "Asia/Shanghai";
 const ETF_BASKET_LOOKBACK_DAYS = 45;
@@ -201,11 +202,12 @@ async function fetchSearchMeta(symbol) {
     return SEARCH_META_CACHE.get(symbol);
   }
 
+  const fallback = INDEX_WEIGHTS_FALLBACK_META[symbol];
   let meta = {
     symbol,
-    nameEn: symbol,
-    iconLight: null,
-    slug: symbol.toLowerCase(),
+    nameEn: fallback?.nameEn || symbol,
+    iconLight: fallback?.iconLight || null,
+    slug: fallback?.slug || symbol.toLowerCase(),
   };
 
   try {
