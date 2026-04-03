@@ -408,6 +408,28 @@ export function getStyles() {
       box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
     }
 
+    .idxTile.up{
+      --idx-accent: var(--up);
+      --idx-accent-soft: rgba(255,77,109,.12);
+      --idx-accent-border: rgba(255,77,109,.22);
+    }
+
+    .idxTile.down{
+      --idx-accent: var(--down);
+      --idx-accent-soft: rgba(34,197,94,.12);
+      --idx-accent-border: rgba(34,197,94,.22);
+    }
+
+    .idxTile.flat{
+      --idx-accent: rgba(226,232,240,.92);
+      --idx-accent-soft: rgba(148,163,184,.10);
+      --idx-accent-border: rgba(148,163,184,.18);
+    }
+
+    .idxTile{
+      border-color: var(--idx-accent-border, rgba(31,43,61,.85));
+    }
+
     .idxTile::after{
       content:"";
       position:absolute;
@@ -415,7 +437,7 @@ export function getStyles() {
       width: 128px;
       height: 128px;
       border-radius: 50%;
-      background: rgba(64,156,255,.16);
+      background: var(--idx-accent-soft, rgba(64,156,255,.16));
       filter: blur(10px);
       pointer-events:none;
     }
@@ -442,7 +464,7 @@ export function getStyles() {
       height: 52px;
       border-radius: 14px;
       background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
-      border: 1px solid rgba(255,255,255,.14);
+      border: 1px solid var(--idx-accent-border, rgba(255,255,255,.14));
       box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
       display:grid;
       place-items:center;
@@ -501,7 +523,8 @@ export function getStyles() {
       line-height: 1;
       font-weight: 800;
       font-variant-numeric: tabular-nums;
-      color: rgba(244,247,252,.98);
+      color: var(--idx-accent, rgba(244,247,252,.98));
+      text-shadow: 0 0 18px var(--idx-accent-soft, transparent);
     }
 
     .idxMainValue span{

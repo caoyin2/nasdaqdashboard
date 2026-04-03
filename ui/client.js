@@ -664,10 +664,13 @@ export function getClientScript() {
       var baseLabel = is1D ? "\u6628\u6536" : "\u8d77\u70b9";
       var chgLabel = is1D ? "\u6da8\u8dcc" : "\u533a\u95f4\u6da8\u8dcc";
       var pctLabel = is1D ? "\u6da8\u8dcc\u5e45" : "\u533a\u95f4\u6da8\u8dcc\u5e45";
-      var cls = (Number.isFinite(item.cardChg) ? item.cardChg >= 0 : true) ? "up" : "down";
+      var cls = "flat";
+      if (Number.isFinite(item.cardChg)) {
+        cls = item.cardChg > 0 ? "up" : (item.cardChg < 0 ? "down" : "flat");
+      }
 
       return [
-        '<article class="idxTile">',
+        '<article class="idxTile ' + cls + '">',
           '<div class="idxTileTop">',
             '<div class="idxIdentity">',
               '<div class="idxIconWrap">',
