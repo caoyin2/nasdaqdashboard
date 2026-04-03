@@ -30,8 +30,8 @@ const STAR_TECH_CACHE = {
   "1D": { memTtlMs: 25 * 1000, cacheSeconds: 25 },
   default: { memTtlMs: 10 * 60 * 1000, cacheSeconds: 10 * 60 },
 };
-const INDEX_WEIGHTS_MEM_TTL_MS = 12 * 60 * 60 * 1000;
-const INDEX_WEIGHTS_CACHE_SECONDS = 12 * 60 * 60;
+const INDEX_WEIGHTS_MEM_TTL_MS = 15 * 60 * 1000;
+const INDEX_WEIGHTS_CACHE_SECONDS = 15 * 60;
 
 function getKvBinding(env) {
   const kv = env?.NasdaqDashboard;
@@ -365,8 +365,9 @@ export default {
     if (url.pathname === "/api/index-weights") {
       try {
         const indexCode = String(url.searchParams.get("index") || "NDXTMC").toUpperCase();
+        const version = String(url.searchParams.get("v") || "default");
         const now = Date.now();
-        const memKey = `weights:${indexCode}`;
+        const memKey = `weights:${indexCode}:${version}`;
         const memCached = INDEX_WEIGHTS_MEM_CACHE.get(memKey);
 
         if (memCached && now - memCached.at < INDEX_WEIGHTS_MEM_TTL_MS) {
