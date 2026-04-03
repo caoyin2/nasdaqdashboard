@@ -975,9 +975,9 @@ export function getStyles() {
       background:
         linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
         rgba(13,20,32,.76);
-      padding: 14px;
+      padding: 16px;
       display:grid;
-      gap: 12px;
+      gap: 14px;
       box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
     }
 
@@ -998,9 +998,9 @@ export function getStyles() {
       z-index: 1;
       display:flex;
       align-items:center;
-      gap: 12px;
+      gap: 14px;
       min-width: 0;
-      padding-right: 46px;
+      padding-right: 50px;
     }
 
     .weightRankBadge{
@@ -1024,9 +1024,9 @@ export function getStyles() {
     }
 
     .weightIconWrap{
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
       background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
       border: 1px solid rgba(255,255,255,.14);
       box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
@@ -1036,19 +1036,19 @@ export function getStyles() {
     }
 
     .weightIcon{
-      width: 26px;
-      height: 26px;
+      width: 32px;
+      height: 32px;
       object-fit: contain;
       display:block;
-      filter: brightness(2.12) saturate(1.34) contrast(1.12);
+      filter: brightness(2.38) saturate(1.42) contrast(1.14);
     }
 
     .weightName{
       min-width: 0;
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 700;
       color: rgba(244,247,252,.98);
-      line-height: 1.2;
+      line-height: 1.25;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -1073,7 +1073,7 @@ export function getStyles() {
     }
 
     .weightValue strong{
-      font-size: 20px;
+      font-size: 22px;
       line-height: 1;
       color: rgba(96,208,255,.98);
       font-variant-numeric: tabular-nums;
@@ -1251,12 +1251,13 @@ export function getStyles() {
       }
 
       .weightCard{
-        padding: 12px;
-        gap: 10px;
+        padding: 14px;
+        gap: 12px;
       }
 
       .weightCardTop{
-        padding-right: 42px;
+        gap: 12px;
+        padding-right: 44px;
       }
 
       .weightRankBadge{
@@ -1268,22 +1269,22 @@ export function getStyles() {
       }
 
       .weightIconWrap{
-        width: 40px;
-        height: 40px;
+        width: 46px;
+        height: 46px;
       }
 
       .weightIcon{
-        width: 24px;
-        height: 24px;
-        filter: brightness(2.24) saturate(1.38) contrast(1.14);
+        width: 28px;
+        height: 28px;
+        filter: brightness(2.48) saturate(1.45) contrast(1.16);
       }
 
       .weightName{
-        font-size: 13px;
+        font-size: 14px;
       }
 
       .weightValue strong{
-        font-size: 18px;
+        font-size: 20px;
       }
 
       .starCard{

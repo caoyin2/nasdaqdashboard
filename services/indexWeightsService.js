@@ -3,10 +3,11 @@ import { getSearchMetaBatch } from "./searchMetaStore.js";
 
 const SHENZHEN_TZ = "Asia/Shanghai";
 const ETF_BASKET_LOOKBACK_DAYS = 45;
-const ISHARES_NDX_URL =
-  "https://www.ishares.com/uk/individual/en/products/253741/ishares-nasdaq-100-ucits-etf/1506575576011.ajax?tab=all&fileType=json";
-const ISHARES_SP50045_URL =
-  "https://www.ishares.com/uk/individual/en/products/280510/ishares-sp-500-information-technology-sector-ucits-etf/1506575576011.ajax?tab=all&fileType=json";
+const ISHARES_ORIGIN = "https://www.ishares.com";
+const ISHARES_NDX_PRODUCT_URL =
+  "https://www.ishares.com/uk/individual/en/products/253741/?switchLocale=y&siteEntryPassthrough=true";
+const ISHARES_SP50045_PRODUCT_URL =
+  "https://www.ishares.com/uk/individual/en/products/280510/?switchLocale=y&siteEntryPassthrough=true";
 
 const INDEX_WEIGHT_CONFIG = {
   NDXTMC: {
@@ -23,7 +24,7 @@ const INDEX_WEIGHT_CONFIG = {
     title: "\u6807\u666e500\u4fe1\u606f\u79d1\u6280\uff08SP500-45\uff09",
     showDataDate: false,
     allowLiveSearch: true,
-    weightsUrl: ISHARES_SP50045_URL,
+    productPageUrl: ISHARES_SP50045_PRODUCT_URL,
   },
   NDX: {
     source: "ishares",
@@ -31,7 +32,7 @@ const INDEX_WEIGHT_CONFIG = {
     title: "\u7eb3\u65af\u8fbe\u514b100\uff08NDX\uff09",
     showDataDate: false,
     allowLiveSearch: true,
-    weightsUrl: ISHARES_NDX_URL,
+    productPageUrl: ISHARES_NDX_PRODUCT_URL,
   },
 };
 
@@ -202,8 +203,63 @@ function parseBasketRows(text) {
   };
 }
 
+async function fetchIsharesPageHtml(config) {
+  const res = await fetch(config.productPageUrl, {
+    cf: { cacheTtl: 900, cacheEverything: true },
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      "Accept": "text/html,application/xhtml+xml",
+      "Referer": ISHARES_ORIGIN + "/",
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`iShares ${config.indexCode} page failed: HTTP ${res.status} ${text.slice(0, 120)}`);
+  }
+
+  return res.text();
+}
+
+function decodeHtmlAttribute(value) {
+  return String(value || "")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function extractIsharesHoldingsRequest(html) {
+  const blockMatch = String(html || "").match(
+    /<div id="allHoldingsTab"[^>]+data-ajaxUri="([^"]+)"[\s\S]*?<select class="date-dropdown">([\s\S]*?)<\/select>/i
+  );
+
+  if (!blockMatch) {
+    throw new Error("iShares holdings block not found in product page HTML");
+  }
+
+  const ajaxUri = decodeHtmlAttribute(blockMatch[1]);
+  const optionHtml = blockMatch[2];
+  const asOfDates = Array.from(optionHtml.matchAll(/<option value="(\d{8})"/g)).map((match) => match[1]);
+  const latestAsOfDate = asOfDates[0] || null;
+
+  return {
+    ajaxUri,
+    latestAsOfDate,
+  };
+}
+
 async function fetchIsharesHoldings(config) {
-  const res = await fetch(config.weightsUrl, {
+  const html = await fetchIsharesPageHtml(config);
+  const holdingsRequest = extractIsharesHoldingsRequest(html);
+  const url = new URL(holdingsRequest.ajaxUri, ISHARES_ORIGIN);
+
+  if (holdingsRequest.latestAsOfDate) {
+    url.searchParams.set("asOfDate", holdingsRequest.latestAsOfDate);
+  }
+
+  const res = await fetch(url.toString(), {
     cf: { cacheTtl: 900, cacheEverything: true },
     headers: {
       "User-Agent": "Mozilla/5.0",
@@ -217,7 +273,10 @@ async function fetchIsharesHoldings(config) {
     throw new Error(`iShares ${config.indexCode} weights failed: HTTP ${res.status} ${text.slice(0, 120)}`);
   }
 
-  return res.json();
+  return {
+    basketDate: holdingsRequest.latestAsOfDate,
+    payload: await res.json(),
+  };
 }
 
 function parseWeightObject(weightLike) {
@@ -298,10 +357,10 @@ export async function getLatestIndexWeightSymbols(indexCode = "NDXTMC") {
     };
   }
 
-  const payload = await fetchIsharesHoldings(config);
-  const items = parseIsharesRows(payload);
+  const holdings = await fetchIsharesHoldings(config);
+  const items = parseIsharesRows(holdings.payload);
   return {
-    basketDate: null,
+    basketDate: holdings.basketDate,
     showDataDate: false,
     symbols: items.map((item) => item.symbol),
   };
@@ -332,8 +391,8 @@ export async function buildIndexWeightsPayload(indexCode = "NDXTMC", env) {
     };
   }
 
-  const payload = await fetchIsharesHoldings(config);
-  const items = parseIsharesRows(payload);
+  const holdings = await fetchIsharesHoldings(config);
+  const items = parseIsharesRows(holdings.payload);
   const enrichedItems = await enrichItems(items, env, {
     allowFetch: config.allowLiveSearch,
   });
@@ -342,7 +401,7 @@ export async function buildIndexWeightsPayload(indexCode = "NDXTMC", env) {
     ok: true,
     indexCode: config.indexCode,
     title: config.title,
-    basketDate: null,
+    basketDate: holdings.basketDate,
     showDataDate: config.showDataDate,
     cashAmount: null,
     items: enrichedItems,
