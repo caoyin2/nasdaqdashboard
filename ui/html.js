@@ -50,19 +50,10 @@ export function getHtml() {
           <div class="h">纳斯达克指数看板</div>
           <div class="sub" id="periodCN">周期：${PERIOD_LABELS["1D"]}</div>
         </div>
-
-        <div class="seg" id="seg">
-          <button data-p="1D" class="active">${PERIOD_LABELS["1D"]}</button>
-          <button data-p="5D">${PERIOD_LABELS["5D"]}</button>
-          <button data-p="1M">${PERIOD_LABELS["1M"]}</button>
-          <button data-p="6M">${PERIOD_LABELS["6M"]}</button>
-          <button data-p="YTD">${PERIOD_LABELS["YTD"]}</button>
-          <button data-p="1Y">${PERIOD_LABELS["1Y"]}</button>
-        </div>
       </div>
     </div>
 
-    <div class="pageSeg" id="pageSeg" aria-label="桌面分页">
+    <div class="pageSeg" id="pageSeg" aria-label="页面切换">
       <button class="active" data-page="overview">科技类指数信息</button>
       <button data-page="stars">明星科技公司</button>
     </div>
@@ -94,6 +85,16 @@ export function getHtml() {
           <div class="card info">
             <div class="right">
               <div id="fearGreedCard"></div>
+
+              <div class="seg" id="seg">
+                <button data-p="1D" class="active">${PERIOD_LABELS["1D"]}</button>
+                <button data-p="5D">${PERIOD_LABELS["5D"]}</button>
+                <button data-p="1M">${PERIOD_LABELS["1M"]}</button>
+                <button data-p="6M">${PERIOD_LABELS["6M"]}</button>
+                <button data-p="YTD">${PERIOD_LABELS["YTD"]}</button>
+                <button data-p="1Y">${PERIOD_LABELS["1Y"]}</button>
+              </div>
+
               <div class="blockTitle">指数</div>
               <div id="idxCards"></div>
             </div>

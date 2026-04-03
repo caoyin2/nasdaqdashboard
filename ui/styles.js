@@ -122,7 +122,12 @@ export function getStyles() {
       border-radius: 999px;
       background: rgba(255,255,255,.04);
       border: 1px solid var(--border);
-      margin-left: 10px;
+      margin-left: 0;
+      width: 100%;
+      justify-content: flex-start;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
     }
 
     .seg button{
@@ -142,11 +147,6 @@ export function getStyles() {
       color: rgba(255,255,255,.96);
       background: rgba(0,174,239,.18);
       box-shadow: inset 0 0 0 1px rgba(0,174,239,.25);
-    }
-
-    .wrap.stars-active .seg{
-      opacity: .42;
-      pointer-events: none;
     }
 
     .asof{
@@ -904,7 +904,6 @@ export function getStyles() {
 
       .seg{
         width: 100%;
-        margin-left: 0;
         overflow-x: auto;
         overflow-y: hidden;
         -webkit-overflow-scrolling: touch;

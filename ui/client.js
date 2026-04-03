@@ -1079,9 +1079,7 @@ export function getClientScript() {
         var payload = await fetchStarPeriod(period, opts);
         if (!payload) return;
         starsState.cache.set(period, payload);
-        starsState.statusText = period === "1D"
-          ? "1\u65e5\u6570\u636e\u6bcf30\u79d2\u81ea\u52a8\u5237\u65b0\u4e00\u6b21"
-          : "\u5df2\u7f13\u5b58\u5f53\u524d\u5468\u671f\u6570\u636e";
+        starsState.statusText = "\u5df2\u7f13\u5b58\u5f53\u524d\u5468\u671f\u6570\u636e";
         starsState.statusType = "ok";
         renderStarPanel();
       } catch (error) {
@@ -1104,10 +1102,6 @@ export function getClientScript() {
     function startStarAutoRefresh() {
       clearInterval(starsState.refreshTimer);
       starsState.refreshTimer = null;
-      if (!shouldRefreshStar1D()) return;
-      starsState.refreshTimer = setInterval(function () {
-        loadStarPeriod("1D", { force: true });
-      }, 30000);
     }
 
     function setActivePage(page) {
@@ -1291,17 +1285,10 @@ export function getClientScript() {
     function startAutoRefresh() {
       clearInterval(refreshTimer);
       refreshTimer = null;
-      if (state.period !== "1D") return;
-      refreshTimer = setInterval(function () {
-        scheduleRender(state.period, { force: true });
-      }, 30000);
     }
 
     document.addEventListener("visibilitychange", function () {
-      if (!document.hidden && state.period === "1D") {
-        scheduleRender(state.period, { force: true });
-      }
-      startStarAutoRefresh();
+      return;
     });
 
     $("seg").addEventListener("click", function (e) {
