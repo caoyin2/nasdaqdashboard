@@ -696,9 +696,9 @@ export function getStyles() {
       background:
         linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
         rgba(13,20,32,.76);
-      padding: 14px;
+      padding: 16px;
       display:grid;
-      gap: 12px;
+      gap: 14px;
       box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
       will-change: transform, opacity;
     }
@@ -741,7 +741,7 @@ export function getStyles() {
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap: 12px;
+      gap: 14px;
       min-width: 0;
       position: relative;
       z-index: 1;
@@ -750,14 +750,14 @@ export function getStyles() {
     .starIdentity{
       display:flex;
       align-items:center;
-      gap: 12px;
+      gap: 14px;
       min-width: 0;
     }
 
     .starIconWrap{
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
       background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
       border: 1px solid rgba(255,255,255,.14);
       box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
@@ -767,11 +767,11 @@ export function getStyles() {
     }
 
     .starIcon{
-      width: 24px;
-      height: 24px;
+      width: 32px;
+      height: 32px;
       object-fit: contain;
       display:block;
-      filter: brightness(1.78) saturate(1.24) contrast(1.12);
+      filter: brightness(2.32) saturate(1.40) contrast(1.14);
     }
 
     .starNameBox{
@@ -781,10 +781,10 @@ export function getStyles() {
     }
 
     .starName{
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 700;
       color: rgba(244,247,252,.98);
-      line-height: 1.15;
+      line-height: 1.25;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -792,20 +792,20 @@ export function getStyles() {
 
     .starSymbol{
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: 12px;
       color: var(--muted);
       letter-spacing: .4px;
     }
 
     .starDeltaChip{
       flex: 0 0 auto;
-      padding: 7px 10px;
+      padding: 8px 12px;
       border-radius: 999px;
       background: var(--star-accent-soft, rgba(255,255,255,.04));
       border: 1px solid var(--star-accent-border, rgba(31,43,61,.85));
       color: var(--star-accent, rgba(244,247,252,.96));
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
       max-width: 100%;
     }
@@ -814,7 +814,7 @@ export function getStyles() {
       position: relative;
       z-index: 1;
       display:grid;
-      gap: 10px;
+      gap: 12px;
     }
 
     .starPrice{
@@ -825,7 +825,7 @@ export function getStyles() {
     }
 
     .starPriceValue{
-      font-size: 28px;
+      font-size: 32px;
       line-height: 1;
       font-weight: 800;
       font-variant-numeric: tabular-nums;
@@ -834,7 +834,7 @@ export function getStyles() {
 
     .starPeriodTag{
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: 12px;
       color: var(--muted);
       white-space: nowrap;
     }
@@ -844,7 +844,7 @@ export function getStyles() {
       grid-template-columns: 1fr auto;
       gap: 6px 12px;
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 13px;
       align-items: baseline;
       color: rgba(168,184,210,.94);
     }
@@ -1288,42 +1288,42 @@ export function getStyles() {
       }
 
       .starCard{
-        padding: 12px;
-        gap: 10px;
+        padding: 14px;
+        gap: 12px;
       }
 
       .starIconWrap{
-        width: 38px;
-        height: 38px;
+        width: 46px;
+        height: 46px;
       }
 
       .starIcon{
-        width: 22px;
-        height: 22px;
-        filter: brightness(1.9) saturate(1.28) contrast(1.14);
+        width: 28px;
+        height: 28px;
+        filter: brightness(2.42) saturate(1.44) contrast(1.16);
       }
 
       .starName{
-        font-size: 13px;
+        font-size: 14px;
         white-space: normal;
         overflow: hidden;
         text-overflow: clip;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
-        line-height: 1.2;
+        line-height: 1.25;
       }
 
       .starDeltaChip{
-        padding: 6px 8px;
-        font-size: 11px;
+        padding: 7px 10px;
+        font-size: 12px;
         justify-self: start;
         width: fit-content;
         max-width: none;
       }
 
       .starPriceValue{
-        font-size: 24px;
+        font-size: 28px;
       }
 
       .starCardTop{
