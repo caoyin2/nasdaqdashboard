@@ -60,6 +60,54 @@ export function getClientScript() {
       .replace(/"/g, "&quot;");
   }
 
+  function setImageRefreshState(img, state) {
+    if (!img || !img.dataset) return;
+    img.dataset.searchRefreshState = state;
+  }
+
+  async function refreshSearchMetaForIcon(symbol) {
+    if (!symbol) return null;
+    var res = await fetch(
+      "/api/search-meta?symbol=" + encodeURIComponent(symbol) + "&refresh=1&_ts=" + Date.now(),
+      {
+        cache: "no-store"
+      }
+    );
+    if (!res.ok) return null;
+    var payload = await res.json();
+    return payload && payload.ok ? payload.meta : null;
+  }
+
+  async function handleSearchIconError(img) {
+    if (!img || !img.dataset) return;
+    if (img.dataset.searchRefreshState === "pending" || img.dataset.searchRefreshState === "done") {
+      return;
+    }
+
+    var symbol = String(img.dataset.searchSymbol || "").trim().toUpperCase();
+    if (!symbol) {
+      setImageRefreshState(img, "done");
+      return;
+    }
+
+    setImageRefreshState(img, "pending");
+
+    try {
+      var meta = await refreshSearchMetaForIcon(symbol);
+      var nextSrc = meta && (meta.iconLight || meta.iconDark);
+      if (nextSrc && nextSrc !== img.currentSrc && nextSrc !== img.src) {
+        img.src = nextSrc;
+        setImageRefreshState(img, "done");
+        return;
+      }
+    } catch (error) {
+      console.error("search icon refresh failed:", error);
+    }
+
+    setImageRefreshState(img, "done");
+    img.classList.add("icon-failed");
+  }
+
   try {
     var configNode = $("app-config");
     var APP_CONFIG = configNode ? JSON.parse(configNode.textContent || "{}") : {};
@@ -340,7 +388,7 @@ export function getClientScript() {
         ctx.fillStyle = "rgba(230,237,247,.55)";
         ctx.font = (14 * DPR) + "px ui-monospace";
         ctx.textAlign = "center";
-        ctx.fillText("鏆傛棤鏁版嵁", W / 2, H / 2);
+        ctx.fillText("\u6682\u65e0\u6570\u636e", W / 2, H / 2);
         ctx.restore();
         return;
       }
@@ -658,7 +706,7 @@ export function getClientScript() {
         };
       }
 
-      return { label: "鏆傛棤鏁版嵁", color: "#94a3b8", bandIndex: null };
+      return { label: "\u6682\u65e0\u6570\u636e", color: "#94a3b8", bandIndex: null };
     }
 
     function hexToRgba(hex, alpha) {
@@ -796,7 +844,7 @@ export function getClientScript() {
     function buildFearGreedMetric(title, point, extraClass) {
       var metricClass = "fgMetric" + (extraClass ? (" " + extraClass) : "");
       var score = point && Number.isFinite(point.score) ? fmt1(point.score) : "--";
-      var status = point && point.ratingCN ? point.ratingCN : "鏆傛棤鏁版嵁";
+      var status = point && point.ratingCN ? point.ratingCN : "\u6682\u65e0\u6570\u636e";
       var pointMeta = fearGreedMeta(
         point && Number.isFinite(point.score) ? point.score : NaN,
         point ? point.rating : null,
@@ -870,11 +918,11 @@ export function getClientScript() {
         '<div class="tile fgCard">',
           '<div class="fgCardHead">',
             '<div>',
-              '<div class="fgEyebrow">甯傚満鎯呯华</div>',
-              '<div class="fgTitle">CNN 鎭愭儳璐┆鎸囨暟</div>',
+              '<div class="fgEyebrow">\u5e02\u573a\u60c5\u7eea</div>',
+              '<div class="fgTitle">CNN \u6050\u60e7\u8d2a\u5a6a\u6307\u6570</div>',
             '</div>',
           '</div>',
-          '<div class="fgEmpty">姝ｅ湪鍔犺浇 CNN 鎭愭儳璐┆鎸囨暟鈥?/div>',
+          '<div class="fgEmpty">\u6b63\u5728\u52a0\u8f7d CNN \u6050\u60e7\u8d2a\u5a6a\u6307\u6570...</div>',
         '</div>'
       ].join("");
     }
@@ -991,7 +1039,7 @@ export function getClientScript() {
           '<div class="starCardTop">',
             '<div class="starIdentity">',
               '<div class="starIconWrap">',
-                '<img class="starIcon" src="' + esc(item.icon) + '" alt="' + esc(item.symbol) + '" loading="lazy" />',
+                '<img class="starIcon" src="' + esc(item.icon) + '" alt="' + esc(item.symbol) + '" loading="lazy" data-search-symbol="' + esc(item.symbol) + '" data-search-refresh-state="idle" />',
               '</div>',
               '<div class="starNameBox">',
                 '<div class="starName">' + esc(item.nameCN) + '</div>',
@@ -1071,7 +1119,7 @@ export function getClientScript() {
           '<div class="weightCardTop">',
             '<div class="weightIconWrap">',
               item.iconLight
-                ? '<img class="weightIcon" src="' + esc(item.iconLight) + '" alt="' + esc(item.nameEn) + '" loading="lazy" />'
+                ? '<img class="weightIcon" src="' + esc(item.iconLight) + '" alt="' + esc(item.nameEn) + '" loading="lazy" data-search-symbol="' + esc(item.symbol) + '" data-search-refresh-state="idle" />'
                 : '<div class="weightIcon" aria-hidden="true"></div>',
             '</div>',
             '<div class="weightName">' + esc(item.nameEn || item.symbol) + '</div>',
@@ -1216,7 +1264,7 @@ export function getClientScript() {
           return null;
         }
         if (timedOut) {
-          throw new Error("鏄庢槦绉戞妧闈㈡澘璇锋眰瓒呮椂锛?5绉掞級");
+          throw new Error("\u660e\u661f\u79d1\u6280\u516c\u53f8\u9762\u677f\u8bf7\u6c42\u8d85\u65f6\uff0815\u79d2\uff09");
         }
         throw error;
       } finally {
@@ -1360,7 +1408,7 @@ export function getClientScript() {
         });
       } catch (error) {
         if (activeFetchCtrl.signal.aborted) {
-          throw new Error("鎺ュ彛璇锋眰瓒呮椂锛?" + (API_TIMEOUT_MS / 1000) + "绉掞級");
+          throw new Error("\u63a5\u53e3\u8bf7\u6c42\u8d85\u65f6\uff08" + (API_TIMEOUT_MS / 1000) + "\u79d2\uff09");
         }
         throw error;
       } finally {
@@ -1398,7 +1446,7 @@ export function getClientScript() {
         });
       } catch (error) {
         if (controller.signal.aborted) {
-          throw new Error("CNN 闈㈡澘璇锋眰瓒呮椂锛?" + (API_TIMEOUT_MS / 1000) + "绉掞級");
+          throw new Error("CNN \u9762\u677f\u8bf7\u6c42\u8d85\u65f6\uff08" + (API_TIMEOUT_MS / 1000) + "\u79d2\uff09");
         }
         throw error;
       } finally {
@@ -1480,7 +1528,7 @@ export function getClientScript() {
 
       if (periodCache.has(p)) {
         applyData(periodCache.get(p).q);
-        setStatus("鍔犺浇缂撳瓨鎴愬姛", "ok");
+        setStatus("\u52a0\u8f7d\u7f13\u5b58\u6210\u529f", "ok");
         return;
       }
 
@@ -1589,6 +1637,14 @@ export function getClientScript() {
       starsState.mobileVisible = state.page === "stars";
       startStarAutoRefresh();
     });
+
+    document.addEventListener("error", function (event) {
+      var target = event && event.target;
+      if (!target || target.tagName !== "IMG" || !target.dataset || !target.dataset.searchSymbol) {
+        return;
+      }
+      handleSearchIconError(target);
+    }, true);
 
     renderFearGreedLoading();
     renderStarPanel();

@@ -18,7 +18,7 @@ import {
   pickPrevCloseSmart,
 } from "../lib/time.js";
 import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
-import { getSearchMetaBatch } from "./searchMetaStore.js";
+import { getSearchMetaBatch, refreshSearchMeta } from "./searchMetaStore.js";
 
 function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars) {
   const last1DBar = getLastBar(bars1D);
@@ -70,8 +70,7 @@ export async function buildStarTechPayload(period, env) {
     { allowFetch: true }
   );
 
-  const jobFactories = STAR_TECH_COMPANIES.map((company) => async () => {
-    const meta = metaMap.get(company.symbol);
+  async function buildCardWithMeta(company, meta) {
     if (!meta?.tickerId) {
       throw new Error(`Missing tickerId for ${company.symbol}`);
     }
@@ -97,6 +96,21 @@ export async function buildStarTechPayload(period, env) {
     }
 
     return buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars);
+  }
+
+  const jobFactories = STAR_TECH_COMPANIES.map((company) => async () => {
+    let meta = metaMap.get(company.symbol);
+
+    try {
+      return await buildCardWithMeta(company, meta);
+    } catch (error) {
+      const refreshed = await refreshSearchMeta(company.symbol, env);
+      if (!refreshed?.tickerId || refreshed.tickerId === meta?.tickerId) {
+        throw error;
+      }
+      meta = refreshed;
+      return buildCardWithMeta(company, meta);
+    }
   });
 
   const results = [];

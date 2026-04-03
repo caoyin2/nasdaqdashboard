@@ -11,8 +11,10 @@ import { API_MEM_TTL_MS, normalizePeriod } from "./config.js";
 import { corsHeaders, htmlResponse, jsonResponse } from "./lib/http.js";
 import { fetchCnnFearGreedSummary } from "./services/cnnFearGreed.js";
 import { buildIndexWeightsPayload } from "./services/indexWeightsService.js";
+import { getKvBinding, resolveKvBinding } from "./services/kvBinding.js";
 import { buildQuotePayload } from "./services/quoteService.js";
 import { probeSeekingAlphaSearch } from "./services/seekingAlpha.js";
+import { getSearchMeta, refreshSearchMeta } from "./services/searchMetaStore.js";
 import { buildStarTechPayload } from "./services/starTechService.js";
 import { getClientScript } from "./ui/client.js";
 import { getHtml } from "./ui/html.js";
@@ -33,21 +35,16 @@ const STAR_TECH_CACHE = {
 const INDEX_WEIGHTS_MEM_TTL_MS = 15 * 60 * 1000;
 const INDEX_WEIGHTS_CACHE_SECONDS = 15 * 60;
 
-function getKvBinding(env) {
-  const kv = env?.NasdaqDashboard;
-  if (!kv || typeof kv.get !== "function" || typeof kv.put !== "function") {
-    return null;
-  }
-  return kv;
-}
-
 async function handleKvRoute(request, url, origin, env) {
-  const kv = getKvBinding(env);
+  const kvInfo = resolveKvBinding(env);
+  const kv = kvInfo.binding;
   if (!kv) {
     return jsonResponse(
       {
         ok: false,
         error: "KV binding NasdaqDashboard is not configured on this Worker",
+        bindingName: kvInfo.bindingName,
+        checkedKeys: kvInfo.checkedKeys.filter((key) => /nasdaq|dashboard/i.test(key)),
       },
       origin,
       500,
@@ -147,6 +144,42 @@ async function handleKvRoute(request, url, origin, env) {
   });
 }
 
+async function handleSearchMetaRoute(url, origin, env) {
+  const symbol = String(url.searchParams.get("symbol") || "").trim().toUpperCase();
+  const refresh = url.searchParams.get("refresh") === "1";
+
+  if (!symbol) {
+    return jsonResponse({ ok: false, error: "Missing symbol" }, origin, 400, {
+      cacheSeconds: 0,
+    });
+  }
+
+  try {
+    const meta = refresh
+      ? (await refreshSearchMeta(symbol, env)) || (await getSearchMeta(symbol, env, { allowFetch: false }))
+      : await getSearchMeta(symbol, env, { allowFetch: true });
+
+    return jsonResponse(
+      {
+        ok: true,
+        symbol,
+        meta,
+        kvBound: !!getKvBinding(env),
+      },
+      origin,
+      200,
+      { cacheSeconds: 0 }
+    );
+  } catch (error) {
+    return jsonResponse(
+      { ok: false, error: error?.message || String(error) },
+      origin,
+      502,
+      { cacheSeconds: 0 }
+    );
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -158,6 +191,10 @@ export default {
 
     if (url.pathname === "/api/kv") {
       return handleKvRoute(request, url, origin, env);
+    }
+
+    if (url.pathname === "/api/search-meta") {
+      return handleSearchMetaRoute(url, origin, env);
     }
 
     if (request.method !== "GET") {

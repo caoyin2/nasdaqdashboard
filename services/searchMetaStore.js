@@ -13,6 +13,7 @@
 
 import { fetchSeekingAlphaSearch } from "./seekingAlpha.js";
 import { INDEX_WEIGHTS_FALLBACK_META } from "./indexWeightsFallback.js";
+import { getKvBinding } from "./kvBinding.js";
 
 const SEARCH_META_PREFIX = "search:";
 const SEARCH_META_BATCH_SIZE = 2;
@@ -64,7 +65,7 @@ function buildFallbackMeta(symbol) {
 
 export async function readSearchMetaFromKv(env, symbol) {
   const key = getSearchMetaKey(symbol);
-  const kv = env?.NasdaqDashboard;
+  const kv = getKvBinding(env);
   if (!kv || typeof kv.get !== "function") {
     return null;
   }
@@ -94,7 +95,7 @@ export async function readSearchMetaFromKv(env, symbol) {
 }
 
 export async function writeSearchMetaToKv(env, meta) {
-  const kv = env?.NasdaqDashboard;
+  const kv = getKvBinding(env);
   if (!kv || typeof kv.put !== "function" || !meta?.symbol) {
     return false;
   }
@@ -133,14 +134,21 @@ async function fetchLiveSearchMeta(symbol, env) {
   return null;
 }
 
+export async function refreshSearchMeta(symbol, env) {
+  const normalizedSymbol = normalizeSymbol(symbol);
+  if (!normalizedSymbol) return null;
+  return fetchLiveSearchMeta(normalizedSymbol, env);
+}
+
 export async function getSearchMeta(symbol, env, options = {}) {
   const normalizedSymbol = normalizeSymbol(symbol);
   if (!normalizedSymbol) return null;
 
   const allowFetch = options.allowFetch !== false;
+  const allowFallback = options.allowFallback !== false;
   const cached = SEARCH_META_MEM_CACHE.get(normalizedSymbol) || null;
 
-  if (cached?.tickerId) {
+  if (cached?.tickerId && cached.source !== "fallback") {
     return cached;
   }
 
@@ -153,12 +161,14 @@ export async function getSearchMeta(symbol, env, options = {}) {
   }
 
   if (fromKv) return fromKv;
-  if (cached) return cached;
+  if (cached && allowFallback) return cached;
 
-  const fallback = buildFallbackMeta(normalizedSymbol);
-  if (fallback) {
-    SEARCH_META_MEM_CACHE.set(normalizedSymbol, fallback);
-    return fallback;
+  if (allowFallback) {
+    const fallback = buildFallbackMeta(normalizedSymbol);
+    if (fallback) {
+      SEARCH_META_MEM_CACHE.set(normalizedSymbol, fallback);
+      return fallback;
+    }
   }
 
   return null;
@@ -173,7 +183,10 @@ export async function getSearchMetaBatch(symbols, env, options = {}) {
   const missing = [];
 
   for (const symbol of uniqueSymbols) {
-    const meta = await getSearchMeta(symbol, env, { allowFetch: false });
+    const meta = await getSearchMeta(symbol, env, {
+      allowFetch: false,
+      allowFallback: false,
+    });
     if (meta) {
       results.set(symbol, meta);
     } else {
@@ -198,6 +211,7 @@ export async function getSearchMetaBatch(symbols, env, options = {}) {
 
       const fallback = buildFallbackMeta(symbol);
       if (fallback) {
+        SEARCH_META_MEM_CACHE.set(symbol, fallback);
         results.set(symbol, fallback);
       }
     });
