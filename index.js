@@ -12,6 +12,7 @@ import { corsHeaders, htmlResponse, jsonResponse } from "./lib/http.js";
 import { fetchCnnFearGreedSummary } from "./services/cnnFearGreed.js";
 import { buildIndexWeightsPayload } from "./services/indexWeightsService.js";
 import { buildQuotePayload } from "./services/quoteService.js";
+import { probeSeekingAlphaSearch } from "./services/seekingAlpha.js";
 import { buildStarTechPayload } from "./services/starTechService.js";
 import { getClientScript } from "./ui/client.js";
 import { getHtml } from "./ui/html.js";
@@ -294,6 +295,35 @@ export default {
 
         ctx.waitUntil(caches.default.put(cacheKey, response.clone()));
         return response;
+      } catch (error) {
+        return jsonResponse(
+          { ok: false, error: error?.message || String(error) },
+          origin,
+          502,
+          { cacheSeconds: 0 }
+        );
+      }
+    }
+
+    if (url.pathname === "/api/search-probe") {
+      try {
+        const query = String(url.searchParams.get("q") || "NVDA").trim() || "NVDA";
+        const sequentialCount = url.searchParams.get("sequential") || "3";
+        const parallelCount = url.searchParams.get("parallel") || "3";
+
+        const payload = await probeSeekingAlphaSearch(query, {
+          sequentialCount,
+          parallelCount,
+        });
+
+        return new Response(JSON.stringify(payload, null, 2), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            ...corsHeaders(origin),
+            "Cache-Control": "no-store",
+          },
+        });
       } catch (error) {
         return jsonResponse(
           { ok: false, error: error?.message || String(error) },
