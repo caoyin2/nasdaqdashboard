@@ -623,7 +623,7 @@ export function getClientScript() {
             '<div class="sym">' + esc(item.symbol) + '</div>',
           '</div>',
           '<div class="kv">',
-            '<div>鏈€鏂?/div><div><b>' + fmt(item.lastClose, 4) + '</b></div>',
+            '<div>\u6700\u65b0</div><div><b>' + fmt(item.lastClose, 4) + '</b></div>',
             '<div>' + baseLabel + '</div><div>' + fmt(item.cardBaseClose, 4) + '</div>',
             '<div>' + chgLabel + '</div><div class="' + cls + '">' + signNum(item.cardChg, 4) + '</div>',
             '<div>' + pctLabel + '</div><div class="' + cls + '">' + signPct(item.cardChgPct) + '</div>',
