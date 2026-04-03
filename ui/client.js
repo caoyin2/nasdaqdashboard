@@ -141,7 +141,11 @@ export function getClientScript() {
 
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
-    var INDEX_WEIGHTS_API_VERSION = "20260403c";
+    var INDEX_WEIGHTS_API_VERSION = "20260403e";
+    var WEIGHTS_INDEX_OPTIONS = [
+      { code: "NDXTMC", label: "\\u7eb3\\u65af\\u8fbe\\u514b\\u79d1\\u6280\\u5e02\\u503c\\u52a0\\u6743" },
+      { code: "SP500-45", label: "\\u6807\\u666e500\\u4fe1\\u606f\\u79d1\\u6280" }
+    ];
     var FEAR_GREED_PALETTE = [
       { key: "extreme fear", label: "\u6781\u5ea6\u6050\u614c", color: "#ff5468", bandIndex: 0, maxExclusive: 25, lines: ["\u6781\u5ea6", "\u6050\u614c"] },
       { key: "fear", label: "\u6050\u614c", color: "#ff9ea4", bandIndex: 1, maxExclusive: 45, lines: ["\u6050\u614c"] },
@@ -176,7 +180,7 @@ export function getClientScript() {
       activeIndex: "NDXTMC",
       cache: new Map(),
       fetchCtrl: null,
-      statusText: "\u8fdb\u5165\u9762\u677f\u540e\u52a0\u8f7d\u6700\u65b0\u7533\u8d4e\u6e05\u5355\u6743\u91cd",
+      statusText: "\u8fdb\u5165\u9762\u677f\u540e\u52a0\u8f7d\u6700\u65b0\u6743\u91cd\u6587\u4ef6",
       statusType: "ok",
       touched: false
     };
@@ -1110,6 +1114,18 @@ export function getClientScript() {
       return text.slice(0, 4) + "-" + text.slice(4, 6) + "-" + text.slice(6, 8);
     }
 
+    function weightIndexSegHTML(activeIndex) {
+      return [
+        '<div class="weightsIndexSeg" role="tablist" aria-label="\\u6743\\u91cd\\u6307\\u6570\\u5207\\u6362">',
+          WEIGHTS_INDEX_OPTIONS.map(function (option) {
+            return '<button data-weight-index="' + esc(option.code) + '"' +
+              (option.code === activeIndex ? ' class="active"' : '') +
+              '>' + esc(option.label) + '</button>';
+          }).join(""),
+        '</div>'
+      ].join("");
+    }
+
     function weightCardHTML(item, maxWeight) {
       var safeMax = Number.isFinite(maxWeight) && maxWeight > 0 ? maxWeight : 1;
       var widthPct = clamp((item.weightPct / safeMax) * 100, 10, 100);
@@ -1143,23 +1159,27 @@ export function getClientScript() {
       var maxWeight = items && items.length ? items[0].weightPct : 0;
       var statusClass = weightsState.statusType === "err" ? "err" : "ok";
       var indexTitle = cached && cached.title ? cached.title : weightsState.activeIndex;
+      var showDataDate = !!(cached && cached.showDataDate !== false && cached.basketDate);
       var listHtml = items && items.length
         ? '<div class="weightsList">' + items.map(function (item) { return weightCardHTML(item, maxWeight); }).join("") + '</div>'
-        : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u53ea\u4f1a\u52a0\u8f7d\u4e00\u6b21\u6700\u65b0\u7533\u8d4e\u6e05\u5355\uff0c\u5e76\u5c06\u7ed3\u679c\u7f13\u5b58\u5728 Worker \u548c\u6d4f\u89c8\u5668\u4e2d\u3002<br />\u5f53\u524d\u4ec5\u5c55\u793a NDXTMC \u6307\u6570\u6743\u91cd\u3002</div>';
+        : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u53ea\u4f1a\u52a0\u8f7d\u4e00\u6b21\u6700\u65b0\u6743\u91cd\uff0c\u5e76\u5c06\u7ed3\u679c\u7f13\u5b58\u5728 Worker \u548c\u6d4f\u89c8\u5668\u4e2d\u3002<br />\u70b9\u51fb\u4e0a\u65b9\u6307\u6570\u6309\u94ae\u53ef\u5207\u6362 NDXTMC \u548c SP500-45\u3002</div>';
 
       root.innerHTML = [
         '<div class="card weightsPanel">',
           '<div class="weightsHead">',
             '<div class="weightsTitle">',
-              '<span>\u6839\u636e\u6700\u65b0\u7533\u8d4e\u6e05\u5355\u63a8\u5bfc\u6210\u5206\u80a1\u6743\u91cd</span>',
+              '<span>\u6839\u636e\u6700\u65b0\u6743\u91cd\u6587\u4ef6\u63a8\u5bfc\u6210\u5206\u80a1\u6743\u91cd</span>',
               '<strong>\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd</strong>',
             '</div>',
             '<div class="weightsMeta">',
               '<div class="' + statusClass + '">' + esc(weightsState.statusText) + '</div>',
               '<div>\u6307\u6570\uff1a<strong>' + esc(indexTitle) + '</strong></div>',
-              '<div>\u6e05\u5355\u65e5\u671f\uff1a<strong>' + esc(cached ? formatBasketDate(cached.basketDate) : "--") + '</strong></div>',
+              showDataDate
+                ? '<div>\u6e05\u5355\u65e5\u671f\uff1a<strong>' + esc(formatBasketDate(cached.basketDate)) + '</strong></div>'
+                : '',
             '</div>',
           '</div>',
+          weightIndexSegHTML(weightsState.activeIndex),
           listHtml,
         '</div>'
       ].join("");
@@ -1210,13 +1230,13 @@ export function getClientScript() {
       weightsState.touched = true;
 
       if (!opts.force && weightsState.cache.has(indexCode)) {
-        weightsState.statusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u7684\u6700\u65b0\u7533\u8d4e\u6e05\u5355";
+        weightsState.statusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u7684\u6700\u65b0\u6743\u91cd\u6587\u4ef6";
         weightsState.statusType = "ok";
         renderWeightsPanel();
         return;
       }
 
-      weightsState.statusText = "\u6b63\u5728\u52a0\u8f7d\u6700\u65b0\u7533\u8d4e\u6e05\u5355\u548c\u516c\u53f8\u56fe\u6807...";
+      weightsState.statusText = "\u6b63\u5728\u52a0\u8f7d\u6700\u65b0\u6743\u91cd\u6587\u4ef6\u548c\u516c\u53f8\u56fe\u6807...";
       weightsState.statusType = "ok";
       renderWeightsPanel();
 
@@ -1224,7 +1244,7 @@ export function getClientScript() {
         var payload = await fetchIndexWeights(indexCode, opts);
         if (!payload) return;
         weightsState.cache.set(indexCode, payload);
-        weightsState.statusText = "\u5df2\u7f13\u5b58\u6700\u65b0\u7533\u8d4e\u6e05\u5355";
+        weightsState.statusText = "\u5df2\u7f13\u5b58\u6700\u65b0\u6743\u91cd\u6587\u4ef6";
         weightsState.statusType = "ok";
         renderWeightsPanel();
       } catch (error) {
@@ -1554,6 +1574,17 @@ export function getClientScript() {
         var period = btn.getAttribute("data-star-p");
         if (!period) return;
         loadStarPeriod(period, { force: false });
+      });
+    }
+
+    var indexWeightsPanel = $("indexWeightsPanel");
+    if (indexWeightsPanel) {
+      indexWeightsPanel.addEventListener("click", function (e) {
+        var btn = e.target && e.target.closest ? e.target.closest("button[data-weight-index]") : null;
+        if (!btn) return;
+        var indexCode = btn.getAttribute("data-weight-index");
+        if (!indexCode || indexCode === weightsState.activeIndex) return;
+        loadIndexWeights(indexCode, { force: false });
       });
     }
 

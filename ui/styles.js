@@ -927,6 +927,40 @@ export function getStyles() {
     .weightsMeta .ok{ color: rgba(0,224,255,.85); }
     .weightsMeta .err{ color: rgba(255,77,109,.90); }
 
+    .weightsIndexSeg{
+      display:inline-flex;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(31,43,61,.85);
+      width: fit-content;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .weightsIndexSeg button{
+      appearance:none;
+      border:0;
+      cursor:pointer;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: transparent;
+      color: rgba(230,237,247,.72);
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    .weightsIndexSeg button.active{
+      color: rgba(255,255,255,.96);
+      background: rgba(53,234,114,.16);
+      box-shadow: inset 0 0 0 1px rgba(53,234,114,.24);
+    }
+
     .weightsList{
       display:grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1184,6 +1218,10 @@ export function getStyles() {
       .weightsMeta{
         justify-items: start;
         text-align: left;
+      }
+
+      .weightsIndexSeg{
+        width: 100%;
       }
 
       .weightsList{

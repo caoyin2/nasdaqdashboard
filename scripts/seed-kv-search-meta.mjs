@@ -51,18 +51,46 @@ async function writeKv(key, value) {
   return res.json();
 }
 
+async function readKv(key) {
+  const res = await fetch(`${BASE_URL}/api/kv?key=${encodeURIComponent(key)}`, {
+    headers: {
+      "Accept": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`KV read failed for ${key}: HTTP ${res.status} ${text.slice(0, 200)}`);
+  }
+
+  return res.json();
+}
+
 async function main() {
-  const latestWeights = await getLatestIndexWeightSymbols("NDXTMC");
+  const latestNdxtmcWeights = await getLatestIndexWeightSymbols("NDXTMC");
+  const latestSp500Weights = await getLatestIndexWeightSymbols("SP500-45");
   const symbols = unique([
     ...STAR_TECH_COMPANIES.map((item) => item.symbol),
-    ...latestWeights.symbols,
+    ...latestNdxtmcWeights.symbols,
+    ...latestSp500Weights.symbols,
   ]);
 
-  console.log(`Seeding ${symbols.length} symbols to ${BASE_URL}/api/kv`);
-  console.log(`Latest NDXTMC basket date: ${latestWeights.basketDate}`);
+  const missingSymbols = [];
+  for (const symbol of symbols) {
+    const key = `search:${symbol}`;
+    const existing = await readKv(key);
+    if (!existing?.found) {
+      missingSymbols.push(symbol);
+    }
+  }
 
-  for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
-    const batch = symbols.slice(i, i + BATCH_SIZE);
+  console.log(`Checked ${symbols.length} symbols against ${BASE_URL}/api/kv`);
+  console.log(`Latest NDXTMC basket date: ${latestNdxtmcWeights.basketDate}`);
+  console.log(`Latest SP500-45 equity constituents: ${latestSp500Weights.symbols.length}`);
+  console.log(`Need to seed ${missingSymbols.length} missing symbols`);
+
+  for (let i = 0; i < missingSymbols.length; i += BATCH_SIZE) {
+    const batch = missingSymbols.slice(i, i + BATCH_SIZE);
     console.log(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.join(", ")}`);
 
     const results = await Promise.allSettled(

@@ -3,11 +3,24 @@ import { getSearchMetaBatch } from "./searchMetaStore.js";
 
 const SHENZHEN_TZ = "Asia/Shanghai";
 const ETF_BASKET_LOOKBACK_DAYS = 45;
-const ETF_INDEX_CONFIG = {
+const ISHARES_SP50045_URL =
+  "https://www.ishares.com/uk/individual/en/products/280510/ishares-sp-500-information-technology-sector-ucits-etf/1506575576011.ajax?tab=all&fileType=json";
+
+const INDEX_WEIGHT_CONFIG = {
   NDXTMC: {
+    source: "szse",
     etfCode: "159509",
     indexCode: "NDXTMC",
     title: "\u7eb3\u65af\u8fbe\u514b\u79d1\u6280\u5e02\u503c\u52a0\u6743\uff08NDXTMC\uff09",
+    showDataDate: true,
+    allowLiveSearch: true,
+  },
+  "SP500-45": {
+    source: "ishares",
+    indexCode: "SP500-45",
+    title: "\u6807\u666e500\u4fe1\u606f\u79d1\u6280\uff08SP500-45\uff09",
+    showDataDate: false,
+    allowLiveSearch: true,
   },
 };
 
@@ -76,12 +89,7 @@ async function fetchBasketText(etfCode, ymd) {
   };
 }
 
-async function fetchLatestBasket(indexCode) {
-  const config = ETF_INDEX_CONFIG[indexCode];
-  if (!config) {
-    throw new Error(`Unsupported index code: ${indexCode}`);
-  }
-
+async function fetchLatestBasket(config) {
   for (let offset = 0; offset < ETF_BASKET_LOOKBACK_DAYS; offset += 1) {
     const candidate = getShanghaiDate(-offset);
     const ymd = fmtDateYmd(candidate);
@@ -91,7 +99,9 @@ async function fetchLatestBasket(indexCode) {
     }
   }
 
-  throw new Error(`No ETF basket file found for ${indexCode} in the last ${ETF_BASKET_LOOKBACK_DAYS} days`);
+  throw new Error(
+    `No ETF basket file found for ${config.indexCode} in the last ${ETF_BASKET_LOOKBACK_DAYS} days`
+  );
 }
 
 function extractCompositionLines(text) {
@@ -153,18 +163,15 @@ function parseBasketRows(text) {
 
       return {
         code: columns[0],
-        name: columns[1],
         shares: parseShares(columns[2]),
         purchaseAmount: parseAmount(columns[columns.length - 3]),
-        redemptionAmount: parseAmount(columns[columns.length - 2]),
-        market: columns[columns.length - 1],
       };
     })
     .filter(Boolean);
 
   const cashRow = parsedRows.find((row) => row.code === "159900");
   if (!cashRow || !Number.isFinite(cashRow.purchaseAmount) || cashRow.purchaseAmount <= 0) {
-    throw new Error("Basket TXT missing valid 申赎现金 row");
+    throw new Error("Basket TXT missing valid subscription cash row");
   }
 
   const cashAmount = cashRow.purchaseAmount;
@@ -184,11 +191,66 @@ function parseBasketRows(text) {
   };
 }
 
-async function enrichItems(items, env) {
+async function fetchIsharesHoldings() {
+  const res = await fetch(ISHARES_SP50045_URL, {
+    cf: { cacheTtl: 900, cacheEverything: true },
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      "Accept": "application/json,text/plain,*/*",
+      "Referer": "https://www.ishares.com/",
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`iShares SP500-45 weights failed: HTTP ${res.status} ${text.slice(0, 120)}`);
+  }
+
+  return res.json();
+}
+
+function parseWeightObject(weightLike) {
+  if (weightLike && Number.isFinite(+weightLike.raw)) {
+    return +weightLike.raw;
+  }
+
+  if (weightLike && typeof weightLike.display === "string") {
+    const parsed = Number(weightLike.display.replace(/,/g, "").trim());
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function parseIsharesRows(payload) {
+  const rows = Array.isArray(payload?.aaData) ? payload.aaData : [];
+
+  return rows
+    .filter((row) => Array.isArray(row) && row[3] === "Equity")
+    .map((row) => {
+      const symbol = String(row[0] || "").trim().toUpperCase();
+      const weightPct = parseWeightObject(row[5]);
+
+      if (!symbol || !Number.isFinite(weightPct)) {
+        return null;
+      }
+
+      return {
+        symbol,
+        weightPct,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.weightPct - a.weightPct);
+}
+
+async function enrichItems(items, env, options = {}) {
   const metaMap = await getSearchMetaBatch(
     items.map((item) => item.symbol),
     env,
-    { allowFetch: true }
+    { allowFetch: options.allowFetch !== false }
   );
 
   return items
@@ -201,8 +263,8 @@ async function enrichItems(items, env) {
         nameEn: meta?.nameEn || fallback?.nameEn || item.symbol,
         iconLight: meta?.iconLight || fallback?.iconLight || null,
         slug: meta?.slug || fallback?.slug || item.symbol.toLowerCase(),
-        shares: item.shares,
-        purchaseAmount: item.purchaseAmount,
+        shares: item.shares ?? null,
+        purchaseAmount: item.purchaseAmount ?? null,
         weightPct: item.weightPct,
       };
     })
@@ -210,31 +272,68 @@ async function enrichItems(items, env) {
 }
 
 export async function getLatestIndexWeightSymbols(indexCode = "NDXTMC") {
-  const latestBasket = await fetchLatestBasket(indexCode);
-  const parsed = parseBasketRows(latestBasket.text);
-  return {
-    basketDate: latestBasket.ymd,
-    symbols: parsed.items.map((item) => item.symbol),
-  };
-}
-
-export async function buildIndexWeightsPayload(indexCode = "NDXTMC", env) {
-  const config = ETF_INDEX_CONFIG[indexCode];
+  const config = INDEX_WEIGHT_CONFIG[indexCode];
   if (!config) {
     throw new Error(`Unsupported index code: ${indexCode}`);
   }
 
-  const latestBasket = await fetchLatestBasket(indexCode);
-  const parsed = parseBasketRows(latestBasket.text);
-  const enrichedItems = await enrichItems(parsed.items, env);
+  if (config.source === "szse") {
+    const latestBasket = await fetchLatestBasket(config);
+    const parsed = parseBasketRows(latestBasket.text);
+    return {
+      basketDate: latestBasket.ymd,
+      showDataDate: true,
+      symbols: parsed.items.map((item) => item.symbol),
+    };
+  }
+
+  const payload = await fetchIsharesHoldings();
+  const items = parseIsharesRows(payload);
+  return {
+    basketDate: null,
+    showDataDate: false,
+    symbols: items.map((item) => item.symbol),
+  };
+}
+
+export async function buildIndexWeightsPayload(indexCode = "NDXTMC", env) {
+  const config = INDEX_WEIGHT_CONFIG[indexCode];
+  if (!config) {
+    throw new Error(`Unsupported index code: ${indexCode}`);
+  }
+
+  if (config.source === "szse") {
+    const latestBasket = await fetchLatestBasket(config);
+    const parsed = parseBasketRows(latestBasket.text);
+    const enrichedItems = await enrichItems(parsed.items, env, {
+      allowFetch: config.allowLiveSearch,
+    });
+
+    return {
+      ok: true,
+      indexCode: config.indexCode,
+      title: config.title,
+      etfCode: config.etfCode,
+      basketDate: latestBasket.ymd,
+      showDataDate: config.showDataDate,
+      cashAmount: parsed.cashAmount,
+      items: enrichedItems,
+    };
+  }
+
+  const payload = await fetchIsharesHoldings();
+  const items = parseIsharesRows(payload);
+  const enrichedItems = await enrichItems(items, env, {
+    allowFetch: config.allowLiveSearch,
+  });
 
   return {
     ok: true,
     indexCode: config.indexCode,
     title: config.title,
-    etfCode: config.etfCode,
-    basketDate: latestBasket.ymd,
-    cashAmount: parsed.cashAmount,
+    basketDate: null,
+    showDataDate: config.showDataDate,
+    cashAmount: null,
     items: enrichedItems,
   };
 }
