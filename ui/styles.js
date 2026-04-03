@@ -879,8 +879,8 @@ export function getStyles() {
       display:grid;
       gap: 14px;
       background:
-        radial-gradient(900px 320px at 0% 0%, rgba(53,234,114,.08), transparent 58%),
-        radial-gradient(900px 320px at 100% 0%, rgba(0,224,255,.08), transparent 58%),
+        radial-gradient(900px 320px at 0% 0%, rgba(0,224,255,.12), transparent 58%),
+        radial-gradient(900px 320px at 100% 0%, rgba(64,156,255,.10), transparent 58%),
         linear-gradient(180deg, rgba(10,15,26,.88), rgba(12,18,30,.78));
     }
 
@@ -957,8 +957,8 @@ export function getStyles() {
 
     .weightsIndexSeg button.active{
       color: rgba(255,255,255,.96);
-      background: rgba(53,234,114,.16);
-      box-shadow: inset 0 0 0 1px rgba(53,234,114,.24);
+      background: rgba(0,224,255,.16);
+      box-shadow: inset 0 0 0 1px rgba(0,224,255,.26);
     }
 
     .weightsList{
@@ -988,7 +988,7 @@ export function getStyles() {
       width: 110px;
       height: 110px;
       border-radius: 50%;
-      background: rgba(53,234,114,.12);
+      background: rgba(64,156,255,.16);
       filter: blur(10px);
       pointer-events:none;
     }
@@ -1054,9 +1054,9 @@ export function getStyles() {
     .weightValue strong{
       font-size: 20px;
       line-height: 1;
-      color: rgba(53,234,114,.96);
+      color: rgba(96,208,255,.98);
       font-variant-numeric: tabular-nums;
-      text-shadow: 0 0 18px rgba(53,234,114,.16);
+      text-shadow: 0 0 18px rgba(0,224,255,.20);
     }
 
     .weightBar{
@@ -1073,8 +1073,8 @@ export function getStyles() {
     .weightBarFill{
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, rgba(0,224,255,.92), rgba(53,234,114,.96));
-      box-shadow: 0 0 18px rgba(53,234,114,.18);
+      background: linear-gradient(90deg, rgba(0,224,255,.94), rgba(64,156,255,.98));
+      box-shadow: 0 0 18px rgba(0,224,255,.22);
     }
 
     .weightsEmpty{

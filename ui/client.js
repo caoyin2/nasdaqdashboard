@@ -141,10 +141,11 @@ export function getClientScript() {
 
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
-    var INDEX_WEIGHTS_API_VERSION = "20260403e";
+    var INDEX_WEIGHTS_API_VERSION = "20260403f";
     var WEIGHTS_INDEX_OPTIONS = [
       { code: "NDXTMC", label: "\\u7eb3\\u65af\\u8fbe\\u514b\\u79d1\\u6280\\u5e02\\u503c\\u52a0\\u6743" },
-      { code: "SP500-45", label: "\\u6807\\u666e500\\u4fe1\\u606f\\u79d1\\u6280" }
+      { code: "SP500-45", label: "\\u6807\\u666e500\\u4fe1\\u606f\\u79d1\\u6280" },
+      { code: "NDX", label: "\\u7eb3\\u65af\\u8fbe\\u514b100" }
     ];
     var FEAR_GREED_PALETTE = [
       { key: "extreme fear", label: "\u6781\u5ea6\u6050\u614c", color: "#ff5468", bandIndex: 0, maxExclusive: 25, lines: ["\u6781\u5ea6", "\u6050\u614c"] },
@@ -1162,7 +1163,7 @@ export function getClientScript() {
       var showDataDate = !!(cached && cached.showDataDate !== false && cached.basketDate);
       var listHtml = items && items.length
         ? '<div class="weightsList">' + items.map(function (item) { return weightCardHTML(item, maxWeight); }).join("") + '</div>'
-        : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u53ea\u4f1a\u52a0\u8f7d\u4e00\u6b21\u6700\u65b0\u6743\u91cd\uff0c\u5e76\u5c06\u7ed3\u679c\u7f13\u5b58\u5728 Worker \u548c\u6d4f\u89c8\u5668\u4e2d\u3002<br />\u70b9\u51fb\u4e0a\u65b9\u6307\u6570\u6309\u94ae\u53ef\u5207\u6362 NDXTMC \u548c SP500-45\u3002</div>';
+        : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u53ea\u4f1a\u52a0\u8f7d\u4e00\u6b21\u6700\u65b0\u6743\u91cd\uff0c\u5e76\u5c06\u7ed3\u679c\u7f13\u5b58\u5728 Worker \u548c\u6d4f\u89c8\u5668\u4e2d\u3002<br />\u70b9\u51fb\u4e0a\u65b9\u6307\u6570\u6309\u94ae\u53ef\u5207\u6362 NDXTMC\u3001SP500-45 \u548c NDX\u3002</div>';
 
       root.innerHTML = [
         '<div class="card weightsPanel">',

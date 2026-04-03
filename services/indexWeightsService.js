@@ -3,6 +3,8 @@ import { getSearchMetaBatch } from "./searchMetaStore.js";
 
 const SHENZHEN_TZ = "Asia/Shanghai";
 const ETF_BASKET_LOOKBACK_DAYS = 45;
+const ISHARES_NDX_URL =
+  "https://www.ishares.com/uk/individual/en/products/253741/ishares-nasdaq-100-ucits-etf/1506575576011.ajax?tab=all&fileType=json";
 const ISHARES_SP50045_URL =
   "https://www.ishares.com/uk/individual/en/products/280510/ishares-sp-500-information-technology-sector-ucits-etf/1506575576011.ajax?tab=all&fileType=json";
 
@@ -21,6 +23,15 @@ const INDEX_WEIGHT_CONFIG = {
     title: "\u6807\u666e500\u4fe1\u606f\u79d1\u6280\uff08SP500-45\uff09",
     showDataDate: false,
     allowLiveSearch: true,
+    weightsUrl: ISHARES_SP50045_URL,
+  },
+  NDX: {
+    source: "ishares",
+    indexCode: "NDX",
+    title: "\u7eb3\u65af\u8fbe\u514b100\uff08NDX\uff09",
+    showDataDate: false,
+    allowLiveSearch: true,
+    weightsUrl: ISHARES_NDX_URL,
   },
 };
 
@@ -191,8 +202,8 @@ function parseBasketRows(text) {
   };
 }
 
-async function fetchIsharesHoldings() {
-  const res = await fetch(ISHARES_SP50045_URL, {
+async function fetchIsharesHoldings(config) {
+  const res = await fetch(config.weightsUrl, {
     cf: { cacheTtl: 900, cacheEverything: true },
     headers: {
       "User-Agent": "Mozilla/5.0",
@@ -203,7 +214,7 @@ async function fetchIsharesHoldings() {
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`iShares SP500-45 weights failed: HTTP ${res.status} ${text.slice(0, 120)}`);
+    throw new Error(`iShares ${config.indexCode} weights failed: HTTP ${res.status} ${text.slice(0, 120)}`);
   }
 
   return res.json();
@@ -287,7 +298,7 @@ export async function getLatestIndexWeightSymbols(indexCode = "NDXTMC") {
     };
   }
 
-  const payload = await fetchIsharesHoldings();
+  const payload = await fetchIsharesHoldings(config);
   const items = parseIsharesRows(payload);
   return {
     basketDate: null,
@@ -321,7 +332,7 @@ export async function buildIndexWeightsPayload(indexCode = "NDXTMC", env) {
     };
   }
 
-  const payload = await fetchIsharesHoldings();
+  const payload = await fetchIsharesHoldings(config);
   const items = parseIsharesRows(payload);
   const enrichedItems = await enrichItems(items, env, {
     allowFetch: config.allowLiveSearch,

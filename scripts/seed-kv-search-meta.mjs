@@ -69,10 +69,12 @@ async function readKv(key) {
 async function main() {
   const latestNdxtmcWeights = await getLatestIndexWeightSymbols("NDXTMC");
   const latestSp500Weights = await getLatestIndexWeightSymbols("SP500-45");
+  const latestNdxWeights = await getLatestIndexWeightSymbols("NDX");
   const symbols = unique([
     ...STAR_TECH_COMPANIES.map((item) => item.symbol),
     ...latestNdxtmcWeights.symbols,
     ...latestSp500Weights.symbols,
+    ...latestNdxWeights.symbols,
   ]);
 
   const missingSymbols = [];
@@ -87,6 +89,7 @@ async function main() {
   console.log(`Checked ${symbols.length} symbols against ${BASE_URL}/api/kv`);
   console.log(`Latest NDXTMC basket date: ${latestNdxtmcWeights.basketDate}`);
   console.log(`Latest SP500-45 equity constituents: ${latestSp500Weights.symbols.length}`);
+  console.log(`Latest NDX equity constituents: ${latestNdxWeights.symbols.length}`);
   console.log(`Need to seed ${missingSymbols.length} missing symbols`);
 
   for (let i = 0; i < missingSymbols.length; i += BATCH_SIZE) {
