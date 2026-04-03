@@ -48,7 +48,7 @@ export function getHtml() {
         <img class="logo" src="${nasdaqLogoUrl}" alt="NASDAQ" />
         <div class="title">
           <div class="h">纳斯达克指数看板</div>
-          <div class="sub" id="periodCN">周期：${PERIOD_LABELS["1D"]}</div>
+          <div class="sub" id="periodCN">面板：科技类指数信息</div>
         </div>
       </div>
     </div>

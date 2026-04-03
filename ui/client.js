@@ -1130,7 +1130,7 @@ export function getClientScript() {
       if (periodLabel) {
         periodLabel.textContent = page === "stars"
           ? "\u9762\u677f\uff1a\u660e\u661f\u79d1\u6280\u516c\u53f8"
-          : "\u5468\u671f\uff1a" + (PERIOD_LABELS[state.period] || state.period);
+          : "\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f";
       }
 
       starsState.mobileVisible = page === "stars";
@@ -1167,7 +1167,7 @@ export function getClientScript() {
       }).join("");
       $("periodCN").textContent = state.page === "stars"
         ? "\u9762\u677f\uff1a\u660e\u661f\u79d1\u6280\u516c\u53f8"
-        : "\u5468\u671f\uff1a" + (PERIOD_LABELS[q.period] || q.period);
+        : "\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f";
       resizeCanvas();
     }
 
