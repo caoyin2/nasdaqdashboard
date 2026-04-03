@@ -20,10 +20,6 @@ import {
 import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
 import { getSearchMetaBatch } from "./searchMetaStore.js";
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars) {
   const last1DBar = getLastBar(bars1D);
   const latestClose = last1DBar?.close;
@@ -104,17 +100,12 @@ export async function buildStarTechPayload(period, env) {
   });
 
   const results = [];
-  const batchSize = 3;
-  const batchDelayMs = 400;
 
-  for (let i = 0; i < jobFactories.length; i += batchSize) {
-    const batch = jobFactories.slice(i, i + batchSize);
-    const settled = await Promise.allSettled(batch.map((run) => run()));
-    results.push(...settled);
-
-    if (i + batchSize < jobFactories.length) {
-      await sleep(batchDelayMs);
-    }
+  for (const run of jobFactories) {
+    results.push(await Promise.resolve(run()).then(
+      (value) => ({ status: "fulfilled", value }),
+      (reason) => ({ status: "rejected", reason })
+    ));
   }
 
   const items = [];
