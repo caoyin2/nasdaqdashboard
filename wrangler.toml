@@ -2,3 +2,6 @@ name = "nasdaqdashboard"
 main = "index.js"
 compatibility_date = "2026-04-02"
 
+[[kv_namespaces]]
+binding = "NasdaqDashboard"
+id = "b2a4eaf33da145a186e3a2088e107063"

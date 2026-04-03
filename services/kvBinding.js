@@ -11,6 +11,7 @@
 
 const KV_BINDING_CANDIDATES = [
   "NasdaqDashboard",
+  "KV_BINDING",
   "NASDAQ_DASHBOARD",
   "nasdaqdashboard",
   "NASDAQDASHBOARD",
@@ -68,4 +69,3 @@ export function resolveKvBinding(env) {
 export function getKvBinding(env) {
   return resolveKvBinding(env).binding;
 }
-
