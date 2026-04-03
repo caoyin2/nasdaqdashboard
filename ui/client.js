@@ -1,13 +1,9 @@
-/**
- * 浏览器端脚本生成器。
- *
- * 注意：
- * 这里不再使用 `someFunction.toString()` 动态拼接前端代码，
- * 因为 Workers 打包后可能插入内部辅助符号（例如 __name），
- * 最终在浏览器执行时变成未定义变量。
- *
- * 现在直接返回一段固定脚本文本，避免构建器改写运行时代码。
- */
+﻿/**
+ * 娴忚鍣ㄧ鑴氭湰鐢熸垚鍣ㄣ€? *
+ * 娉ㄦ剰锛? * 杩欓噷涓嶅啀浣跨敤 `someFunction.toString()` 鍔ㄦ€佹嫾鎺ュ墠绔唬鐮侊紝
+ * 鍥犱负 Workers 鎵撳寘鍚庡彲鑳芥彃鍏ュ唴閮ㄨ緟鍔╃鍙凤紙渚嬪 __name锛夛紝
+ * 鏈€缁堝湪娴忚鍣ㄦ墽琛屾椂鍙樻垚鏈畾涔夊彉閲忋€? *
+ * 鐜板湪鐩存帴杩斿洖涓€娈靛浐瀹氳剼鏈枃鏈紝閬垮厤鏋勫缓鍣ㄦ敼鍐欒繍琛屾椂浠ｇ爜銆? */
 
 export function getClientScript() {
   return `
@@ -84,25 +80,26 @@ export function getClientScript() {
     });
 
     function fmtBJ(ms) {
-      return dtfBJ.format(new Date(ms)).replaceAll("/", "-") + "（北京）";
+      return dtfBJ.format(new Date(ms)).replaceAll("/", "-") + "\uff08\u5317\u4eac\uff09";
     }
 
     var canvas = $("c");
     var ctx = canvas && canvas.getContext ? canvas.getContext("2d") : null;
 
     if (!canvas || !ctx) {
-      setStatus("未找到图表容器", "err");
+      setStatus("\u672a\u627e\u5230\u56fe\u8868\u5bb9\u5668", "err");
       return;
     }
 
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
+    var INDEX_WEIGHTS_API_VERSION = "20260403b";
     var FEAR_GREED_PALETTE = [
-      { key: "extreme fear", label: "极度恐慌", color: "#ff5468", bandIndex: 0, maxExclusive: 25, lines: ["极度", "恐慌"] },
-      { key: "fear", label: "恐慌", color: "#ff9ea4", bandIndex: 1, maxExclusive: 45, lines: ["恐慌"] },
-      { key: "neutral", label: "中性", color: "#ffd449", bandIndex: 2, maxExclusive: 55, lines: ["中性"] },
-      { key: "greed", label: "贪婪", color: "#8be3a3", bandIndex: 3, maxExclusive: 75, lines: ["贪婪"] },
-      { key: "extreme greed", label: "极度贪婪", color: "#35ea72", bandIndex: 4, maxExclusive: 101, lines: ["极度", "贪婪"] }
+      { key: "extreme fear", label: "\u6781\u5ea6\u6050\u614c", color: "#ff5468", bandIndex: 0, maxExclusive: 25, lines: ["\u6781\u5ea6", "\u6050\u614c"] },
+      { key: "fear", label: "\u6050\u614c", color: "#ff9ea4", bandIndex: 1, maxExclusive: 45, lines: ["\u6050\u614c"] },
+      { key: "neutral", label: "\u4e2d\u6027", color: "#ffd449", bandIndex: 2, maxExclusive: 55, lines: ["\u4e2d\u6027"] },
+      { key: "greed", label: "\u8d2a\u5a6a", color: "#8be3a3", bandIndex: 3, maxExclusive: 75, lines: ["\u8d2a\u5a6a"] },
+      { key: "extreme greed", label: "\u6781\u5ea6\u8d2a\u5a6a", color: "#35ea72", bandIndex: 4, maxExclusive: 101, lines: ["\u6781\u5ea6", "\u8d2a\u5a6a"] }
     ];
 
     var state = {
@@ -343,7 +340,7 @@ export function getClientScript() {
         ctx.fillStyle = "rgba(230,237,247,.55)";
         ctx.font = (14 * DPR) + "px ui-monospace";
         ctx.textAlign = "center";
-        ctx.fillText("暂无数据", W / 2, H / 2);
+        ctx.fillText("鏆傛棤鏁版嵁", W / 2, H / 2);
         ctx.restore();
         return;
       }
@@ -509,7 +506,7 @@ export function getClientScript() {
           ctx.stroke();
 
           var rows = [];
-          rows.push("时间：" + fmtBJ(state.hoverTime));
+          rows.push("\u65f6\u95f4\uff1a " + fmtBJ(state.hoverTime));
 
           state.items.forEach(function (item) {
             var p = item.map && item.map.get(state.hoverTime);
@@ -523,7 +520,7 @@ export function getClientScript() {
               ctx.fill();
             }
 
-            rows.push(item.nameCN + "：" + p.close.toFixed(4) + "（" + signPct(p.pct) + "）");
+            rows.push(item.nameCN + "\uff1a " + p.close.toFixed(4) + "\uff08" + signPct(p.pct) + "\uff09");
           });
 
           ctx.font = labelFont;
@@ -611,9 +608,9 @@ export function getClientScript() {
 
     function tileHTML(item, period) {
       var is1D = period === "1D";
-      var baseLabel = is1D ? "昨收" : "起点";
-      var chgLabel = is1D ? "涨跌" : "区间涨跌";
-      var pctLabel = is1D ? "涨跌幅" : "区间涨跌幅";
+      var baseLabel = is1D ? "\u6628\u6536" : "\u8d77\u70b9";
+      var chgLabel = is1D ? "\u6da8\u8dcc" : "\u533a\u95f4\u6da8\u8dcc";
+      var pctLabel = is1D ? "\u6da8\u8dcc\u5e45" : "\u533a\u95f4\u6da8\u8dcc\u5e45";
       var cls = (Number.isFinite(item.cardChg) ? item.cardChg >= 0 : true) ? "up" : "down";
 
       return [
@@ -626,7 +623,7 @@ export function getClientScript() {
             '<div class="sym">' + esc(item.symbol) + '</div>',
           '</div>',
           '<div class="kv">',
-            '<div>最新</div><div><b>' + fmt(item.lastClose, 4) + '</b></div>',
+            '<div>鏈€鏂?/div><div><b>' + fmt(item.lastClose, 4) + '</b></div>',
             '<div>' + baseLabel + '</div><div>' + fmt(item.cardBaseClose, 4) + '</div>',
             '<div>' + chgLabel + '</div><div class="' + cls + '">' + signNum(item.cardChg, 4) + '</div>',
             '<div>' + pctLabel + '</div><div class="' + cls + '">' + signPct(item.cardChgPct) + '</div>',
@@ -661,7 +658,7 @@ export function getClientScript() {
         };
       }
 
-      return { label: "暂无数据", color: "#94a3b8", bandIndex: null };
+      return { label: "鏆傛棤鏁版嵁", color: "#94a3b8", bandIndex: null };
     }
 
     function hexToRgba(hex, alpha) {
@@ -799,7 +796,7 @@ export function getClientScript() {
     function buildFearGreedMetric(title, point, extraClass) {
       var metricClass = "fgMetric" + (extraClass ? (" " + extraClass) : "");
       var score = point && Number.isFinite(point.score) ? fmt1(point.score) : "--";
-      var status = point && point.ratingCN ? point.ratingCN : "暂无数据";
+      var status = point && point.ratingCN ? point.ratingCN : "鏆傛棤鏁版嵁";
       var pointMeta = fearGreedMeta(
         point && Number.isFinite(point.score) ? point.score : NaN,
         point ? point.rating : null,
@@ -827,11 +824,11 @@ export function getClientScript() {
           '<div class="tile fgCard">',
             '<div class="fgCardHead">',
               '<div>',
-                '<div class="fgEyebrow">市场情绪</div>',
-                '<div class="fgTitle">CNN 恐惧贪婪指数</div>',
+                '<div class="fgEyebrow">\u5e02\u573a\u60c5\u7eea</div>',
+                '<div class="fgTitle">CNN \u6050\u60e7\u8d2a\u5a6a\u6307\u6570</div>',
               '</div>',
             '</div>',
-            '<div class="fgEmpty">暂时无法加载 CNN 恐惧贪婪指数</div>',
+            '<div class="fgEmpty">\u6682\u65f6\u65e0\u6cd5\u52a0\u8f7d CNN \u6050\u60e7\u8d2a\u5a6a\u6307\u6570</div>',
           '</div>'
         ].join("");
         return;
@@ -845,8 +842,8 @@ export function getClientScript() {
         '<div class="tile fgCard">',
           '<div class="fgCardHead">',
             '<div>',
-              '<div class="fgEyebrow">市场情绪</div>',
-              '<div class="fgTitle">CNN 恐惧贪婪指数</div>',
+              '<div class="fgEyebrow">\u5e02\u573a\u60c5\u7eea</div>',
+              '<div class="fgTitle">CNN \u6050\u60e7\u8d2a\u5a6a\u6307\u6570</div>',
             '</div>',
             '<div class="fgBadge" style="color:' + meta.color + ';background:' + meta.color + '14;border-color:' + meta.color + '33;">' + esc(meta.label) + '</div>',
           '</div>',
@@ -854,10 +851,10 @@ export function getClientScript() {
             gaugeHtml,
             '<div class="fgData">',
               '<div class="fgStats">',
-                buildFearGreedMetric("最新", currentPoint, "fgMetricMain"),
-                buildFearGreedMetric("一周前", data.previous1Week),
-                buildFearGreedMetric("一月前", data.previous1Month),
-                buildFearGreedMetric("一年前", data.previous1Year),
+                buildFearGreedMetric("\u6700\u65b0", currentPoint, "fgMetricMain"),
+                buildFearGreedMetric("\u4e00\u5468\u524d", data.previous1Week),
+                buildFearGreedMetric("\u4e00\u6708\u524d", data.previous1Month),
+                buildFearGreedMetric("\u4e00\u5e74\u524d", data.previous1Year),
               '</div>',
             '</div>',
           '</div>',
@@ -873,11 +870,11 @@ export function getClientScript() {
         '<div class="tile fgCard">',
           '<div class="fgCardHead">',
             '<div>',
-              '<div class="fgEyebrow">市场情绪</div>',
-              '<div class="fgTitle">CNN 恐惧贪婪指数</div>',
+              '<div class="fgEyebrow">甯傚満鎯呯华</div>',
+              '<div class="fgTitle">CNN 鎭愭儳璐┆鎸囨暟</div>',
             '</div>',
           '</div>',
-          '<div class="fgEmpty">正在加载 CNN 恐惧贪婪指数…</div>',
+          '<div class="fgEmpty">姝ｅ湪鍔犺浇 CNN 鎭愭儳璐┆鎸囨暟鈥?/div>',
         '</div>'
       ].join("");
     }
@@ -1135,7 +1132,7 @@ export function getClientScript() {
       }, API_TIMEOUT_MS);
 
       try {
-        var res = await fetch("/api/index-weights?index=" + encodeURIComponent(indexCode), {
+        var res = await fetch("/api/index-weights?index=" + encodeURIComponent(indexCode) + "&v=" + encodeURIComponent(INDEX_WEIGHTS_API_VERSION), {
           cache: opts.force ? "no-store" : "default",
           signal: controller.signal
         });
@@ -1148,7 +1145,7 @@ export function getClientScript() {
           return null;
         }
         if (timedOut) {
-          throw new Error("科技类指数权重请求超时（15秒）");
+          throw new Error("\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd\u8bf7\u6c42\u8d85\u65f6\uff0815\u79d2\uff09");
         }
         throw error;
       } finally {
@@ -1165,13 +1162,13 @@ export function getClientScript() {
       weightsState.touched = true;
 
       if (!opts.force && weightsState.cache.has(indexCode)) {
-        weightsState.statusText = "已使用缓存的最新申赎清单";
+        weightsState.statusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u7684\u6700\u65b0\u7533\u8d4e\u6e05\u5355";
         weightsState.statusType = "ok";
         renderWeightsPanel();
         return;
       }
 
-      weightsState.statusText = "正在加载最新申赎清单和公司图标...";
+      weightsState.statusText = "\u6b63\u5728\u52a0\u8f7d\u6700\u65b0\u7533\u8d4e\u6e05\u5355\u548c\u516c\u53f8\u56fe\u6807...";
       weightsState.statusType = "ok";
       renderWeightsPanel();
 
@@ -1179,12 +1176,12 @@ export function getClientScript() {
         var payload = await fetchIndexWeights(indexCode, opts);
         if (!payload) return;
         weightsState.cache.set(indexCode, payload);
-        weightsState.statusText = "已缓存最新申赎清单";
+        weightsState.statusText = "\u5df2\u7f13\u5b58\u6700\u65b0\u7533\u8d4e\u6e05\u5355";
         weightsState.statusType = "ok";
         renderWeightsPanel();
       } catch (error) {
         console.error("index weights load failed:", error);
-        weightsState.statusText = error && error.message ? error.message : "科技类指数权重加载失败";
+        weightsState.statusText = error && error.message ? error.message : "\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd\u52a0\u8f7d\u5931\u8d25";
         weightsState.statusType = "err";
         renderWeightsPanel();
       }
@@ -1219,7 +1216,7 @@ export function getClientScript() {
           return null;
         }
         if (timedOut) {
-          throw new Error("明星科技面板请求超时（15秒）");
+          throw new Error("鏄庢槦绉戞妧闈㈡澘璇锋眰瓒呮椂锛?5绉掞級");
         }
         throw error;
       } finally {
@@ -1363,7 +1360,7 @@ export function getClientScript() {
         });
       } catch (error) {
         if (activeFetchCtrl.signal.aborted) {
-          throw new Error("接口请求超时（>" + (API_TIMEOUT_MS / 1000) + "秒）");
+          throw new Error("鎺ュ彛璇锋眰瓒呮椂锛?" + (API_TIMEOUT_MS / 1000) + "绉掞級");
         }
         throw error;
       } finally {
@@ -1401,7 +1398,7 @@ export function getClientScript() {
         });
       } catch (error) {
         if (controller.signal.aborted) {
-          throw new Error("CNN 面板请求超时（>" + (API_TIMEOUT_MS / 1000) + "秒）");
+          throw new Error("CNN 闈㈡澘璇锋眰瓒呮椂锛?" + (API_TIMEOUT_MS / 1000) + "绉掞級");
         }
         throw error;
       } finally {
@@ -1445,14 +1442,14 @@ export function getClientScript() {
     async function renderPeriod(period, options) {
       var opts = options || {};
       try {
-        setStatus(opts.force ? "刷新中…" : "加载中…", "ok");
+        setStatus(opts.force ? "\u5237\u65b0\u4e2d..." : "\u52a0\u8f7d\u4e2d...", "ok");
         var result = await ensureData(period, opts);
         if (period !== state.period) return;
         applyData(result.q);
-        setStatus(result.fromCache ? "加载缓存成功" : "加载成功", "ok");
+        setStatus(result.fromCache ? "\u52a0\u8f7d\u7f13\u5b58\u6210\u529f" : "\u52a0\u8f7d\u6210\u529f", "ok");
       } catch (error) {
         console.error(error);
-        setStatus(error && error.message ? error.message : "加载失败", "err");
+        setStatus(error && error.message ? error.message : "\u52a0\u8f7d\u5931\u8d25", "err");
       }
     }
 
@@ -1483,7 +1480,7 @@ export function getClientScript() {
 
       if (periodCache.has(p)) {
         applyData(periodCache.get(p).q);
-        setStatus("加载缓存成功", "ok");
+        setStatus("鍔犺浇缂撳瓨鎴愬姛", "ok");
         return;
       }
 
@@ -1602,7 +1599,7 @@ export function getClientScript() {
     startAutoRefresh();
   } catch (error) {
     console.error("app bootstrap failed:", error);
-    setStatus(error && error.message ? error.message : "页面初始化失败", "err");
+    setStatus(error && error.message ? error.message : "\u9875\u9762\u521d\u59cb\u5316\u5931\u8d25", "err");
   }
 })();
 `;
