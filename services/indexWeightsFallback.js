@@ -1,33 +1,57 @@
 export const INDEX_WEIGHTS_FALLBACK_META = {
   NVDA: {
+    tickerId: 1150,
     nameEn: "NVIDIA Corporation",
     iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/NVDA.svg",
     slug: "nvda",
   },
   AAPL: {
+    tickerId: 146,
     nameEn: "Apple Inc.",
     iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/AAPL.svg",
     slug: "aapl",
   },
   MSFT: {
+    tickerId: 575,
     nameEn: "Microsoft Corporation",
     iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/MSFT.svg",
     slug: "msft",
   },
+  AMZN: {
+    tickerId: 562,
+    nameEn: "Amazon.com, Inc.",
+    iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/AMZN.svg",
+    slug: "amzn",
+  },
   AVGO: {
+    tickerId: 14539,
     nameEn: "Broadcom Inc.",
     iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/AVGO.svg",
     slug: "avgo",
   },
   META: {
+    tickerId: 36222,
     nameEn: "Meta Platforms, Inc.",
     iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/META.svg",
     slug: "meta",
   },
   GOOGL: {
+    tickerId: 148893,
     nameEn: "Alphabet Inc.",
     iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/GOOGL.svg",
     slug: "googl",
+  },
+  TSLA: {
+    tickerId: 16123,
+    nameEn: "Tesla, Inc.",
+    iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/TSLA.svg",
+    slug: "tsla",
+  },
+  ORCL: {
+    tickerId: 663,
+    nameEn: "Oracle Corporation",
+    iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/ORCL.svg",
+    slug: "orcl",
   },
   GOOG: {
     nameEn: "Alphabet Inc.",
@@ -35,31 +59,43 @@ export const INDEX_WEIGHTS_FALLBACK_META = {
     slug: "goog",
   },
   MU: {
+    tickerId: 1309,
     nameEn: "Micron Technology, Inc.",
     iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/MU.svg",
     slug: "mu",
   },
   AMD: {
+    tickerId: 1016,
     nameEn: "Advanced Micro Devices, Inc.",
     iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/AMD.svg",
     slug: "amd",
   },
+  TSM: {
+    tickerId: 1534,
+    nameEn: "Taiwan Semiconductor Manufacturing Company Limited",
+    iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/TSM.svg",
+    slug: "tsm",
+  },
   PLTR: {
+    tickerId: 554416,
     nameEn: "Palantir Technologies Inc.",
     iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/PLTR.svg",
     slug: "pltr",
   },
   LRCX: {
+    tickerId: 1181,
     nameEn: "Lam Research Corporation",
     iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/LRCX.svg",
     slug: "lrcx",
   },
   AMAT: {
+    tickerId: 1132,
     nameEn: "Applied Materials, Inc.",
     iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/AMAT.svg",
     slug: "amat",
   },
   INTC: {
+    tickerId: 1017,
     nameEn: "Intel Corporation",
     iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/INTC.svg",
     slug: "intc",
@@ -70,6 +106,7 @@ export const INDEX_WEIGHTS_FALLBACK_META = {
     slug: "txn",
   },
   KLAC: {
+    tickerId: 1793,
     nameEn: "KLA Corporation",
     iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/KLAC.svg",
     slug: "klac",
@@ -85,6 +122,7 @@ export const INDEX_WEIGHTS_FALLBACK_META = {
     slug: "shop",
   },
   ASML: {
+    tickerId: 1715,
     nameEn: "ASML Holding N.V.",
     iconLight: "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/ASML.svg",
     slug: "asml",

@@ -52,7 +52,7 @@ function buildFallbackMeta(symbol) {
 
   return {
     symbol,
-    tickerId: null,
+    tickerId: Number.isFinite(+fallback.tickerId) ? +fallback.tickerId : null,
     nameEn: fallback.nameEn || symbol,
     slug: fallback.slug || symbol.toLowerCase(),
     iconLight: fallback.iconLight || null,
