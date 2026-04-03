@@ -52,6 +52,20 @@ function buildSearchHeaders() {
   };
 }
 
+function buildChartHeaders() {
+  return {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://seekingalpha.com/",
+    "Origin": "https://seekingalpha.com",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
+  };
+}
+
 async function runSearchAttempt(query, label) {
   const url = buildSearchUrl(query);
   try {
@@ -98,7 +112,9 @@ async function runSearchAttempt(query, label) {
 
 export async function fetchSeekingAlphaPeriod(period, tickerId) {
   const url = `${UPSTREAM}?period=${encodeURIComponent(period)}&ticker_id=${encodeURIComponent(tickerId)}`;
-  const res = await fetchWithTimeout(url, `SeekingAlpha ${period} ticker_id=${tickerId}`);
+  const res = await fetchWithTimeout(url, `SeekingAlpha ${period} ticker_id=${tickerId}`, {
+    headers: buildChartHeaders(),
+  });
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
