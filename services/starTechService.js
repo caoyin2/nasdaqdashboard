@@ -109,16 +109,19 @@ export async function buildStarTechPayload(period, env) {
   }
 
   const items = [];
+  const errors = [];
   for (const result of results) {
     if (result.status === "fulfilled") {
       items.push(result.value);
     } else {
       console.error("Star tech fetch failed:", result.reason);
+      errors.push(result.reason?.message || String(result.reason));
     }
   }
 
   if (items.length === 0) {
-    throw new Error("All star-tech upstream requests failed");
+    const sample = errors.slice(0, 3).join(" | ");
+    throw new Error(`All star-tech upstream requests failed${sample ? `: ${sample}` : ""}`);
   }
 
   return {
