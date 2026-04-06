@@ -143,7 +143,6 @@ export function getClientScript() {
     var API_TIMEOUT_MS = 15000;
     var INDEX_WEIGHTS_API_VERSION = "20260403h";
     var SP500_SECTOR_API_VERSION = "20260406a";
-    var OVERVIEW_RESUME_REFRESH_MS = 5 * 60 * 1000;
     var WEIGHTS_INDEX_OPTIONS = [
       { code: "NDXTMC", label: "\\u7eb3\\u65af\\u8fbe\\u514b\\u79d1\\u6280\\u5e02\\u503c\\u52a0\\u6743" },
       { code: "SP500-45", label: "\\u6807\\u666e500\\u4fe1\\u606f\\u79d1\\u6280" },
@@ -1682,7 +1681,7 @@ export function getClientScript() {
       var res;
       try {
         res = await fetch("/api/quote?p=" + encodeURIComponent(period), {
-          cache: opts.force ? "no-store" : "default",
+          cache: "no-store",
           signal: activeFetchCtrl.signal
         });
       } catch (error) {
@@ -1785,16 +1784,10 @@ export function getClientScript() {
       refreshTimer = null;
     }
 
-    function shouldRefreshOverviewOnResume() {
-      var cached = periodCache.get(state.period);
-      if (!cached || !cached.savedAt) return true;
-      return (Date.now() - cached.savedAt) > OVERVIEW_RESUME_REFRESH_MS;
-    }
-
     function refreshOverviewOnResume(force) {
       if (document.hidden) return;
       if (state.page !== "overview") return;
-      if (!force && !shouldRefreshOverviewOnResume()) return;
+      if (!force && !periodCache.has(state.period)) return;
       scheduleRender(state.period, { force: true });
     }
 
@@ -1806,6 +1799,10 @@ export function getClientScript() {
 
     window.addEventListener("pageshow", function (event) {
       refreshOverviewOnResume(!!(event && event.persisted));
+    });
+
+    window.addEventListener("focus", function () {
+      refreshOverviewOnResume(true);
     });
 
     $("seg").addEventListener("click", function (e) {
