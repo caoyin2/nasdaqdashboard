@@ -131,6 +131,10 @@ export function getClientScript() {
       return dtfBJ.format(new Date(ms)).replaceAll("/", "-") + "\uff08\u5317\u4eac\uff09";
     }
 
+    function latestDataText(ms) {
+      return Number.isFinite(ms) ? ("\u6700\u65b0\u6570\u636e\uff1a" + fmtBJ(ms)) : "\u6700\u65b0\u6570\u636e\uff1a--";
+    }
+
     var canvas = $("c");
     var ctx = canvas && canvas.getContext ? canvas.getContext("2d") : null;
 
@@ -1112,6 +1116,7 @@ export function getClientScript() {
       var periodLabel = PERIOD_LABELS[starsState.period] || starsState.period;
       var cached = starsState.cache.get(starsState.period);
       var items = cached && cached.items ? sortStarItems(cached.items) : null;
+      var latestText = latestDataText(cached && cached.asOfMs);
       var statusClass = starsState.statusType === "err" ? "err" : "ok";
       var maxAbs = items && items.length ? sectorMaxAbsChange(items) : 1;
       var gridHtml = items && items.length
@@ -1137,6 +1142,7 @@ export function getClientScript() {
           '<div class="starPanelMeta">',
             '<div class="starPanelMetaText ' + statusClass + '">' + esc(starsState.statusText) + '</div>',
             '<div class="starPanelMetaText">\u5f53\u524d\u5468\u671f\uff1a' + esc(periodLabel) + '</div>',
+            '<div class="starPanelMetaText">' + esc(latestText) + '</div>',
           '</div>',
           gridHtml,
         '</div>'
@@ -1155,6 +1161,7 @@ export function getClientScript() {
       var periodLabel = PERIOD_LABELS[sectorsState.period] || sectorsState.period;
       var cached = sectorsState.cache.get(sectorsState.period);
       var items = cached && cached.items ? sortStarItems(cached.items) : null;
+      var latestText = latestDataText(cached && cached.asOfMs);
       var statusClass = sectorsState.statusType === "err" ? "err" : "ok";
       var gridHtml = items && items.length
         ? renderSectorView(items)
@@ -1181,6 +1188,7 @@ export function getClientScript() {
           '<div class="starPanelMeta">',
             '<div class="starPanelMetaText ' + statusClass + '">' + esc(sectorsState.statusText) + '</div>',
             '<div class="starPanelMetaText">\u5f53\u524d\u5468\u671f\uff1a' + esc(periodLabel) + '</div>',
+            '<div class="starPanelMetaText">' + esc(latestText) + '</div>',
           '</div>',
           gridHtml,
         '</div>'
@@ -1665,6 +1673,10 @@ export function getClientScript() {
       $("idxCards").innerHTML = '<div class="idxHeatGrid">' + overviewItems.map(function (item) {
         return sectorHeatTileHTML(item, overviewMaxAbs);
       }).join("") + '</div>';
+      var idxLatestTime = $("idxLatestTime");
+      if (idxLatestTime) {
+        idxLatestTime.textContent = latestDataText(q.asOfMs);
+      }
       $("periodCN").textContent = getPanelTitle(state.page);
       resizeCanvas();
     }

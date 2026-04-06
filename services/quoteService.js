@@ -139,6 +139,7 @@ export async function buildQuotePayload(period, env) {
   return {
     ok: true,
     period,
+    asOfMs: Number.isFinite(latestMs) ? latestMs : null,
     asOfUTC,
     items,
   };

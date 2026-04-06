@@ -225,6 +225,26 @@ export function getStyles() {
       letter-spacing:.5px;
     }
 
+    .blockTitleRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 2px 6px 0 6px;
+    }
+
+    .blockTitleRow .blockTitle{
+      padding: 0;
+    }
+
+    .blockMeta{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+
     .chartWrap{
       height: 660px;
       position:relative;
@@ -870,6 +890,7 @@ export function getStyles() {
       align-items:center;
       justify-content:space-between;
       gap: 12px;
+      flex-wrap: wrap;
       min-height: 20px;
     }
 
@@ -1649,6 +1670,17 @@ export function getStyles() {
       .starPanel{
         padding: 14px;
         gap: 12px;
+      }
+
+      .blockTitleRow{
+        align-items:flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .blockMeta{
+        text-align:left;
+        white-space: normal;
       }
 
       .starPanelHead{

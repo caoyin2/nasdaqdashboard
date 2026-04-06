@@ -23,6 +23,7 @@ import { getSearchMetaBatch, refreshSearchMeta } from "./searchMetaStore.js";
 function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars) {
   const last1DBar = getLastBar(bars1D);
   const latestClose = last1DBar?.close;
+  const latestT = last1DBar?.t;
 
   const lastClose = Number.isFinite(latestClose)
     ? latestClose
@@ -54,6 +55,7 @@ function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars) {
     symbol: company.symbol,
     nameCN: company.nameCN,
     icon: meta.iconLight || null,
+    latestT: Number.isFinite(latestT) ? latestT : null,
     period,
     baseLabel,
     lastClose: Number.isFinite(lastClose) ? lastClose : null,
@@ -138,9 +140,17 @@ export async function buildStarTechPayload(period, env) {
     throw new Error(`All star-tech upstream requests failed${sample ? `: ${sample}` : ""}`);
   }
 
+  let latestMs = -Infinity;
+  for (const item of items) {
+    if (Number.isFinite(item.latestT) && item.latestT > latestMs) {
+      latestMs = item.latestT;
+    }
+  }
+
   return {
     ok: true,
     period,
+    asOfMs: Number.isFinite(latestMs) ? latestMs : null,
     items,
   };
 }

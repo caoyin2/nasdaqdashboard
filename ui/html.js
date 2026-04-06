@@ -97,7 +97,10 @@ export function getHtml() {
                 <button data-p="1Y">${PERIOD_LABELS["1Y"]}</button>
               </div>
 
-              <div class="blockTitle">\u6307\u6570</div>
+              <div class="blockTitleRow">
+                <div class="blockTitle">\u6307\u6570</div>
+                <div class="blockMeta" id="idxLatestTime"></div>
+              </div>
               <div id="idxCards"></div>
             </div>
           </div>

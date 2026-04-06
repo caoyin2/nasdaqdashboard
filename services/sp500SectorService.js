@@ -23,6 +23,7 @@ import { getSearchMetaBatch, refreshSearchMeta } from "./searchMetaStore.js";
 function buildSectorCard(period, etf, meta, bars1D, periodBarsRaw, ytdBars) {
   const last1DBar = getLastBar(bars1D);
   const latestClose = last1DBar?.close;
+  const latestT = last1DBar?.t;
 
   const lastClose = Number.isFinite(latestClose)
     ? latestClose
@@ -54,6 +55,7 @@ function buildSectorCard(period, etf, meta, bars1D, periodBarsRaw, ytdBars) {
     symbol: etf.symbol,
     nameCN: etf.nameCN,
     icon: meta.iconLight || null,
+    latestT: Number.isFinite(latestT) ? latestT : null,
     period,
     baseLabel,
     lastClose: Number.isFinite(lastClose) ? lastClose : null,
@@ -138,9 +140,17 @@ export async function buildSp500SectorPayload(period, env) {
     return String(a?.symbol || "").localeCompare(String(b?.symbol || ""));
   });
 
+  let latestMs = -Infinity;
+  for (const item of items) {
+    if (Number.isFinite(item.latestT) && item.latestT > latestMs) {
+      latestMs = item.latestT;
+    }
+  }
+
   return {
     ok: true,
     period,
+    asOfMs: Number.isFinite(latestMs) ? latestMs : null,
     title: "\u6807\u666e500\u5404\u677f\u5757ETF",
     items,
   };
