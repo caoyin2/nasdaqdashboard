@@ -180,6 +180,7 @@ export function getClientScript() {
     };
     var sectorsState = {
       period: "1D",
+      view: "cards",
       cache: new Map(),
       fetchCtrl: null,
       statusText: "\u8fdb\u5165\u9762\u677f\u540e\u52a0\u8f7d\u5f53\u524d\u5468\u671f\u6570\u636e",
@@ -985,7 +986,7 @@ export function getClientScript() {
       var positions = new Map();
       if (!root) return positions;
 
-      root.querySelectorAll(".starCard[data-symbol]").forEach(function (node) {
+      root.querySelectorAll(".starCard[data-symbol], .sectorHeatTile[data-symbol], .sectorBarRow[data-symbol]").forEach(function (node) {
         var rect = node.getBoundingClientRect();
         positions.set(node.getAttribute("data-symbol"), {
           left: rect.left,
@@ -1000,7 +1001,7 @@ export function getClientScript() {
       if (!root || !previousPositions || !previousPositions.size) return;
       if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-      root.querySelectorAll(".starCard[data-symbol]").forEach(function (node) {
+      root.querySelectorAll(".starCard[data-symbol], .sectorHeatTile[data-symbol], .sectorBarRow[data-symbol]").forEach(function (node) {
         var symbol = node.getAttribute("data-symbol");
         var previous = previousPositions.get(symbol);
         var currentRect = node.getBoundingClientRect();
@@ -1141,7 +1142,7 @@ export function getClientScript() {
       var items = cached && cached.items ? sortStarItems(cached.items) : null;
       var statusClass = sectorsState.statusType === "err" ? "err" : "ok";
       var gridHtml = items && items.length
-        ? '<div class="starGrid">' + items.map(starCardHTML).join("") + '</div>'
+        ? renderSectorView(items)
         : '<div class="starPanelEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u52a0\u8f7d\u5f53\u524d\u5468\u671f\u7684\u6807\u666e500\u5404\u677f\u5757 ETF \u8868\u73b0\u3002<br />\u53ea\u5728\u70b9\u51fb\u8fdb\u5165\u6216\u5207\u6362\u5468\u671f\u65f6\u8bf7\u6c42\u65b0\u6570\u636e\uff0c\u4e0d\u4f1a\u9884\u5148\u62c9\u53d6\u6240\u6709\u5468\u671f\u3002</div>';
 
       root.innerHTML = [
@@ -1151,13 +1152,16 @@ export function getClientScript() {
               '<span>\u6309\u5468\u671f\u67e5\u770b\u6807\u666e500\u5404\u677f\u5757 ETF \u6da8\u8dcc\u5e45</span>',
               '<strong>\u6807\u666e500\u677f\u5757ETF</strong>',
             '</div>',
-            '<div class="starPeriodSeg" id="sectorPeriodSeg">',
-              '<button data-sector-p="1D"' + (sectorsState.period === "1D" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1D"]) + '</button>',
-              '<button data-sector-p="5D"' + (sectorsState.period === "5D" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["5D"]) + '</button>',
-              '<button data-sector-p="1M"' + (sectorsState.period === "1M" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1M"]) + '</button>',
-              '<button data-sector-p="6M"' + (sectorsState.period === "6M" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["6M"]) + '</button>',
-              '<button data-sector-p="YTD"' + (sectorsState.period === "YTD" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["YTD"]) + '</button>',
-              '<button data-sector-p="1Y"' + (sectorsState.period === "1Y" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1Y"]) + '</button>',
+            '<div class="starPanelTools">',
+              '<div class="starPeriodSeg" id="sectorPeriodSeg">',
+                '<button data-sector-p="1D"' + (sectorsState.period === "1D" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1D"]) + '</button>',
+                '<button data-sector-p="5D"' + (sectorsState.period === "5D" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["5D"]) + '</button>',
+                '<button data-sector-p="1M"' + (sectorsState.period === "1M" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1M"]) + '</button>',
+                '<button data-sector-p="6M"' + (sectorsState.period === "6M" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["6M"]) + '</button>',
+                '<button data-sector-p="YTD"' + (sectorsState.period === "YTD" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["YTD"]) + '</button>',
+                '<button data-sector-p="1Y"' + (sectorsState.period === "1Y" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1Y"]) + '</button>',
+              '</div>',
+              sectorViewSegHTML(),
             '</div>',
           '</div>',
           '<div class="starPanelMeta">',
@@ -1171,6 +1175,110 @@ export function getClientScript() {
       requestAnimationFrame(function () {
         animateStarCards(root, previousPositions);
       });
+    }
+
+    function sectorViewSegHTML() {
+      return [
+        '<div class="sectorViewSeg" role="tablist" aria-label="\\u677f\\u5757ETF\\u89c6\\u56fe\\u5207\\u6362">',
+          '<button data-sector-view="cards"' + (sectorsState.view === "cards" ? ' class="active"' : '') + '>\u5361\u7247</button>',
+          '<button data-sector-view="heatmap"' + (sectorsState.view === "heatmap" ? ' class="active"' : '') + '>\u70ed\u529b\u56fe</button>',
+          '<button data-sector-view="bars"' + (sectorsState.view === "bars" ? ' class="active"' : '') + '>\u6761\u5f62\u56fe</button>',
+        '</div>'
+      ].join("");
+    }
+
+    function sectorMaxAbsChange(items) {
+      var values = (items || []).map(function (item) {
+        return Math.abs(Number.isFinite(item && item.changePct) ? item.changePct : 0);
+      }).filter(function (value) { return value > 0; });
+      if (!values.length) return 1;
+      return Math.max.apply(null, values);
+    }
+
+    function sectorTint(item, alpha) {
+      var a = Number.isFinite(alpha) ? alpha : 0.18;
+      if (Number.isFinite(item && item.change) && item.change > 0) return "rgba(255,77,109," + a.toFixed(3) + ")";
+      if (Number.isFinite(item && item.change) && item.change < 0) return "rgba(34,197,94," + a.toFixed(3) + ")";
+      return "rgba(148,163,184," + a.toFixed(3) + ")";
+    }
+
+    function sectorHeatTileHTML(item, maxAbs) {
+      var intensity = clamp(Math.abs(Number.isFinite(item && item.changePct) ? item.changePct : 0) / (maxAbs || 1), 0, 1);
+      var bg = sectorTint(item, 0.12 + intensity * 0.34);
+      var border = sectorTint(item, 0.26 + intensity * 0.30);
+      var glow = sectorTint(item, 0.16 + intensity * 0.24);
+      var tone = starToneClass(item);
+
+      return [
+        '<article class="sectorHeatTile ' + tone + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
+          '<div class="sectorHeatHeader">',
+            '<div class="starIdentity">',
+              '<div class="starIconWrap">',
+                '<img class="starIcon" src="' + esc(item.icon) + '" alt="' + esc(item.symbol) + '" loading="lazy" data-search-symbol="' + esc(item.symbol) + '" data-search-refresh-state="idle" />',
+              '</div>',
+              '<div class="starNameBox">',
+                '<div class="starName">' + esc(item.nameCN) + '</div>',
+                '<div class="starSymbol">' + esc(item.symbol) + '</div>',
+              '</div>',
+            '</div>',
+            '<div class="sectorHeatPrice">' + fmtPrice(item.lastClose) + '</div>',
+          '</div>',
+          '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>',
+          '<div class="sectorHeatMeta">',
+            '<span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>',
+            '<strong>' + signPrice(item.change) + '</strong>',
+          '</div>',
+        '</article>'
+      ].join("");
+    }
+
+    function sectorBarRowHTML(item, maxAbs) {
+      var intensity = clamp(Math.abs(Number.isFinite(item && item.changePct) ? item.changePct : 0) / (maxAbs || 1), 0, 1);
+      var tone = starToneClass(item);
+      var fill = sectorTint(item, 0.38 + intensity * 0.34);
+      var glow = sectorTint(item, 0.16 + intensity * 0.20);
+      var widthPct = clamp(intensity * 100, 8, 100);
+
+      return [
+        '<article class="sectorBarRow ' + tone + '" data-symbol="' + esc(item.symbol) + '">',
+          '<div class="sectorBarTop">',
+            '<div class="starIdentity">',
+              '<div class="starIconWrap">',
+                '<img class="starIcon" src="' + esc(item.icon) + '" alt="' + esc(item.symbol) + '" loading="lazy" data-search-symbol="' + esc(item.symbol) + '" data-search-refresh-state="idle" />',
+              '</div>',
+              '<div class="starNameBox">',
+                '<div class="starName">' + esc(item.nameCN) + '</div>',
+                '<div class="starSymbol">' + esc(item.symbol) + '</div>',
+              '</div>',
+            '</div>',
+            '<div class="sectorBarValues">',
+              '<strong>' + signPct(item.changePct) + '</strong>',
+              '<span>' + fmtPrice(item.lastClose) + '</span>',
+            '</div>',
+          '</div>',
+          '<div class="sectorBarTrack">',
+            '<div class="sectorBarFill" style="width:' + widthPct.toFixed(2) + '%; background:' + fill + '; box-shadow: 0 0 18px ' + glow + ';"></div>',
+          '</div>',
+          '<div class="sectorBarMeta">',
+            '<span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>',
+            '<strong>' + signPrice(item.change) + '</strong>',
+          '</div>',
+        '</article>'
+      ].join("");
+    }
+
+    function renderSectorView(items) {
+      var maxAbs = sectorMaxAbsChange(items);
+
+      if (sectorsState.view === "heatmap") {
+        return '<div class="sectorHeatGrid">' + items.map(function (item) { return sectorHeatTileHTML(item, maxAbs); }).join("") + '</div>';
+      }
+
+      if (sectorsState.view === "bars") {
+        return '<div class="sectorBarList">' + items.map(function (item) { return sectorBarRowHTML(item, maxAbs); }).join("") + '</div>';
+      }
+
+      return '<div class="starGrid">' + items.map(starCardHTML).join("") + '</div>';
     }
 
     function formatBasketDate(ymd) {
@@ -1725,10 +1833,19 @@ export function getClientScript() {
     if (sp500SectorPanel) {
       sp500SectorPanel.addEventListener("click", function (e) {
         var btn = e.target && e.target.closest ? e.target.closest("button[data-sector-p]") : null;
-        if (!btn) return;
-        var period = btn.getAttribute("data-sector-p");
-        if (!period) return;
-        loadSectorPeriod(period, { force: false });
+        if (btn) {
+          var period = btn.getAttribute("data-sector-p");
+          if (!period) return;
+          loadSectorPeriod(period, { force: false });
+          return;
+        }
+
+        var viewBtn = e.target && e.target.closest ? e.target.closest("button[data-sector-view]") : null;
+        if (!viewBtn) return;
+        var view = viewBtn.getAttribute("data-sector-view");
+        if (!view || view === sectorsState.view) return;
+        sectorsState.view = view;
+        renderSectorPanel();
       });
     }
 

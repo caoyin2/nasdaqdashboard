@@ -779,6 +779,13 @@ export function getStyles() {
       gap: 14px;
     }
 
+    .starPanelTools{
+      display:grid;
+      gap: 10px;
+      justify-items:end;
+      min-width: 0;
+    }
+
     .starPanelTitle{
       display:grid;
       gap: 4px;
@@ -825,6 +832,37 @@ export function getStyles() {
       color: rgba(255,255,255,.96);
       background: rgba(255,180,0,.16);
       box-shadow: inset 0 0 0 1px rgba(255,180,0,.24);
+    }
+
+    .sectorViewSeg{
+      display:inline-flex;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(31,43,61,.85);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .sectorViewSeg button{
+      appearance:none;
+      border:0;
+      cursor:pointer;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: transparent;
+      color: rgba(230,237,247,.72);
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    .sectorViewSeg button.active{
+      color: rgba(255,255,255,.96);
+      background: rgba(0,224,255,.16);
+      box-shadow: inset 0 0 0 1px rgba(0,224,255,.24);
     }
 
     .starPanelMeta{
@@ -1035,6 +1073,144 @@ export function getStyles() {
       color: var(--muted);
       font-family: var(--mono);
       font-size: 13px;
+    }
+
+    .sectorHeatGrid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .sectorHeatTile{
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(31,43,61,.85);
+      padding: 16px;
+      display:grid;
+      gap: 14px;
+      min-height: 188px;
+      will-change: transform, opacity;
+    }
+
+    .sectorHeatHeader{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+    }
+
+    .sectorHeatPrice{
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(230,237,247,.92);
+      white-space: nowrap;
+      margin-top: 2px;
+    }
+
+    .sectorHeatPct{
+      font-size: 36px;
+      line-height: 1;
+      font-weight: 800;
+      color: rgba(244,247,252,.98);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.02em;
+    }
+
+    .sectorHeatMeta{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(200,214,236,.88);
+    }
+
+    .sectorHeatMeta strong{
+      font-size: 13px;
+      color: rgba(244,247,252,.96);
+    }
+
+    .sectorBarList{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .sectorBarRow{
+      position: relative;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid rgba(31,43,61,.85);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
+        rgba(13,20,32,.76);
+      padding: 16px;
+      display:grid;
+      gap: 12px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+      will-change: transform, opacity;
+    }
+
+    .sectorBarTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 14px;
+    }
+
+    .sectorBarValues{
+      display:grid;
+      justify-items:end;
+      gap: 6px;
+      min-width: 96px;
+      text-align:right;
+    }
+
+    .sectorBarValues strong{
+      font-size: 28px;
+      line-height: 1;
+      color: rgba(244,247,252,.98);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.02em;
+    }
+
+    .sectorBarValues span{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(200,214,236,.88);
+    }
+
+    .sectorBarTrack{
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.05);
+    }
+
+    .sectorBarFill{
+      height: 100%;
+      border-radius: inherit;
+    }
+
+    .sectorBarMeta{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(200,214,236,.88);
+    }
+
+    .sectorBarMeta strong{
+      font-size: 13px;
+      color: rgba(244,247,252,.96);
     }
 
     .weightsPanel{
@@ -1376,6 +1552,10 @@ export function getStyles() {
         align-items: stretch;
       }
 
+      .starPanelTools{
+        justify-items: stretch;
+      }
+
       .starPanelTitle strong{
         font-size: 18px;
       }
@@ -1429,6 +1609,55 @@ export function getStyles() {
       .weightsPanel{
         padding: 14px;
         gap: 12px;
+      }
+
+      .sectorHeatGrid{
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .sectorHeatTile{
+        padding: 14px;
+        gap: 12px;
+        min-height: 0;
+      }
+
+      .sectorHeatPct{
+        font-size: 30px;
+      }
+
+      .sectorHeatPrice{
+        font-size: 13px;
+      }
+
+      .sectorHeatMeta{
+        flex-direction: column;
+        align-items:flex-start;
+      }
+
+      .sectorBarRow{
+        padding: 14px;
+        gap: 10px;
+      }
+
+      .sectorBarTop{
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .sectorBarValues{
+        justify-items:start;
+        text-align:left;
+        min-width: 0;
+      }
+
+      .sectorBarValues strong{
+        font-size: 24px;
+      }
+
+      .sectorBarMeta{
+        flex-direction: column;
+        align-items:flex-start;
       }
 
       .weightsHead{
