@@ -1134,6 +1134,24 @@ export function getStyles() {
       color: rgba(244,247,252,.96);
     }
 
+    .sectorHeatTile.up .sectorHeatPrice,
+    .sectorHeatTile.up .sectorHeatPct,
+    .sectorHeatTile.up .sectorHeatMeta strong{
+      color: var(--up);
+    }
+
+    .sectorHeatTile.down .sectorHeatPrice,
+    .sectorHeatTile.down .sectorHeatPct,
+    .sectorHeatTile.down .sectorHeatMeta strong{
+      color: var(--down);
+    }
+
+    .sectorHeatTile.flat .sectorHeatPrice,
+    .sectorHeatTile.flat .sectorHeatPct,
+    .sectorHeatTile.flat .sectorHeatMeta strong{
+      color: rgba(226,232,240,.94);
+    }
+
     .sectorBarList{
       display:grid;
       grid-template-columns: 1fr;
