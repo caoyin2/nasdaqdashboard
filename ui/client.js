@@ -1099,8 +1099,9 @@ export function getClientScript() {
       var cached = starsState.cache.get(starsState.period);
       var items = cached && cached.items ? sortStarItems(cached.items) : null;
       var statusClass = starsState.statusType === "err" ? "err" : "ok";
+      var maxAbs = items && items.length ? sectorMaxAbsChange(items) : 1;
       var gridHtml = items && items.length
-        ? '<div class="starGrid">' + items.map(starCardHTML).join("") + '</div>'
+        ? '<div class="sectorHeatGrid">' + items.map(function (item) { return sectorHeatTileHTML(item, maxAbs); }).join("") + '</div>'
         : '<div class="starPanelEmpty">\u70b9\u51fb\u4e0a\u65b9\u5468\u671f\u6309\u94ae\u540e\u52a0\u8f7d\u5bf9\u5e94\u6570\u636e\u3002<br />\u4e3a\u4e86\u63a7\u5236\u8bf7\u6c42\u91cf\uff0c\u660e\u661f\u79d1\u6280\u516c\u53f8\u9762\u677f\u4e0d\u4f1a\u5728\u9875\u9762\u521d\u59cb\u65f6\u4e00\u6b21\u6027\u8bfb\u53d6\u5168\u90e8\u5468\u671f\u3002</div>';
 
       root.innerHTML = [
