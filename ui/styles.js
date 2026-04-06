@@ -1082,6 +1082,16 @@ export function getStyles() {
       align-items: stretch;
     }
 
+    .idxHeatGrid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .idxHeatGrid .sectorHeatTile{
+      min-height: 0;
+    }
+
     .sectorHeatTile{
       position: relative;
       overflow: hidden;
@@ -1395,6 +1405,7 @@ export function getStyles() {
       display:grid;
       gap: 14px;
       box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+      min-height: 188px;
     }
 
     .weightCard::after{
@@ -1404,7 +1415,7 @@ export function getStyles() {
       width: 110px;
       height: 110px;
       border-radius: 50%;
-      background: rgba(64,156,255,.16);
+      background: var(--weight-glow-soft, rgba(64,156,255,.16));
       filter: blur(10px);
       pointer-events:none;
     }
@@ -1472,12 +1483,25 @@ export function getStyles() {
       text-overflow: ellipsis;
     }
 
+    .weightNameBox{
+      display:grid;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .weightSymbol{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(208,225,246,.84);
+      line-height: 1;
+    }
+
     .weightValue{
       position: relative;
       z-index: 1;
       display:flex;
-      align-items:center;
-      justify-content:space-between;
+      align-items:flex-end;
+      justify-content:flex-start;
       gap: 12px;
       font-family: var(--mono);
     }
@@ -1489,11 +1513,11 @@ export function getStyles() {
     }
 
     .weightValue strong{
-      font-size: 22px;
+      font-size: 36px;
       line-height: 1;
-      color: rgba(96,208,255,.98);
+      color: var(--weight-accent, rgba(196,232,255,.98));
       font-variant-numeric: tabular-nums;
-      text-shadow: 0 0 18px rgba(0,224,255,.20);
+      text-shadow: 0 0 18px rgba(0,224,255,.18);
     }
 
     .weightBar{
@@ -1767,6 +1791,7 @@ export function getStyles() {
       .weightCard{
         padding: 14px;
         gap: 12px;
+        min-height: 0;
       }
 
       .weightCardTop{
@@ -1798,7 +1823,7 @@ export function getStyles() {
       }
 
       .weightValue strong{
-        font-size: 20px;
+        font-size: 30px;
       }
 
       .starCard{

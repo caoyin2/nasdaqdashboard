@@ -708,6 +708,19 @@ export function getClientScript() {
       ].join("");
     }
 
+    function overviewHeatItem(item, period) {
+      return {
+        symbol: item.symbol,
+        icon: item.iconLight || "",
+        nameCN: item.nameCN,
+        lastClose: item.lastClose,
+        baseClose: item.cardBaseClose,
+        change: item.cardChg,
+        changePct: item.cardChgPct,
+        baseLabel: period === "1D" ? "\u6628\u6536" : "\u8d77\u70b9"
+      };
+    }
+
     function fearGreedMeta(score, rating, ratingCN) {
       var key = String(rating || "").toLowerCase().trim();
       var matchedByKey = FEAR_GREED_PALETTE.find(function (entry) {
@@ -1289,10 +1302,18 @@ export function getClientScript() {
 
     function weightCardHTML(item, maxWeight, rank) {
       var safeMax = Number.isFinite(maxWeight) && maxWeight > 0 ? maxWeight : 1;
-      var widthPct = clamp((item.weightPct / safeMax) * 100, 10, 100);
+      var intensity = clamp(item.weightPct / safeMax, 0, 1);
+      var bg = "rgba(32,118,255," + (0.08 + intensity * 0.30).toFixed(3) + ")";
+      var border = "rgba(105,214,255," + (0.18 + intensity * 0.26).toFixed(3) + ")";
+      var glow = "rgba(38,106,255," + (0.12 + intensity * 0.22).toFixed(3) + ")";
+      var accent = intensity > 0.72
+        ? "rgba(235,248,255,.99)"
+        : intensity > 0.38
+          ? "rgba(184,228,255,.98)"
+          : "rgba(146,208,255,.96)";
 
       return [
-        '<article class="weightCard">',
+        '<article class="weightCard" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 16px 32px ' + glow + '; --weight-accent:' + accent + '; --weight-glow-soft:' + glow + ';">',
           '<div class="weightRankBadge">' + esc(String(rank)) + '</div>',
           '<div class="weightCardTop">',
             '<div class="weightIconWrap">',
@@ -1300,13 +1321,13 @@ export function getClientScript() {
                 ? '<img class="weightIcon" src="' + esc(item.iconLight) + '" alt="' + esc(item.nameEn) + '" loading="lazy" data-search-symbol="' + esc(item.symbol) + '" data-search-refresh-state="idle" />'
                 : '<div class="weightIcon" aria-hidden="true"></div>',
             '</div>',
-            '<div class="weightName">' + esc(item.nameEn || item.symbol) + '</div>',
+            '<div class="weightNameBox">',
+              '<div class="weightName">' + esc(item.nameEn || item.symbol) + '</div>',
+              '<div class="weightSymbol">' + esc(item.symbol) + '</div>',
+            '</div>',
           '</div>',
           '<div class="weightValue">',
             '<strong>' + fmt(item.weightPct, 2) + '%</strong>',
-          '</div>',
-          '<div class="weightBar">',
-            '<div class="weightBarFill" style="width:' + widthPct.toFixed(2) + '%"></div>',
           '</div>',
         '</article>'
       ].join("");
@@ -1643,9 +1664,11 @@ export function getClientScript() {
 
       state.items = items;
       rebuildTimes();
-      $("idxCards").innerHTML = items.map(function (item) {
-        return tileHTML(item, q.period);
-      }).join("");
+      var overviewItems = items.map(function (item) { return overviewHeatItem(item, q.period); });
+      var overviewMaxAbs = sectorMaxAbsChange(overviewItems);
+      $("idxCards").innerHTML = '<div class="idxHeatGrid">' + overviewItems.map(function (item) {
+        return sectorHeatTileHTML(item, overviewMaxAbs);
+      }).join("") + '</div>';
       $("periodCN").textContent = getPanelTitle(state.page);
       resizeCanvas();
     }
