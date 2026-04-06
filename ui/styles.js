@@ -1185,17 +1185,76 @@ export function getStyles() {
     }
 
     .sectorBarTrack{
+      position: relative;
       width: 100%;
       height: 12px;
       border-radius: 999px;
       overflow: hidden;
-      background: rgba(255,255,255,.06);
+      background:
+        linear-gradient(
+          90deg,
+          rgba(34,197,94,.10) 0 49.5%,
+          rgba(255,255,255,.08) 49.5% 50.5%,
+          rgba(255,77,109,.10) 50.5% 100%
+        );
       border: 1px solid rgba(255,255,255,.05);
     }
 
+    .sectorBarAxis{
+      display:grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items:center;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(196,211,236,.82);
+    }
+
+    .sectorBarAxis span:last-child{
+      text-align:right;
+    }
+
+    .sectorBarAxis strong{
+      font-size: 12px;
+      color: rgba(244,247,252,.94);
+      font-weight: 700;
+      justify-self:center;
+    }
+
+    .sectorBarMidline{
+      position: absolute;
+      top: -1px;
+      bottom: -1px;
+      left: 50%;
+      width: 1px;
+      transform: translateX(-50%);
+      background: rgba(244,247,252,.36);
+      box-shadow: 0 0 12px rgba(244,247,252,.12);
+      z-index: 1;
+      pointer-events: none;
+    }
+
     .sectorBarFill{
-      height: 100%;
-      border-radius: inherit;
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: 2;
+    }
+
+    .sectorBarFill.positive{
+      left: 50%;
+      border-radius: 0 999px 999px 0;
+    }
+
+    .sectorBarFill.negative{
+      right: 50%;
+      border-radius: 999px 0 0 999px;
+    }
+
+    .sectorBarFill.flat{
+      left: 50%;
+      width: 0 !important;
+      box-shadow: none !important;
     }
 
     .sectorBarMeta{
@@ -1653,6 +1712,10 @@ export function getStyles() {
 
       .sectorBarValues strong{
         font-size: 24px;
+      }
+
+      .sectorBarAxis{
+        font-size: 10px;
       }
 
       .sectorBarMeta{

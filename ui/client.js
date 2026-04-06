@@ -1237,7 +1237,8 @@ export function getClientScript() {
       var tone = starToneClass(item);
       var fill = sectorTint(item, 0.38 + intensity * 0.34);
       var glow = sectorTint(item, 0.16 + intensity * 0.20);
-      var widthPct = clamp(intensity * 100, 8, 100);
+      var direction = Number.isFinite(item && item.change) ? (item.change > 0 ? "positive" : (item.change < 0 ? "negative" : "flat")) : "flat";
+      var widthPct = direction === "flat" ? 0 : clamp(intensity * 50, 3, 50);
 
       return [
         '<article class="sectorBarRow ' + tone + '" data-symbol="' + esc(item.symbol) + '">',
@@ -1256,8 +1257,14 @@ export function getClientScript() {
               '<span>' + fmtPrice(item.lastClose) + '</span>',
             '</div>',
           '</div>',
+          '<div class="sectorBarAxis">',
+            '<span>\u8dcc</span>',
+            '<strong>0</strong>',
+            '<span>\u6da8</span>',
+          '</div>',
           '<div class="sectorBarTrack">',
-            '<div class="sectorBarFill" style="width:' + widthPct.toFixed(2) + '%; background:' + fill + '; box-shadow: 0 0 18px ' + glow + ';"></div>',
+            '<div class="sectorBarMidline"></div>',
+            '<div class="sectorBarFill ' + direction + '" style="width:' + widthPct.toFixed(2) + '%; background:' + fill + '; box-shadow: 0 0 18px ' + glow + ';"></div>',
           '</div>',
           '<div class="sectorBarMeta">',
             '<span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>',
