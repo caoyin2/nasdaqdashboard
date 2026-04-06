@@ -141,6 +141,7 @@ export function getClientScript() {
 
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
+    var OVERVIEW_API_TIMEOUT_MS = 30000;
     var INDEX_WEIGHTS_API_VERSION = "20260403h";
     var SP500_SECTOR_API_VERSION = "20260406a";
     var WEIGHTS_INDEX_OPTIONS = [
@@ -1670,27 +1671,36 @@ export function getClientScript() {
 
     async function fetchPeriod(period, options) {
       var opts = options || {};
+      var controller = new AbortController();
+      var timedOut = false;
 
       if (activeFetchCtrl) activeFetchCtrl.abort();
-      activeFetchCtrl = new AbortController();
+      activeFetchCtrl = controller;
 
       var timer = setTimeout(function () {
-        if (activeFetchCtrl) activeFetchCtrl.abort();
-      }, API_TIMEOUT_MS);
+        timedOut = true;
+        controller.abort();
+      }, OVERVIEW_API_TIMEOUT_MS);
 
       var res;
       try {
         res = await fetch("/api/quote?p=" + encodeURIComponent(period), {
           cache: "no-store",
-          signal: activeFetchCtrl.signal
+          signal: controller.signal
         });
       } catch (error) {
-        if (activeFetchCtrl.signal.aborted) {
-          throw new Error("\u63a5\u53e3\u8bf7\u6c42\u8d85\u65f6\uff08" + (API_TIMEOUT_MS / 1000) + "\u79d2\uff09");
+        if (controller.signal.aborted && !timedOut) {
+          return null;
+        }
+        if (timedOut) {
+          throw new Error("\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f\u8bf7\u6c42\u8d85\u65f6\uff08" + (OVERVIEW_API_TIMEOUT_MS / 1000) + "\u79d2\uff09");
         }
         throw error;
       } finally {
         clearTimeout(timer);
+        if (activeFetchCtrl === controller) {
+          activeFetchCtrl = null;
+        }
       }
 
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -1702,11 +1712,8 @@ export function getClientScript() {
 
     async function ensureData(period, options) {
       var opts = options || {};
-      if (!opts.force && periodCache.has(period)) {
-        return { q: periodCache.get(period).q, fromCache: true };
-      }
       var q = await fetchPeriod(period, opts);
-      return { q: q, fromCache: false };
+      return q ? { q: q, fromCache: false } : null;
     }
 
     async function fetchFearGreedData(options) {
@@ -1770,9 +1777,10 @@ export function getClientScript() {
       try {
         setStatus(opts.force ? "\u5237\u65b0\u4e2d..." : "\u52a0\u8f7d\u4e2d...", "ok");
         var result = await ensureData(period, opts);
+        if (!result) return;
         if (period !== state.period) return;
         applyData(result.q);
-        setStatus(result.fromCache ? "\u52a0\u8f7d\u7f13\u5b58\u6210\u529f" : "\u52a0\u8f7d\u6210\u529f", "ok");
+        setStatus("\u52a0\u8f7d\u6210\u529f", "ok");
       } catch (error) {
         console.error(error);
         setStatus(error && error.message ? error.message : "\u52a0\u8f7d\u5931\u8d25", "err");
@@ -1820,14 +1828,7 @@ export function getClientScript() {
       });
 
       startAutoRefresh();
-
-      if (periodCache.has(p)) {
-        applyData(periodCache.get(p).q);
-        setStatus("\u52a0\u8f7d\u7f13\u5b58\u6210\u529f", "ok");
-        return;
-      }
-
-      scheduleRender(p, { force: false });
+      scheduleRender(p, { force: true });
     });
 
     var pageSeg = $("pageSeg");
