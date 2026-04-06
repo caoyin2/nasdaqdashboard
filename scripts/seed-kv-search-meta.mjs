@@ -1,4 +1,4 @@
-import { STAR_TECH_COMPANIES } from "../config.js";
+import { SP500_SECTOR_ETFS, STAR_TECH_COMPANIES } from "../config.js";
 import { getLatestIndexWeightSymbols } from "../services/indexWeightsService.js";
 import { fetchSeekingAlphaSearch } from "../services/seekingAlpha.js";
 
@@ -74,6 +74,7 @@ async function main() {
     "SPGI",
     "NDAQ",
     ...STAR_TECH_COMPANIES.map((item) => item.symbol),
+    ...SP500_SECTOR_ETFS.map((item) => item.symbol),
     ...latestNdxtmcWeights.symbols,
     ...latestSp500Weights.symbols,
     ...latestNdxWeights.symbols,

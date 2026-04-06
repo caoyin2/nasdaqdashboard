@@ -48,6 +48,20 @@ export const STAR_TECH_COMPANIES = [
   { symbol: "PLTR", nameCN: "\u5e15\u5170\u63d0\u5c14" },
 ];
 
+export const SP500_SECTOR_ETFS = [
+  { symbol: "XLC", nameCN: "\u901a\u4fe1\u670d\u52a1" },
+  { symbol: "XLY", nameCN: "\u975e\u5fc5\u9700\u6d88\u8d39" },
+  { symbol: "XLP", nameCN: "\u5fc5\u9700\u6d88\u8d39" },
+  { symbol: "XLE", nameCN: "\u80fd\u6e90" },
+  { symbol: "XLF", nameCN: "\u91d1\u878d" },
+  { symbol: "XLV", nameCN: "\u533b\u7597\u4fdd\u5065" },
+  { symbol: "XLI", nameCN: "\u5de5\u4e1a" },
+  { symbol: "XLB", nameCN: "\u539f\u6750\u6599" },
+  { symbol: "XLRE", nameCN: "\u623f\u5730\u4ea7" },
+  { symbol: "XLK", nameCN: "\u4fe1\u606f\u6280\u672f" },
+  { symbol: "XLU", nameCN: "\u516c\u7528\u4e8b\u4e1a" },
+];
+
 export const LINE_COLORS = [
   "rgba(0,224,255,.95)",
   "rgba(255,180,0,.95)",

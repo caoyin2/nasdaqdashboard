@@ -15,6 +15,7 @@ import { getKvBinding, resolveKvBinding } from "./services/kvBinding.js";
 import { buildQuotePayload } from "./services/quoteService.js";
 import { probeSeekingAlphaSearch } from "./services/seekingAlpha.js";
 import { getSearchMeta, refreshSearchMeta } from "./services/searchMetaStore.js";
+import { buildSp500SectorPayload } from "./services/sp500SectorService.js";
 import { buildStarTechPayload } from "./services/starTechService.js";
 import { getClientScript } from "./ui/client.js";
 import { getHtml } from "./ui/html.js";
@@ -24,6 +25,8 @@ const FEAR_GREED_MEM_CACHE =
   globalThis.__FEAR_GREED_MEM_CACHE__ ?? (globalThis.__FEAR_GREED_MEM_CACHE__ = new Map());
 const STAR_TECH_MEM_CACHE =
   globalThis.__STAR_TECH_MEM_CACHE__ ?? (globalThis.__STAR_TECH_MEM_CACHE__ = new Map());
+const SP500_SECTOR_MEM_CACHE =
+  globalThis.__SP500_SECTOR_MEM_CACHE__ ?? (globalThis.__SP500_SECTOR_MEM_CACHE__ = new Map());
 const INDEX_WEIGHTS_MEM_CACHE =
   globalThis.__INDEX_WEIGHTS_MEM_CACHE__ ?? (globalThis.__INDEX_WEIGHTS_MEM_CACHE__ = new Map());
 const FEAR_GREED_MEM_TTL_MS = 5 * 60 * 1000;
@@ -32,6 +35,8 @@ const STAR_TECH_CACHE = {
   "1D": { memTtlMs: 25 * 1000, cacheSeconds: 25 },
   default: { memTtlMs: 10 * 60 * 1000, cacheSeconds: 10 * 60 },
 };
+const SP500_SECTOR_CACHE_SECONDS = 10 * 60;
+const SP500_SECTOR_MEM_TTL_MS = 10 * 60 * 1000;
 const INDEX_WEIGHTS_MEM_TTL_MS = 15 * 60 * 1000;
 const INDEX_WEIGHTS_CACHE_SECONDS = 15 * 60;
 
@@ -384,6 +389,67 @@ export default {
             "Content-Type": "application/json; charset=utf-8",
             ...corsHeaders(origin),
             "Cache-Control": `public, max-age=${policy.cacheSeconds}, s-maxage=${policy.cacheSeconds}`,
+          },
+        });
+
+        ctx.waitUntil(caches.default.put(cacheKey, response.clone()));
+        return response;
+      } catch (error) {
+        return jsonResponse(
+          { ok: false, error: error?.message || String(error) },
+          origin,
+          502,
+          { cacheSeconds: 0 }
+        );
+      }
+    }
+
+    if (url.pathname === "/api/sp500-sectors") {
+      try {
+        const period = normalizePeriod(url.searchParams.get("p"));
+        const now = Date.now();
+        const memKey = `sp500-sectors:${period}`;
+        const memCached = SP500_SECTOR_MEM_CACHE.get(memKey);
+
+        if (memCached && now - memCached.at < SP500_SECTOR_MEM_TTL_MS) {
+          return new Response(memCached.body, {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              ...corsHeaders(origin),
+              "Cache-Control": `public, max-age=${SP500_SECTOR_CACHE_SECONDS}, s-maxage=${SP500_SECTOR_CACHE_SECONDS}`,
+            },
+          });
+        }
+
+        const cacheKey = new Request(url.toString(), { method: "GET" });
+        const edgeHit = await caches.default.match(cacheKey);
+
+        if (edgeHit) {
+          const body = await edgeHit.text();
+          SP500_SECTOR_MEM_CACHE.set(memKey, { at: now, body });
+
+          return new Response(body, {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              ...corsHeaders(origin),
+              "Cache-Control": `public, max-age=${SP500_SECTOR_CACHE_SECONDS}, s-maxage=${SP500_SECTOR_CACHE_SECONDS}`,
+            },
+          });
+        }
+
+        const payload = await buildSp500SectorPayload(period, env);
+        const body = JSON.stringify(payload, null, 2);
+
+        SP500_SECTOR_MEM_CACHE.set(memKey, { at: now, body });
+
+        const response = new Response(body, {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            ...corsHeaders(origin),
+            "Cache-Control": `public, max-age=${SP500_SECTOR_CACHE_SECONDS}, s-maxage=${SP500_SECTOR_CACHE_SECONDS}`,
           },
         });
 

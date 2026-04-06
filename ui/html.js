@@ -57,6 +57,7 @@ export function getHtml() {
       <button class="active" data-page="overview">\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f</button>
       <button data-page="stars">\u660e\u661f\u79d1\u6280\u516c\u53f8</button>
       <button data-page="weights">\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd</button>
+      <button data-page="sectors">\u6807\u666e500\u677f\u5757ETF</button>
     </div>
 
     <div class="pages" id="pages">
@@ -109,6 +110,10 @@ export function getHtml() {
 
       <section class="page page-weights" data-page="weights">
         <div id="indexWeightsPanel"></div>
+      </section>
+
+      <section class="page page-sectors" data-page="sectors">
+        <div id="sp500SectorPanel"></div>
       </section>
     </div>
   </div>

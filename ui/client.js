@@ -142,6 +142,7 @@ export function getClientScript() {
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
     var INDEX_WEIGHTS_API_VERSION = "20260403h";
+    var SP500_SECTOR_API_VERSION = "20260406a";
     var WEIGHTS_INDEX_OPTIONS = [
       { code: "NDXTMC", label: "\\u7eb3\\u65af\\u8fbe\\u514b\\u79d1\\u6280\\u5e02\\u503c\\u52a0\\u6743" },
       { code: "SP500-45", label: "\\u6807\\u666e500\\u4fe1\\u606f\\u79d1\\u6280" },
@@ -177,6 +178,14 @@ export function getClientScript() {
       touched: false,
       mobileVisible: false
     };
+    var sectorsState = {
+      period: "1D",
+      cache: new Map(),
+      fetchCtrl: null,
+      statusText: "\u8fdb\u5165\u9762\u677f\u540e\u52a0\u8f7d\u5f53\u524d\u5468\u671f\u6570\u636e",
+      statusType: "ok",
+      touched: false
+    };
     var weightsState = {
       activeIndex: "NDXTMC",
       cache: new Map(),
@@ -192,6 +201,7 @@ export function getClientScript() {
     function getPanelTitle(page) {
       if (page === "stars") return "\u9762\u677f\uff1a\u660e\u661f\u79d1\u6280\u516c\u53f8";
       if (page === "weights") return "\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd";
+      if (page === "sectors") return "\u9762\u677f\uff1a\u6807\u666e500\u677f\u5757ETF";
       return "\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f";
     }
 
@@ -1121,6 +1131,48 @@ export function getClientScript() {
       });
     }
 
+    function renderSectorPanel() {
+      var root = $("sp500SectorPanel");
+      if (!root) return;
+
+      var previousPositions = captureStarPositions(root);
+      var periodLabel = PERIOD_LABELS[sectorsState.period] || sectorsState.period;
+      var cached = sectorsState.cache.get(sectorsState.period);
+      var items = cached && cached.items ? sortStarItems(cached.items) : null;
+      var statusClass = sectorsState.statusType === "err" ? "err" : "ok";
+      var gridHtml = items && items.length
+        ? '<div class="starGrid">' + items.map(starCardHTML).join("") + '</div>'
+        : '<div class="starPanelEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u52a0\u8f7d\u5f53\u524d\u5468\u671f\u7684\u6807\u666e500\u5404\u677f\u5757 ETF \u8868\u73b0\u3002<br />\u53ea\u5728\u70b9\u51fb\u8fdb\u5165\u6216\u5207\u6362\u5468\u671f\u65f6\u8bf7\u6c42\u65b0\u6570\u636e\uff0c\u4e0d\u4f1a\u9884\u5148\u62c9\u53d6\u6240\u6709\u5468\u671f\u3002</div>';
+
+      root.innerHTML = [
+        '<div class="card starPanel">',
+          '<div class="starPanelHead">',
+            '<div class="starPanelTitle">',
+              '<span>\u6309\u5468\u671f\u67e5\u770b\u6807\u666e500\u5404\u677f\u5757 ETF \u6da8\u8dcc\u5e45</span>',
+              '<strong>\u6807\u666e500\u677f\u5757ETF</strong>',
+            '</div>',
+            '<div class="starPeriodSeg" id="sectorPeriodSeg">',
+              '<button data-sector-p="1D"' + (sectorsState.period === "1D" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1D"]) + '</button>',
+              '<button data-sector-p="5D"' + (sectorsState.period === "5D" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["5D"]) + '</button>',
+              '<button data-sector-p="1M"' + (sectorsState.period === "1M" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1M"]) + '</button>',
+              '<button data-sector-p="6M"' + (sectorsState.period === "6M" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["6M"]) + '</button>',
+              '<button data-sector-p="YTD"' + (sectorsState.period === "YTD" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["YTD"]) + '</button>',
+              '<button data-sector-p="1Y"' + (sectorsState.period === "1Y" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1Y"]) + '</button>',
+            '</div>',
+          '</div>',
+          '<div class="starPanelMeta">',
+            '<div class="starPanelMetaText ' + statusClass + '">' + esc(sectorsState.statusText) + '</div>',
+            '<div class="starPanelMetaText">\u5f53\u524d\u5468\u671f\uff1a' + esc(periodLabel) + '</div>',
+          '</div>',
+          gridHtml,
+        '</div>'
+      ].join("");
+
+      requestAnimationFrame(function () {
+        animateStarCards(root, previousPositions);
+      });
+    }
+
     function formatBasketDate(ymd) {
       var text = String(ymd || "");
       if (!/^\\d{8}$/.test(text)) return "--";
@@ -1344,6 +1396,77 @@ export function getClientScript() {
       startStarAutoRefresh();
     }
 
+    async function fetchSectorPeriod(period, options) {
+      var opts = options || {};
+      if (sectorsState.fetchCtrl) {
+        sectorsState.fetchCtrl.abort();
+      }
+
+      var controller = new AbortController();
+      var timedOut = false;
+      sectorsState.fetchCtrl = controller;
+
+      var timer = setTimeout(function () {
+        timedOut = true;
+        controller.abort();
+      }, API_TIMEOUT_MS);
+
+      try {
+        var res = await fetch("/api/sp500-sectors?p=" + encodeURIComponent(period) + "&v=" + encodeURIComponent(SP500_SECTOR_API_VERSION), {
+          cache: opts.force ? "no-store" : "default",
+          signal: controller.signal
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        var payload = await res.json();
+        if (!payload.ok) throw new Error(payload.error || "Sector ETF API error");
+        return payload;
+      } catch (error) {
+        if (controller.signal.aborted && !timedOut) {
+          return null;
+        }
+        if (timedOut) {
+          throw new Error("\u6807\u666e500\u677f\u5757 ETF \u9762\u677f\u8bf7\u6c42\u8d85\u65f6\uff0815\u79d2\uff09");
+        }
+        throw error;
+      } finally {
+        clearTimeout(timer);
+        if (sectorsState.fetchCtrl === controller) {
+          sectorsState.fetchCtrl = null;
+        }
+      }
+    }
+
+    async function loadSectorPeriod(period, options) {
+      var opts = options || {};
+      sectorsState.period = period;
+      sectorsState.touched = true;
+
+      if (!opts.force && sectorsState.cache.has(period)) {
+        sectorsState.statusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u6570\u636e";
+        sectorsState.statusType = "ok";
+        renderSectorPanel();
+        return;
+      }
+
+      sectorsState.statusText = "\u6b63\u5728\u52a0\u8f7d " + (PERIOD_LABELS[period] || period) + " \u6570\u636e...";
+      sectorsState.statusType = "ok";
+      renderSectorPanel();
+
+      try {
+        var payload = await fetchSectorPeriod(period, opts);
+        if (!payload) return;
+        sectorsState.cache.set(period, payload);
+        sectorsState.statusText = "\u5df2\u7f13\u5b58\u5f53\u524d\u5468\u671f\u6570\u636e";
+        sectorsState.statusType = "ok";
+        renderSectorPanel();
+      } catch (error) {
+        console.error("sector ETF load failed:", error);
+        sectorsState.statusText = error && error.message ? error.message : "\u6807\u666e500\u677f\u5757 ETF \u9762\u677f\u52a0\u8f7d\u5931\u8d25";
+        sectorsState.statusType = "err";
+        renderSectorPanel();
+      }
+    }
+
     function shouldRefreshStar1D() {
       if (document.hidden) return false;
       if (starsState.period !== "1D") return false;
@@ -1378,6 +1501,7 @@ export function getClientScript() {
       if (wrap) {
         wrap.classList.toggle("stars-active", page === "stars");
         wrap.classList.toggle("weights-active", page === "weights");
+        wrap.classList.toggle("sectors-active", page === "sectors");
       }
 
       if (periodLabel) {
@@ -1392,6 +1516,10 @@ export function getClientScript() {
 
       if (page === "weights" && !weightsState.touched) {
         loadIndexWeights(weightsState.activeIndex, { force: false });
+      }
+
+      if (page === "sectors" && !sectorsState.touched) {
+        loadSectorPeriod(sectorsState.period, { force: false });
       }
 
       startStarAutoRefresh();
@@ -1593,6 +1721,17 @@ export function getClientScript() {
       });
     }
 
+    var sp500SectorPanel = $("sp500SectorPanel");
+    if (sp500SectorPanel) {
+      sp500SectorPanel.addEventListener("click", function (e) {
+        var btn = e.target && e.target.closest ? e.target.closest("button[data-sector-p]") : null;
+        if (!btn) return;
+        var period = btn.getAttribute("data-sector-p");
+        if (!period) return;
+        loadSectorPeriod(period, { force: false });
+      });
+    }
+
     var indexWeightsPanel = $("indexWeightsPanel");
     if (indexWeightsPanel) {
       indexWeightsPanel.addEventListener("click", function (e) {
@@ -1695,6 +1834,7 @@ export function getClientScript() {
 
     renderFearGreedLoading();
     renderStarPanel();
+    renderSectorPanel();
     renderWeightsPanel();
     loadFearGreed({ force: false });
     setActivePage("overview");
