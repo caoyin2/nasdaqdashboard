@@ -1306,14 +1306,9 @@ export function getClientScript() {
       var bg = "rgba(32,118,255," + (0.08 + intensity * 0.30).toFixed(3) + ")";
       var border = "rgba(105,214,255," + (0.18 + intensity * 0.26).toFixed(3) + ")";
       var glow = "rgba(38,106,255," + (0.12 + intensity * 0.22).toFixed(3) + ")";
-      var accent = intensity > 0.72
-        ? "rgba(235,248,255,.99)"
-        : intensity > 0.38
-          ? "rgba(184,228,255,.98)"
-          : "rgba(146,208,255,.96)";
 
       return [
-        '<article class="weightCard" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 16px 32px ' + glow + '; --weight-accent:' + accent + '; --weight-glow-soft:' + glow + ';">',
+        '<article class="weightCard" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 16px 32px ' + glow + '; --weight-glow-soft:' + glow + ';">',
           '<div class="weightRankBadge">' + esc(String(rank)) + '</div>',
           '<div class="weightCardTop">',
             '<div class="weightIconWrap">',

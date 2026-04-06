@@ -1515,9 +1515,12 @@ export function getStyles() {
     .weightValue strong{
       font-size: 36px;
       line-height: 1;
-      color: var(--weight-accent, rgba(196,232,255,.98));
+      color: rgba(124,232,255,.99);
       font-variant-numeric: tabular-nums;
-      text-shadow: 0 0 18px rgba(0,224,255,.18);
+      text-shadow:
+        0 0 10px rgba(90,214,255,.34),
+        0 0 22px rgba(0,224,255,.28),
+        0 0 36px rgba(64,156,255,.24);
     }
 
     .weightBar{
