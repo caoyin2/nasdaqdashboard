@@ -115,36 +115,40 @@ export async function buildStarTechPayload(period, env) {
     }
   });
 
-  const results = [];
-
-  for (const run of jobFactories) {
-    results.push(await Promise.resolve(run()).then(
-      (value) => ({ status: "fulfilled", value }),
-      (reason) => ({ status: "rejected", reason })
-    ));
-  }
-
-  const items = [];
-  const errors = [];
-  for (const result of results) {
-    if (result.status === "fulfilled") {
-      items.push(result.value);
-    } else {
-      console.error("Star tech fetch failed:", result.reason);
-      errors.push(result.reason?.message || String(result.reason));
+  let items;
+  try {
+    items = [];
+    for (const run of jobFactories) {
+      items.push(await run());
     }
+  } catch (error) {
+    throw new Error(`Star-tech upstream request failed: ${error?.message || String(error)}`);
   }
 
-  if (items.length === 0) {
-    const sample = errors.slice(0, 3).join(" | ");
-    throw new Error(`All star-tech upstream requests failed${sample ? `: ${sample}` : ""}`);
+  if (items.length !== STAR_TECH_COMPANIES.length) {
+    throw new Error(`Star-tech upstream request incomplete: expected ${STAR_TECH_COMPANIES.length}, got ${items.length}`);
   }
 
   let latestMs = -Infinity;
+  const latestTimes = [];
   for (const item of items) {
     if (Number.isFinite(item.latestT) && item.latestT > latestMs) {
       latestMs = item.latestT;
     }
+    latestTimes.push(item.latestT);
+  }
+
+  if (latestTimes.some((value) => !Number.isFinite(value))) {
+    throw new Error("Star-tech upstream request incomplete: missing latest timestamp");
+  }
+
+  const referenceLatest = latestTimes[0];
+  const mismatchedItems = items.filter((item) => item.latestT !== referenceLatest);
+  if (mismatchedItems.length > 0) {
+    const mismatchText = items
+      .map((item) => `${item.symbol}:${item.latestT}`)
+      .join(", ");
+    throw new Error(`Star-tech data timestamp mismatch: ${mismatchText}`);
   }
 
   return {

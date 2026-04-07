@@ -101,13 +101,13 @@ export async function buildSp500SectorPayload(period, env) {
   }
 
   const items = [];
-  const errors = [];
 
   for (const etf of SP500_SECTOR_ETFS) {
     let meta = metaMap.get(etf.symbol);
 
     try {
       items.push(await buildCardWithMeta(etf, meta));
+      continue;
     } catch (error) {
       try {
         const refreshed = await refreshSearchMeta(etf.symbol, env);
@@ -120,14 +120,12 @@ export async function buildSp500SectorPayload(period, env) {
         console.error("Sector ETF search refresh failed:", refreshError);
       }
 
-      console.error("Sector ETF fetch failed:", error);
-      errors.push(error?.message || String(error));
+      throw new Error(`Sector ETF upstream request failed for ${etf.symbol}: ${error?.message || String(error)}`);
     }
   }
 
-  if (items.length === 0) {
-    const sample = errors.slice(0, 3).join(" | ");
-    throw new Error(`All sector ETF upstream requests failed${sample ? `: ${sample}` : ""}`);
+  if (items.length !== SP500_SECTOR_ETFS.length) {
+    throw new Error(`Sector ETF upstream request incomplete: expected ${SP500_SECTOR_ETFS.length}, got ${items.length}`);
   }
 
   items.sort((a, b) => {
@@ -141,10 +139,25 @@ export async function buildSp500SectorPayload(period, env) {
   });
 
   let latestMs = -Infinity;
+  const latestTimes = [];
   for (const item of items) {
     if (Number.isFinite(item.latestT) && item.latestT > latestMs) {
       latestMs = item.latestT;
     }
+    latestTimes.push(item.latestT);
+  }
+
+  if (latestTimes.some((value) => !Number.isFinite(value))) {
+    throw new Error("Sector ETF upstream request incomplete: missing latest timestamp");
+  }
+
+  const referenceLatest = latestTimes[0];
+  const mismatchedItems = items.filter((item) => item.latestT !== referenceLatest);
+  if (mismatchedItems.length > 0) {
+    const mismatchText = items
+      .map((item) => `${item.symbol}:${item.latestT}`)
+      .join(", ");
+    throw new Error(`Sector ETF data timestamp mismatch: ${mismatchText}`);
   }
 
   return {
