@@ -86,6 +86,29 @@ export function getStyles() {
       min-width:0;
     }
 
+    .buildInfo{
+      display:grid;
+      gap: 2px;
+      min-width: 0;
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(31,43,61,.85);
+      background: rgba(255,255,255,.03);
+      text-align: right;
+      font-family: var(--mono);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+    }
+
+    .buildInfoLine{
+      font-size: 11px;
+      line-height: 1.35;
+      color: rgba(196,211,236,.86);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 420px;
+    }
+
     .logo{
       width: 128px;
       height: 32px;
@@ -1588,6 +1611,18 @@ export function getStyles() {
       .brand{
         flex-wrap: wrap;
         gap: 10px;
+      }
+
+      .buildInfo{
+        width: 100%;
+        text-align: left;
+      }
+
+      .buildInfoLine{
+        max-width: none;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
       }
 
       .logo{

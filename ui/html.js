@@ -5,6 +5,7 @@ import {
   PERIOD_LABELS,
   UP_COLOR,
 } from "../config.js";
+import { BUILD_INFO } from "./buildInfo.js";
 import { getStyles } from "./styles.js";
 
 function safeJsonForHtml(data) {
@@ -50,6 +51,10 @@ export function getHtml() {
           <div class="h">\u7eb3\u65af\u8fbe\u514b\u6307\u6570\u770b\u677f</div>
           <div class="sub" id="periodCN">\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f</div>
         </div>
+      </div>
+      <div class="buildInfo" title="${BUILD_INFO.fullSha}">
+        <div class="buildInfoLine">\u7248\u672c\uff1a${BUILD_INFO.shortSha} ${BUILD_INFO.message}</div>
+        <div class="buildInfoLine">\u63d0\u4ea4\uff1a${BUILD_INFO.committedAt}</div>
       </div>
     </div>
 
