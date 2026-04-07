@@ -20,7 +20,16 @@ const shortSha = git("git log -1 --format=%h");
 const message = git("git log -1 --format=%s").replace(/\\/g, "\\\\").replace(/`/g, "\\`");
 const committedAtIso = git("git log -1 --format=%cI");
 const committedAt = committedAtIso
-  ? committedAtIso.replace("T", " ").replace(/([+-]\\d{2}:\\d{2}|Z)$/, "")
+  ? new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "Asia/Shanghai",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).format(new Date(committedAtIso))
   : "";
 
 const content = `export const BUILD_INFO = {
