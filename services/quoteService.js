@@ -110,30 +110,40 @@ export async function buildQuotePayload(period, env) {
     };
   });
 
-  const indexResults = await Promise.allSettled(indexJobs);
-
-  const items = indexResults
-    .filter((result) => result.status === "fulfilled")
-    .map((result) => result.value);
-
-  for (const result of indexResults) {
-    if (result.status === "rejected") {
-      console.error("Index fetch failed:", result.reason);
-    }
+  let items;
+  try {
+    items = await Promise.all(indexJobs);
+  } catch (error) {
+    throw new Error(`Index upstream request failed: ${error?.message || String(error)}`);
   }
 
-  if (items.length === 0) {
-    throw new Error("All index upstream requests failed");
+  if (items.length !== INDEXES.length) {
+    throw new Error(`Index upstream request incomplete: expected ${INDEXES.length}, got ${items.length}`);
   }
 
   let asOfUTC = null;
   let latestMs = -Infinity;
+  const latestTimes = [];
 
   for (const item of items) {
     if (Number.isFinite(item.latestT) && item.latestT > latestMs) {
       latestMs = item.latestT;
       asOfUTC = fmtUTC(item.latestT);
     }
+    latestTimes.push(item.latestT);
+  }
+
+  if (latestTimes.some((value) => !Number.isFinite(value))) {
+    throw new Error("Index upstream request incomplete: missing latest timestamp");
+  }
+
+  const referenceLatest = latestTimes[0];
+  const mismatchedItems = items.filter((item) => item.latestT !== referenceLatest);
+  if (mismatchedItems.length > 0) {
+    const mismatchText = items
+      .map((item) => `${item.symbol}:${item.latestT}`)
+      .join(", ");
+    throw new Error(`Index data timestamp mismatch: ${mismatchText}`);
   }
 
   return {
