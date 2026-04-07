@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "dev",
-  fullSha: "development",
-  message: "development build",
-  committedAt: "1970-01-01 00:00:00",
+  shortSha: "e16e606",
+  fullSha: "e16e606b7774593f0522a23bf9769e811d01ceb5",
+  message: "feat: add deployed version header",
+  committedAt: "2026-04-07 12:58:09+08:00",
 };
