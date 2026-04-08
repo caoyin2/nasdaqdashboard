@@ -14,6 +14,7 @@ import {
   patchBarsWithLatest1D,
   pickFirstCloseFromBars,
   pickPrevCloseSmart,
+  validateLatestTimes,
 } from "../lib/time.js";
 import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
 import { getSearchMetaBatch } from "./searchMetaStore.js";
@@ -121,35 +122,13 @@ export async function buildQuotePayload(period, env) {
     throw new Error(`Index upstream request incomplete: expected ${INDEXES.length}, got ${items.length}`);
   }
 
-  let asOfUTC = null;
-  let latestMs = -Infinity;
-  const latestTimes = [];
-
-  for (const item of items) {
-    if (Number.isFinite(item.latestT) && item.latestT > latestMs) {
-      latestMs = item.latestT;
-      asOfUTC = fmtUTC(item.latestT);
-    }
-    latestTimes.push(item.latestT);
-  }
-
-  if (latestTimes.some((value) => !Number.isFinite(value))) {
-    throw new Error("Index upstream request incomplete: missing latest timestamp");
-  }
-
-  const referenceLatest = latestTimes[0];
-  const mismatchedItems = items.filter((item) => item.latestT !== referenceLatest);
-  if (mismatchedItems.length > 0) {
-    const mismatchText = items
-      .map((item) => `${item.symbol}:${item.latestT}`)
-      .join(", ");
-    throw new Error(`Index data timestamp mismatch: ${mismatchText}`);
-  }
+  const latestInfo = validateLatestTimes(items, "Index", 5000);
+  const asOfUTC = fmtUTC(latestInfo.asOfMs);
 
   return {
     ok: true,
     period,
-    asOfMs: Number.isFinite(latestMs) ? latestMs : null,
+    asOfMs: Number.isFinite(latestInfo.asOfMs) ? latestInfo.asOfMs : null,
     asOfUTC,
     items,
   };

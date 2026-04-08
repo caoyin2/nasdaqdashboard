@@ -16,6 +16,7 @@ import {
   parseBarsFromAttributes,
   pickFirstCloseFromBars,
   pickPrevCloseSmart,
+  validateLatestTimes,
 } from "../lib/time.js";
 import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
 import { getSearchMetaBatch, refreshSearchMeta } from "./searchMetaStore.js";
@@ -129,32 +130,12 @@ export async function buildStarTechPayload(period, env) {
     throw new Error(`Star-tech upstream request incomplete: expected ${STAR_TECH_COMPANIES.length}, got ${items.length}`);
   }
 
-  let latestMs = -Infinity;
-  const latestTimes = [];
-  for (const item of items) {
-    if (Number.isFinite(item.latestT) && item.latestT > latestMs) {
-      latestMs = item.latestT;
-    }
-    latestTimes.push(item.latestT);
-  }
-
-  if (latestTimes.some((value) => !Number.isFinite(value))) {
-    throw new Error("Star-tech upstream request incomplete: missing latest timestamp");
-  }
-
-  const referenceLatest = latestTimes[0];
-  const mismatchedItems = items.filter((item) => item.latestT !== referenceLatest);
-  if (mismatchedItems.length > 0) {
-    const mismatchText = items
-      .map((item) => `${item.symbol}:${item.latestT}`)
-      .join(", ");
-    throw new Error(`Star-tech data timestamp mismatch: ${mismatchText}`);
-  }
+  const latestInfo = validateLatestTimes(items, "Star-tech", 5000);
 
   return {
     ok: true,
     period,
-    asOfMs: Number.isFinite(latestMs) ? latestMs : null,
+    asOfMs: Number.isFinite(latestInfo.asOfMs) ? latestInfo.asOfMs : null,
     items,
   };
 }

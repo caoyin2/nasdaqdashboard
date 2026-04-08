@@ -16,6 +16,7 @@ import {
   parseBarsFromAttributes,
   pickFirstCloseFromBars,
   pickPrevCloseSmart,
+  validateLatestTimes,
 } from "../lib/time.js";
 import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
 import { getSearchMetaBatch, refreshSearchMeta } from "./searchMetaStore.js";
@@ -138,32 +139,12 @@ export async function buildSp500SectorPayload(period, env) {
     return String(a?.symbol || "").localeCompare(String(b?.symbol || ""));
   });
 
-  let latestMs = -Infinity;
-  const latestTimes = [];
-  for (const item of items) {
-    if (Number.isFinite(item.latestT) && item.latestT > latestMs) {
-      latestMs = item.latestT;
-    }
-    latestTimes.push(item.latestT);
-  }
-
-  if (latestTimes.some((value) => !Number.isFinite(value))) {
-    throw new Error("Sector ETF upstream request incomplete: missing latest timestamp");
-  }
-
-  const referenceLatest = latestTimes[0];
-  const mismatchedItems = items.filter((item) => item.latestT !== referenceLatest);
-  if (mismatchedItems.length > 0) {
-    const mismatchText = items
-      .map((item) => `${item.symbol}:${item.latestT}`)
-      .join(", ");
-    throw new Error(`Sector ETF data timestamp mismatch: ${mismatchText}`);
-  }
+  const latestInfo = validateLatestTimes(items, "Sector ETF", 5000);
 
   return {
     ok: true,
     period,
-    asOfMs: Number.isFinite(latestMs) ? latestMs : null,
+    asOfMs: Number.isFinite(latestInfo.asOfMs) ? latestInfo.asOfMs : null,
     title: "\u6807\u666e500\u5404\u677f\u5757ETF",
     items,
   };
