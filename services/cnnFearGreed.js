@@ -12,6 +12,8 @@ const CNN_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
   "Accept": "application/json,text/plain,*/*",
+  "Cache-Control": "no-cache",
+  "Pragma": "no-cache",
   "Referer": "https://www.cnn.com/",
   "Origin": "https://www.cnn.com",
 };
@@ -97,7 +99,6 @@ export async function fetchCnnFearGreedSummary() {
   let res;
   try {
     res = await fetch(CNN_FG_UPSTREAM, {
-      cf: { cacheTtl: 10, cacheEverything: true },
       headers: CNN_HEADERS,
       signal: controller.signal,
     });

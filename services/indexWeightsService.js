@@ -82,10 +82,11 @@ function decodeBasketText(buffer) {
 async function fetchBasketText(etfCode, ymd) {
   const url = `https://reportdocs.static.szse.cn/files/text/etf/ETF${etfCode}${ymd}.txt`;
   const res = await fetch(url, {
-    cf: { cacheTtl: 300, cacheEverything: true },
     headers: {
       "User-Agent": "cf-worker-proxy",
       "Accept": "text/plain",
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache",
     },
   });
 
@@ -205,10 +206,11 @@ function parseBasketRows(text) {
 
 async function fetchIsharesPageHtml(config) {
   const res = await fetch(config.productPageUrl, {
-    cf: { cacheTtl: 900, cacheEverything: true },
     headers: {
       "User-Agent": "Mozilla/5.0",
       "Accept": "text/html,application/xhtml+xml",
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache",
       "Referer": ISHARES_ORIGIN + "/",
     },
   });
@@ -260,10 +262,11 @@ async function fetchIsharesHoldings(config) {
   }
 
   const res = await fetch(url.toString(), {
-    cf: { cacheTtl: 900, cacheEverything: true },
     headers: {
       "User-Agent": "Mozilla/5.0",
       "Accept": "application/json,text/plain,*/*",
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache",
       "Referer": "https://www.ishares.com/",
     },
   });

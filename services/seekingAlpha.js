@@ -12,13 +12,14 @@ async function fetchWithTimeout(url, label, options = {}) {
   const headers = {
     "User-Agent": "cf-worker-proxy",
     "Accept": "application/json",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
     ...(options.headers || {}),
   };
 
   let res;
   try {
     res = await fetch(url, {
-      cf: { cacheTtl: 10, cacheEverything: true },
       headers,
       signal: controller.signal,
     });

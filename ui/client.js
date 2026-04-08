@@ -1388,7 +1388,7 @@ export function getClientScript() {
 
       try {
         var res = await fetch("/api/index-weights?index=" + encodeURIComponent(indexCode) + "&v=" + encodeURIComponent(INDEX_WEIGHTS_API_VERSION), {
-          cache: opts.force ? "no-store" : "default",
+          cache: "no-store",
           signal: controller.signal
         });
         if (!res.ok) throw new Error("HTTP " + res.status);
@@ -1459,7 +1459,7 @@ export function getClientScript() {
 
       try {
         var res = await fetch("/api/star-tech?p=" + encodeURIComponent(period), {
-          cache: opts.force ? "no-store" : "default",
+          cache: "no-store",
           signal: controller.signal
         });
         if (!res.ok) throw new Error("HTTP " + res.status);
@@ -1534,7 +1534,7 @@ export function getClientScript() {
 
       try {
         var res = await fetch("/api/sp500-sectors?p=" + encodeURIComponent(period) + "&v=" + encodeURIComponent(SP500_SECTOR_API_VERSION), {
-          cache: opts.force ? "no-store" : "default",
+          cache: "no-store",
           signal: controller.signal
         });
         if (!res.ok) throw new Error("HTTP " + res.status);
@@ -1588,13 +1588,6 @@ export function getClientScript() {
       }
     }
 
-    function shouldRefreshStar1D() {
-      if (document.hidden) return false;
-      if (starsState.period !== "1D") return false;
-      if (!starsState.cache.has("1D")) return false;
-      return state.page === "stars";
-    }
-
     function startStarAutoRefresh() {
       clearInterval(starsState.refreshTimer);
       starsState.refreshTimer = null;
@@ -1632,15 +1625,15 @@ export function getClientScript() {
       starsState.mobileVisible = page === "stars";
 
       if (page === "stars" && !starsState.touched) {
-        loadStarPeriod(starsState.period, { force: false });
+        loadStarPeriod(starsState.period, { force: true });
       }
 
       if (page === "weights" && !weightsState.touched) {
-        loadIndexWeights(weightsState.activeIndex, { force: false });
+        loadIndexWeights(weightsState.activeIndex, { force: true });
       }
 
       if (page === "sectors" && !sectorsState.touched) {
-        loadSectorPeriod(sectorsState.period, { force: false });
+        loadSectorPeriod(sectorsState.period, { force: true });
       }
 
       startStarAutoRefresh();
@@ -1724,6 +1717,9 @@ export function getClientScript() {
 
     async function ensureData(period, options) {
       var opts = options || {};
+      if (!opts.force && periodCache.has(period)) {
+        return { q: periodCache.get(period).q, fromCache: true };
+      }
       var q = await fetchPeriod(period, opts);
       return q ? { q: q, fromCache: false } : null;
     }
@@ -1738,7 +1734,7 @@ export function getClientScript() {
       var res;
       try {
         res = await fetch("/api/fear-greed", {
-          cache: opts.force ? "no-store" : "default",
+          cache: "no-store",
           signal: controller.signal
         });
       } catch (error) {
@@ -1787,12 +1783,12 @@ export function getClientScript() {
     async function renderPeriod(period, options) {
       var opts = options || {};
       try {
-        setStatus(opts.force ? "\u5237\u65b0\u4e2d..." : "\u52a0\u8f7d\u4e2d...", "ok");
+        setStatus(opts.force ? "\u4ece\u7f51\u7edc\u83b7\u53d6\u4e2d..." : "\u52a0\u8f7d\u4e2d...", "ok");
         var result = await ensureData(period, opts);
         if (!result) return;
         if (period !== state.period) return;
         applyData(result.q);
-        setStatus("\u52a0\u8f7d\u6210\u529f", "ok");
+        setStatus(result.fromCache ? "\u5df2\u4f7f\u7528\u672c\u9875\u9762\u7f13\u5b58\u6570\u636e" : "\u52a0\u8f7d\u6210\u529f", "ok");
       } catch (error) {
         console.error(error);
         setStatus(error && error.message ? error.message : "\u52a0\u8f7d\u5931\u8d25", "err");
@@ -1803,27 +1799,6 @@ export function getClientScript() {
       clearInterval(refreshTimer);
       refreshTimer = null;
     }
-
-    function refreshOverviewOnResume(force) {
-      if (document.hidden) return;
-      if (state.page !== "overview") return;
-      if (!force && !periodCache.has(state.period)) return;
-      scheduleRender(state.period, { force: true });
-    }
-
-    document.addEventListener("visibilitychange", function () {
-      if (!document.hidden) {
-        refreshOverviewOnResume(false);
-      }
-    });
-
-    window.addEventListener("pageshow", function (event) {
-      refreshOverviewOnResume(!!(event && event.persisted));
-    });
-
-    window.addEventListener("focus", function () {
-      refreshOverviewOnResume(true);
-    });
 
     $("seg").addEventListener("click", function (e) {
       var btn = e.target && e.target.closest ? e.target.closest("button[data-p]") : null;
@@ -1840,7 +1815,7 @@ export function getClientScript() {
       });
 
       startAutoRefresh();
-      scheduleRender(p, { force: true });
+      scheduleRender(p, { force: false });
     });
 
     var pageSeg = $("pageSeg");
@@ -1983,9 +1958,9 @@ export function getClientScript() {
     renderStarPanel();
     renderSectorPanel();
     renderWeightsPanel();
-    loadFearGreed({ force: false });
+    loadFearGreed({ force: true });
     setActivePage("overview");
-    scheduleRender(state.period, { force: false });
+    scheduleRender(state.period, { force: true });
     startAutoRefresh();
   } catch (error) {
     console.error("app bootstrap failed:", error);
