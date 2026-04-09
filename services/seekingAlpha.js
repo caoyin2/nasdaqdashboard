@@ -125,6 +125,33 @@ export async function fetchSeekingAlphaPeriod(period, tickerId) {
   return res.json();
 }
 
+export async function fetchSeekingAlphaRealTimeQuotes(saIds) {
+  const ids = Array.from(
+    new Set(
+      (Array.isArray(saIds) ? saIds : [saIds])
+        .map((value) => Number.parseInt(value, 10))
+        .filter((value) => Number.isFinite(value) && value > 0)
+    )
+  );
+
+  if (!ids.length) {
+    return [];
+  }
+
+  const url = `https://finance-api.seekingalpha.com/real_time_quotes?sa_ids=${ids.join(",")}`;
+  const res = await fetchWithTimeout(url, `SeekingAlpha real_time_quotes ${ids.join(",")}`, {
+    headers: buildChartHeaders(),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`SeekingAlpha real_time_quotes failed: HTTP ${res.status} ${text.slice(0, 120)}`);
+  }
+
+  const json = await res.json();
+  return Array.isArray(json?.real_time_quotes) ? json.real_time_quotes : [];
+}
+
 export async function fetchSeekingAlphaSearch(query) {
   const url = buildSearchUrl(query);
   const res = await fetchWithTimeout(url, `SeekingAlpha search ${query}`, {

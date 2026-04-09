@@ -13,12 +13,13 @@
 import { STAR_TECH_COMPANIES } from "../config.js";
 import {
   getLastBar,
+  parseTimeKeyToUTCms,
   parseBarsFromAttributes,
   pickFirstCloseFromBars,
   pickPrevCloseSmart,
   validateLatestTimes,
 } from "../lib/time.js";
-import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
+import { fetchSeekingAlphaPeriod, fetchSeekingAlphaRealTimeQuotes } from "./seekingAlpha.js";
 import { getSearchMetaBatch, refreshSearchMeta } from "./searchMetaStore.js";
 
 function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars) {
@@ -66,12 +67,81 @@ function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars) {
   };
 }
 
+function buildStarCardFromRealTimeQuote(company, meta, quote) {
+  const lastClose = Number.isFinite(+quote?.last) ? +quote.last : Number.isFinite(+quote?.close) ? +quote.close : null;
+  const baseClose = Number.isFinite(+quote?.prev_close) ? +quote.prev_close : null;
+  const latestT = parseTimeKeyToUTCms(quote?.last_time);
+  const change = Number.isFinite(lastClose) && Number.isFinite(baseClose)
+    ? lastClose - baseClose
+    : null;
+  const changePct = Number.isFinite(change) && Number.isFinite(baseClose) && baseClose !== 0
+    ? (change / baseClose) * 100
+    : null;
+
+  return {
+    tickerId: meta.tickerId,
+    symbol: company.symbol,
+    nameCN: company.nameCN,
+    icon: meta.iconLight || null,
+    latestT: Number.isFinite(latestT) ? latestT : null,
+    period: "1D",
+    baseLabel: "\u6628\u6536",
+    lastClose,
+    baseClose,
+    change: Number.isFinite(change) ? change : null,
+    changePct: Number.isFinite(changePct) ? changePct : null,
+  };
+}
+
 export async function buildStarTechPayload(period, env) {
   const metaMap = await getSearchMetaBatch(
     STAR_TECH_COMPANIES.map((company) => company.symbol),
     env,
     { allowFetch: true }
   );
+
+  if (period === "1D") {
+    const missingMetaSymbols = STAR_TECH_COMPANIES
+      .filter((company) => !metaMap.get(company.symbol)?.tickerId)
+      .map((company) => company.symbol);
+
+    if (missingMetaSymbols.length > 0) {
+      throw new Error(`Missing tickerId for ${missingMetaSymbols.join(", ")}`);
+    }
+
+    const quotes = await fetchSeekingAlphaRealTimeQuotes(
+      STAR_TECH_COMPANIES.map((company) => metaMap.get(company.symbol)?.tickerId)
+    );
+    const quoteMap = new Map(
+      quotes
+        .filter((quote) => Number.isFinite(+quote?.ticker_id))
+        .map((quote) => [+quote.ticker_id, quote])
+    );
+
+    const items = STAR_TECH_COMPANIES.map((company) => {
+      const meta = metaMap.get(company.symbol);
+      const quote = quoteMap.get(meta.tickerId);
+
+      if (!quote) {
+        throw new Error(`Missing real-time quote for ${company.symbol}`);
+      }
+
+      return buildStarCardFromRealTimeQuote(company, meta, quote);
+    });
+
+    if (items.length !== STAR_TECH_COMPANIES.length) {
+      throw new Error(`Star-tech upstream request incomplete: expected ${STAR_TECH_COMPANIES.length}, got ${items.length}`);
+    }
+
+    const latestInfo = validateLatestTimes(items, "Star-tech", 5000);
+
+    return {
+      ok: true,
+      period,
+      asOfMs: Number.isFinite(latestInfo.asOfMs) ? latestInfo.asOfMs : null,
+      items,
+    };
+  }
 
   async function buildCardWithMeta(company, meta) {
     if (!meta?.tickerId) {

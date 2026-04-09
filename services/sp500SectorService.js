@@ -13,12 +13,13 @@
 import { SP500_SECTOR_ETFS } from "../config.js";
 import {
   getLastBar,
+  parseTimeKeyToUTCms,
   parseBarsFromAttributes,
   pickFirstCloseFromBars,
   pickPrevCloseSmart,
   validateLatestTimes,
 } from "../lib/time.js";
-import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
+import { fetchSeekingAlphaPeriod, fetchSeekingAlphaRealTimeQuotes } from "./seekingAlpha.js";
 import { getSearchMetaBatch, refreshSearchMeta } from "./searchMetaStore.js";
 
 function buildSectorCard(period, etf, meta, bars1D, periodBarsRaw, ytdBars) {
@@ -66,12 +67,92 @@ function buildSectorCard(period, etf, meta, bars1D, periodBarsRaw, ytdBars) {
   };
 }
 
+function buildSectorCardFromRealTimeQuote(etf, meta, quote) {
+  const lastClose = Number.isFinite(+quote?.last) ? +quote.last : Number.isFinite(+quote?.close) ? +quote.close : null;
+  const baseClose = Number.isFinite(+quote?.prev_close) ? +quote.prev_close : null;
+  const latestT = parseTimeKeyToUTCms(quote?.last_time);
+  const change = Number.isFinite(lastClose) && Number.isFinite(baseClose)
+    ? lastClose - baseClose
+    : null;
+  const changePct = Number.isFinite(change) && Number.isFinite(baseClose) && baseClose !== 0
+    ? (change / baseClose) * 100
+    : null;
+
+  return {
+    tickerId: meta.tickerId,
+    symbol: etf.symbol,
+    nameCN: etf.nameCN,
+    icon: meta.iconLight || null,
+    latestT: Number.isFinite(latestT) ? latestT : null,
+    period: "1D",
+    baseLabel: "\u6628\u6536",
+    lastClose,
+    baseClose,
+    change: Number.isFinite(change) ? change : null,
+    changePct: Number.isFinite(changePct) ? changePct : null,
+  };
+}
+
 export async function buildSp500SectorPayload(period, env) {
   const metaMap = await getSearchMetaBatch(
     SP500_SECTOR_ETFS.map((etf) => etf.symbol),
     env,
     { allowFetch: true }
   );
+
+  if (period === "1D") {
+    const missingMetaSymbols = SP500_SECTOR_ETFS
+      .filter((etf) => !metaMap.get(etf.symbol)?.tickerId)
+      .map((etf) => etf.symbol);
+
+    if (missingMetaSymbols.length > 0) {
+      throw new Error(`Missing tickerId for ${missingMetaSymbols.join(", ")}`);
+    }
+
+    const quotes = await fetchSeekingAlphaRealTimeQuotes(
+      SP500_SECTOR_ETFS.map((etf) => metaMap.get(etf.symbol)?.tickerId)
+    );
+    const quoteMap = new Map(
+      quotes
+        .filter((quote) => Number.isFinite(+quote?.ticker_id))
+        .map((quote) => [+quote.ticker_id, quote])
+    );
+
+    const items = SP500_SECTOR_ETFS.map((etf) => {
+      const meta = metaMap.get(etf.symbol);
+      const quote = quoteMap.get(meta.tickerId);
+
+      if (!quote) {
+        throw new Error(`Missing real-time quote for ${etf.symbol}`);
+      }
+
+      return buildSectorCardFromRealTimeQuote(etf, meta, quote);
+    });
+
+    if (items.length !== SP500_SECTOR_ETFS.length) {
+      throw new Error(`Sector ETF upstream request incomplete: expected ${SP500_SECTOR_ETFS.length}, got ${items.length}`);
+    }
+
+    items.sort((a, b) => {
+      const pctDelta = (Number.isFinite(b?.changePct) ? b.changePct : -Infinity) - (Number.isFinite(a?.changePct) ? a.changePct : -Infinity);
+      if (Math.abs(pctDelta) > 1e-9) return pctDelta;
+
+      const changeDelta = (Number.isFinite(b?.change) ? b.change : -Infinity) - (Number.isFinite(a?.change) ? a.change : -Infinity);
+      if (Math.abs(changeDelta) > 1e-9) return changeDelta;
+
+      return String(a?.symbol || "").localeCompare(String(b?.symbol || ""));
+    });
+
+    const latestInfo = validateLatestTimes(items, "Sector ETF", 5000);
+
+    return {
+      ok: true,
+      period,
+      asOfMs: Number.isFinite(latestInfo.asOfMs) ? latestInfo.asOfMs : null,
+      title: "\u6807\u666e500\u5404\u677f\u5757ETF",
+      items,
+    };
+  }
 
   async function buildCardWithMeta(etf, meta) {
     if (!meta?.tickerId) {
