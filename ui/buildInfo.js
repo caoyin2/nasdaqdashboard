@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "d3fa508",
-  fullSha: "d3fa508739d0401b4dceb8fe8baa95432711baff",
-  message: "feat: add star tech list manager",
-  committedAt: "2026-04-10 12:03:32",
+  shortSha: "1f59e6d",
+  fullSha: "1f59e6d0d060ddda785a3fb587521acf10a8051c",
+  message: "fix: validate star list additions and refine mobile manager",
+  committedAt: "2026-04-10 13:15:18",
 };
