@@ -13,7 +13,9 @@
  */
 
 import { STAR_TECH_COMPANIES } from "../config.js";
+import { fetchSeekingAlphaSearch } from "./seekingAlpha.js";
 import { getKvBinding } from "./kvBinding.js";
+import { writeSearchMetaToKv } from "./searchMetaStore.js";
 
 export const STAR_TECH_LIST_KEY = "index:star-tech:list";
 
@@ -22,6 +24,57 @@ function normalizeCompany(item) {
   const nameCN = String(item?.nameCN || "").trim();
   if (!symbol || !nameCN) return null;
   return { symbol, nameCN };
+}
+
+function sanitizeTopSearchResult(symbol, top) {
+  if (!top) return null;
+
+  return {
+    symbol,
+    tickerId: Number.isFinite(+top.id) ? +top.id : null,
+    nameEn: String(top.content || symbol).replace(/<[^>]+>/g, ""),
+    slug: String(top.slug || symbol).toLowerCase(),
+    iconLight: top.image?.light || null,
+    iconDark: top.image?.dark || null,
+    updatedAt: new Date().toISOString(),
+    source: "live",
+  };
+}
+
+function getSearchSymbolCandidate(top) {
+  const slug = String(top?.slug || "").trim().toUpperCase();
+  if (slug) return slug;
+
+  const urlMatch = String(top?.url || "").match(/\/symbol\/([^/?#]+)/i);
+  if (urlMatch?.[1]) return String(urlMatch[1]).trim().toUpperCase();
+
+  const nameText = String(top?.name || "").replace(/<[^>]+>/g, "").trim().toUpperCase();
+  if (nameText && /^[A-Z0-9.\-]+$/.test(nameText)) return nameText;
+
+  return "";
+}
+
+async function validateAndSeedSearchMeta(symbol) {
+  const payload = await fetchSeekingAlphaSearch(symbol);
+  const top = payload?.symbols?.[0];
+  if (!top) {
+    throw new Error(`Symbol ${symbol} not found in search`);
+  }
+
+  const matchedSymbol = getSearchSymbolCandidate(top);
+  if (matchedSymbol !== symbol) {
+    throw new Error(`Search top result mismatch: expected ${symbol}, got ${matchedSymbol || "unknown"}`);
+  }
+
+  const meta = sanitizeTopSearchResult(symbol, top);
+  if (!meta?.tickerId) {
+    throw new Error(`Search result for ${symbol} has no tickerId`);
+  }
+
+  return {
+    meta,
+    fallbackName: meta.nameEn,
+  };
 }
 
 function normalizeCompanyList(items) {
@@ -92,15 +145,24 @@ export async function setStarTechCompanyList(env, list) {
 }
 
 export async function addStarTechCompany(env, item) {
-  const company = normalizeCompany(item);
-  if (!company) {
-    throw new Error("Missing symbol or 中文名");
+  const symbol = String(item?.symbol || "").trim().toUpperCase();
+  const inputNameCN = String(item?.nameCN || "").trim();
+  if (!symbol) {
+    throw new Error("Missing symbol");
   }
 
   const current = await getStarTechCompanyList(env);
-  if (current.some((entry) => entry.symbol === company.symbol)) {
-    throw new Error(`Symbol ${company.symbol} already exists`);
+  if (current.some((entry) => entry.symbol === symbol)) {
+    throw new Error(`Symbol ${symbol} already exists`);
   }
+
+  const validation = await validateAndSeedSearchMeta(symbol);
+  await writeSearchMetaToKv(env, validation.meta);
+
+  const company = {
+    symbol,
+    nameCN: inputNameCN || validation.fallbackName,
+  };
 
   const next = current.concat(company);
   await writeStarTechListToKv(env, next);

@@ -2017,31 +2017,43 @@ export function getStyles() {
 
       .starManageOverlay{
         padding: 12px;
+        align-items: end;
       }
 
       .starManageModal{
+        width: 100%;
+        max-height: calc(100vh - 24px);
         padding: 14px;
         gap: 12px;
+        border-radius: 16px;
       }
 
       .starManageHead{
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        align-items: flex-start;
       }
 
       .starManageForm{
         grid-template-columns: 1fr;
       }
 
-      .starManageDelete,
-      .starManageClose,
+      .starManageClose{
+        width: auto;
+        flex: 0 0 auto;
+      }
+
+      .starManageItem{
+        flex-direction: row;
+        align-items: center;
+      }
+
       .starManageSubmit{
         width: 100%;
       }
 
-      .starManageItem{
-        flex-direction: column;
-        align-items: stretch;
+      .starManageDelete{
+        width: auto;
+        flex: 0 0 auto;
       }
 
       #idxCards{
