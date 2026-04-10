@@ -1673,6 +1673,7 @@ export function getClientScript() {
           map: new Map(line.map(function (p) { return [p.t, p]; })),
           iconSymbol: item.iconSymbol || meta.iconSymbol || item.symbol,
           iconLight: item.iconLight || null,
+          latestT: item.latestT,
           lastClose: item.lastClose,
           cardBaseClose: item.cardBaseClose,
           cardChg: item.cardChg,
