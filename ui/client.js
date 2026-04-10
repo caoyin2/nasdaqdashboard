@@ -2064,11 +2064,13 @@ export function getClientScript() {
           return;
         }
 
-        var closeBtn = e.target && e.target.closest ? e.target.closest("[data-star-manage-close]") : null;
-        if (closeBtn) {
-          if (closeBtn.getAttribute("data-star-manage-close") === "overlay" && e.target !== closeBtn) {
-            return;
-          }
+        var closeBtn = e.target && e.target.closest
+          ? e.target.closest('button[data-star-manage-close="button"]')
+          : null;
+        var closeOverlay = e.target && e.target.matches
+          ? e.target.matches('[data-star-manage-close="overlay"]')
+          : false;
+        if (closeBtn || closeOverlay) {
           closeStarListManager();
           return;
         }
