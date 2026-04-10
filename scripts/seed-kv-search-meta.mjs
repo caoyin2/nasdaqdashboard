@@ -1,5 +1,6 @@
 import { SP500_SECTOR_ETFS, STAR_TECH_COMPANIES } from "../config.js";
 import { getLatestIndexWeightSymbols } from "../services/indexWeightsService.js";
+import { STAR_TECH_LIST_KEY } from "../services/starTechListStore.js";
 import { fetchSeekingAlphaSearch } from "../services/seekingAlpha.js";
 
 const BASE_URL = process.env.BASE_URL || "https://stock.caoyinchat.top";
@@ -51,6 +52,11 @@ async function writeKv(key, value) {
   return res.json();
 }
 
+async function seedStarTechList() {
+  await writeKv(STAR_TECH_LIST_KEY, STAR_TECH_COMPANIES);
+  console.log(`Stored ${STAR_TECH_LIST_KEY}`);
+}
+
 async function readKv(key) {
   const res = await fetch(`${BASE_URL}/api/kv?key=${encodeURIComponent(key)}`, {
     headers: {
@@ -67,6 +73,8 @@ async function readKv(key) {
 }
 
 async function main() {
+  await seedStarTechList();
+
   const latestNdxtmcWeights = await getLatestIndexWeightSymbols("NDXTMC");
   const latestSp500Weights = await getLatestIndexWeightSymbols("SP500-45");
   const latestNdxWeights = await getLatestIndexWeightSymbols("NDX");

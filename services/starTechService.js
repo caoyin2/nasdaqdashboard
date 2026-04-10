@@ -10,7 +10,6 @@
  * the main index cards.
  */
 
-import { STAR_TECH_COMPANIES } from "../config.js";
 import {
   getLastBar,
   patchBarsWithLatest1D,
@@ -21,6 +20,7 @@ import {
 } from "../lib/time.js";
 import { fetchSeekingAlphaPeriod, fetchSeekingAlphaRealTimeQuotes } from "./seekingAlpha.js";
 import { getSearchMetaBatch, refreshSearchMeta } from "./searchMetaStore.js";
+import { getStarTechCompanyList } from "./starTechListStore.js";
 
 function maxLatestTime(items) {
   const values = (items || [])
@@ -116,14 +116,16 @@ function buildStarCardFromRealTimeQuote(company, meta, quote) {
 }
 
 export async function buildStarTechPayload(period, env) {
+  const companies = await getStarTechCompanyList(env);
+
   const metaMap = await getSearchMetaBatch(
-    STAR_TECH_COMPANIES.map((company) => company.symbol),
+    companies.map((company) => company.symbol),
     env,
     { allowFetch: true }
   );
 
   if (period === "1D") {
-    const missingMetaSymbols = STAR_TECH_COMPANIES
+    const missingMetaSymbols = companies
       .filter((company) => !metaMap.get(company.symbol)?.tickerId)
       .map((company) => company.symbol);
 
@@ -132,7 +134,7 @@ export async function buildStarTechPayload(period, env) {
     }
 
     const quotes = await fetchSeekingAlphaRealTimeQuotes(
-      STAR_TECH_COMPANIES.map((company) => metaMap.get(company.symbol)?.tickerId)
+      companies.map((company) => metaMap.get(company.symbol)?.tickerId)
     );
     const quoteMap = new Map(
       quotes
@@ -140,7 +142,7 @@ export async function buildStarTechPayload(period, env) {
         .map((quote) => [+quote.ticker_id, quote])
     );
 
-    const items = STAR_TECH_COMPANIES.map((company) => {
+    const items = companies.map((company) => {
       const meta = metaMap.get(company.symbol);
       const quote = quoteMap.get(meta.tickerId);
 
@@ -151,8 +153,8 @@ export async function buildStarTechPayload(period, env) {
       return buildStarCardFromRealTimeQuote(company, meta, quote);
     });
 
-    if (items.length !== STAR_TECH_COMPANIES.length) {
-      throw new Error(`Star-tech upstream request incomplete: expected ${STAR_TECH_COMPANIES.length}, got ${items.length}`);
+    if (items.length !== companies.length) {
+      throw new Error(`Star-tech upstream request incomplete: expected ${companies.length}, got ${items.length}`);
     }
 
     return {
@@ -191,7 +193,7 @@ export async function buildStarTechPayload(period, env) {
     return buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars);
   }
 
-  const jobFactories = STAR_TECH_COMPANIES.map((company) => async () => {
+  const jobFactories = companies.map((company) => async () => {
     let meta = metaMap.get(company.symbol);
 
     try {
@@ -216,8 +218,8 @@ export async function buildStarTechPayload(period, env) {
     throw new Error(`Star-tech upstream request failed: ${error?.message || String(error)}`);
   }
 
-  if (items.length !== STAR_TECH_COMPANIES.length) {
-    throw new Error(`Star-tech upstream request incomplete: expected ${STAR_TECH_COMPANIES.length}, got ${items.length}`);
+  if (items.length !== companies.length) {
+    throw new Error(`Star-tech upstream request incomplete: expected ${companies.length}, got ${items.length}`);
   }
 
   return {
