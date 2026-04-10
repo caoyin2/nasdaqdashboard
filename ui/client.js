@@ -1288,8 +1288,17 @@ export function getClientScript() {
       var border = sectorTint(item, 0.26 + intensity * 0.30);
       var glow = sectorTint(item, 0.16 + intensity * 0.24);
       var tone = starToneClass(item);
-      var footerHtml = (item && item.showSparkline && item.period !== "1D" && getSparklineValues(item).length > 1)
-        ? sparklineSvgHTML(item, "sectorHeatSparkline")
+      var hasSparkline = !!(item && item.showSparkline && item.period !== "1D" && getSparklineValues(item).length > 1);
+      var mainHtml = hasSparkline
+        ? [
+            '<div class="sectorHeatMain">',
+              '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>',
+              sparklineSvgHTML(item, "sectorHeatSparkline"),
+            '</div>'
+          ].join("")
+        : '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>';
+      var footerHtml = hasSparkline
+        ? ""
         : '<div class="sectorHeatLatest">' + esc(cardLatestTimeText(item.latestT)) + '</div>';
 
       return [
@@ -1306,7 +1315,7 @@ export function getClientScript() {
             '</div>',
             '<div class="sectorHeatPrice">' + fmtPrice(item.lastClose) + '</div>',
           '</div>',
-          '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>',
+          mainHtml,
           '<div class="sectorHeatMeta">',
             '<span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>',
             '<strong>' + signPrice(item.change) + '</strong>',

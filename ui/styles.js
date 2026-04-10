@@ -1183,6 +1183,14 @@ export function getStyles() {
       letter-spacing: -.02em;
     }
 
+    .sectorHeatMain{
+      display:grid;
+      grid-template-columns: minmax(0, 1fr) 120px;
+      align-items: center;
+      gap: 14px;
+      min-height: 42px;
+    }
+
     .sectorHeatMeta{
       display:flex;
       align-items:center;
@@ -1210,7 +1218,7 @@ export function getStyles() {
 
     .sectorHeatSparkline{
       justify-self: end;
-      align-self: end;
+      align-self: center;
       width: 120px;
       height: 42px;
       color: rgba(226,232,240,.94);
@@ -1859,6 +1867,12 @@ export function getStyles() {
         font-size: 30px;
       }
 
+      .sectorHeatMain{
+        grid-template-columns: minmax(0, 1fr) 104px;
+        gap: 10px;
+        min-height: 38px;
+      }
+
       .sectorHeatPrice{
         font-size: 13px;
       }
@@ -1869,12 +1883,15 @@ export function getStyles() {
       }
 
       .sectorHeatLatest{
-        justify-self: start;
-        text-align: left;
+        justify-self: end;
+        text-align: right;
       }
 
       .sectorHeatSparkline{
-        justify-self: start;
+        justify-self: end;
+        align-self: center;
+        width: 104px;
+        height: 38px;
       }
 
       .sectorBarRow{
