@@ -736,6 +736,7 @@ export function getClientScript() {
         symbol: item.symbol,
         icon: item.iconLight || "",
         nameCN: item.nameCN,
+        latestT: item.latestT,
         lastClose: item.lastClose,
         baseClose: item.cardBaseClose,
         change: item.cardChg,
