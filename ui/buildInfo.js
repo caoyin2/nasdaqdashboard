@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "f8b8f60",
-  fullSha: "f8b8f60947e3ea475bb3b605a41a36f31a06cc43",
-  message: "fix: swap sparkline card latest time and delta",
-  committedAt: "2026-04-10 11:09:12",
+  shortSha: "a3a2dc5",
+  fullSha: "a3a2dc5d4a6f4a2e412639b205d747ff8ee60508",
+  message: "feat: load star tech list from kv",
+  committedAt: "2026-04-10 11:43:05",
 };
