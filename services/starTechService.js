@@ -17,10 +17,17 @@ import {
   parseBarsFromAttributes,
   pickFirstCloseFromBars,
   pickPrevCloseSmart,
-  validateLatestTimes,
 } from "../lib/time.js";
 import { fetchSeekingAlphaPeriod, fetchSeekingAlphaRealTimeQuotes } from "./seekingAlpha.js";
 import { getSearchMetaBatch, refreshSearchMeta } from "./searchMetaStore.js";
+
+function maxLatestTime(items) {
+  const values = (items || [])
+    .map((item) => item?.latestT)
+    .filter((value) => Number.isFinite(value));
+
+  return values.length ? Math.max(...values) : null;
+}
 
 function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars) {
   const last1DBar = getLastBar(bars1D);
@@ -133,12 +140,10 @@ export async function buildStarTechPayload(period, env) {
       throw new Error(`Star-tech upstream request incomplete: expected ${STAR_TECH_COMPANIES.length}, got ${items.length}`);
     }
 
-    const latestInfo = validateLatestTimes(items, "Star-tech", 5000);
-
     return {
       ok: true,
       period,
-      asOfMs: Number.isFinite(latestInfo.asOfMs) ? latestInfo.asOfMs : null,
+      asOfMs: maxLatestTime(items),
       items,
     };
   }
@@ -200,12 +205,10 @@ export async function buildStarTechPayload(period, env) {
     throw new Error(`Star-tech upstream request incomplete: expected ${STAR_TECH_COMPANIES.length}, got ${items.length}`);
   }
 
-  const latestInfo = validateLatestTimes(items, "Star-tech", 5000);
-
   return {
     ok: true,
     period,
-    asOfMs: Number.isFinite(latestInfo.asOfMs) ? latestInfo.asOfMs : null,
+    asOfMs: maxLatestTime(items),
     items,
   };
 }

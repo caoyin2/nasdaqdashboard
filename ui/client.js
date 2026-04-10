@@ -131,8 +131,26 @@ export function getClientScript() {
       return dtfBJ.format(new Date(ms)).replaceAll("/", "-") + "\uff08\u5317\u4eac\uff09";
     }
 
+    var dtfBJSeconds = new Intl.DateTimeFormat("zh-CN", {
+      timeZone: "Asia/Shanghai",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false
+    });
+
+    function fmtBJSeconds(ms) {
+      return dtfBJSeconds.format(new Date(ms)).replaceAll("/", "-");
+    }
+
     function latestDataText(ms) {
       return Number.isFinite(ms) ? ("\u6700\u65b0\u6570\u636e\uff1a" + fmtBJ(ms)) : "\u6700\u65b0\u6570\u636e\uff1a--";
+    }
+
+    function cardLatestTimeText(ms) {
+      return Number.isFinite(ms) ? ("\u6700\u65b0 " + fmtBJSeconds(ms)) : "\u6700\u65b0 --";
     }
 
     var canvas = $("c");
@@ -1103,6 +1121,7 @@ export function getClientScript() {
               '<div>\u57fa\u51c6</div><div>' + fmtPrice(item.baseClose) + '</div>',
               '<div>\u6da8\u8dcc</div><div><strong>' + signPrice(item.change) + '</strong></div>',
             '</div>',
+            '<div class="starCardLatest">' + esc(cardLatestTimeText(item.latestT)) + '</div>',
           '</div>',
         '</article>'
       ].join("");
@@ -1240,6 +1259,7 @@ export function getClientScript() {
             '<span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>',
             '<strong>' + signPrice(item.change) + '</strong>',
           '</div>',
+          '<div class="sectorHeatLatest">' + esc(cardLatestTimeText(item.latestT)) + '</div>',
         '</article>'
       ].join("");
     }

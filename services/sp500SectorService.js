@@ -17,10 +17,17 @@ import {
   parseBarsFromAttributes,
   pickFirstCloseFromBars,
   pickPrevCloseSmart,
-  validateLatestTimes,
 } from "../lib/time.js";
 import { fetchSeekingAlphaPeriod, fetchSeekingAlphaRealTimeQuotes } from "./seekingAlpha.js";
 import { getSearchMetaBatch, refreshSearchMeta } from "./searchMetaStore.js";
+
+function maxLatestTime(items) {
+  const values = (items || [])
+    .map((item) => item?.latestT)
+    .filter((value) => Number.isFinite(value));
+
+  return values.length ? Math.max(...values) : null;
+}
 
 function buildSectorCard(period, etf, meta, bars1D, periodBarsRaw, ytdBars) {
   const last1DBar = getLastBar(bars1D);
@@ -143,12 +150,10 @@ export async function buildSp500SectorPayload(period, env) {
       return String(a?.symbol || "").localeCompare(String(b?.symbol || ""));
     });
 
-    const latestInfo = validateLatestTimes(items, "Sector ETF", 5000);
-
     return {
       ok: true,
       period,
-      asOfMs: Number.isFinite(latestInfo.asOfMs) ? latestInfo.asOfMs : null,
+      asOfMs: maxLatestTime(items),
       title: "\u6807\u666e500\u5404\u677f\u5757ETF",
       items,
     };
@@ -220,12 +225,10 @@ export async function buildSp500SectorPayload(period, env) {
     return String(a?.symbol || "").localeCompare(String(b?.symbol || ""));
   });
 
-  const latestInfo = validateLatestTimes(items, "Sector ETF", 5000);
-
   return {
     ok: true,
     period,
-    asOfMs: Number.isFinite(latestInfo.asOfMs) ? latestInfo.asOfMs : null,
+    asOfMs: maxLatestTime(items),
     title: "\u6807\u666e500\u5404\u677f\u5757ETF",
     items,
   };

@@ -1105,6 +1105,16 @@ export function getStyles() {
       font-weight: 700;
     }
 
+    .starCardLatest{
+      justify-self: end;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.2;
+      color: rgba(200,214,236,.84);
+      text-align: right;
+      white-space: nowrap;
+    }
+
     .starPanelEmpty{
       min-height: 180px;
       border-radius: 14px;
@@ -1186,6 +1196,16 @@ export function getStyles() {
     .sectorHeatMeta strong{
       font-size: 13px;
       color: rgba(244,247,252,.96);
+    }
+
+    .sectorHeatLatest{
+      justify-self: end;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.2;
+      color: rgba(200,214,236,.84);
+      text-align: right;
+      white-space: nowrap;
     }
 
     .sectorHeatTile.up .sectorHeatPrice,
@@ -1806,6 +1826,11 @@ export function getStyles() {
         align-items:flex-start;
       }
 
+      .sectorHeatLatest{
+        justify-self: start;
+        text-align: left;
+      }
+
       .sectorBarRow{
         padding: 14px;
         gap: 10px;
@@ -1948,6 +1973,11 @@ export function getStyles() {
 
       .starNameBox{
         gap: 3px;
+      }
+
+      .starCardLatest{
+        justify-self: start;
+        text-align: left;
       }
     }
 
