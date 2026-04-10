@@ -1191,6 +1191,14 @@ export function getStyles() {
       min-height: 42px;
     }
 
+    .sectorHeatTrend{
+      display:grid;
+      justify-items: end;
+      align-items: end;
+      gap: 6px;
+      min-width: 0;
+    }
+
     .sectorHeatMeta{
       display:flex;
       align-items:center;
@@ -1256,6 +1264,11 @@ export function getStyles() {
 
     .sectorHeatSparkline.flat{
       color: rgba(226,232,240,.94);
+    }
+
+    .sectorHeatLatestInline{
+      justify-self: end;
+      max-width: 120px;
     }
 
     .sectorHeatTile.up .sectorHeatPrice,
@@ -1873,6 +1886,10 @@ export function getStyles() {
         min-height: 38px;
       }
 
+      .sectorHeatTrend{
+        gap: 5px;
+      }
+
       .sectorHeatPrice{
         font-size: 13px;
       }
@@ -1892,6 +1909,10 @@ export function getStyles() {
         align-self: center;
         width: 104px;
         height: 38px;
+      }
+
+      .sectorHeatLatestInline{
+        max-width: 104px;
       }
 
       .sectorBarRow{

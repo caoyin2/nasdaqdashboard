@@ -1293,7 +1293,10 @@ export function getClientScript() {
         ? [
             '<div class="sectorHeatMain">',
               '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>',
-              sparklineSvgHTML(item, "sectorHeatSparkline"),
+              '<div class="sectorHeatTrend">',
+                sparklineSvgHTML(item, "sectorHeatSparkline"),
+                '<div class="sectorHeatLatest sectorHeatLatestInline">' + esc(cardLatestTimeText(item.latestT)) + '</div>',
+              '</div>',
             '</div>'
           ].join("")
         : '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>';
