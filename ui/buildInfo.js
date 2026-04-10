@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "3c809d8",
-  fullSha: "3c809d8165b9716dbf7177cd77f633f02e045f77",
-  message: "fix: align sparklines beside heatmap percentages",
-  committedAt: "2026-04-10 10:31:26",
+  shortSha: "3e4c019",
+  fullSha: "3e4c019df5112f67cda1655d2a9a2a62b1d9ca18",
+  message: "fix: restore latest time under non-1d sparklines",
+  committedAt: "2026-04-10 10:51:14",
 };
