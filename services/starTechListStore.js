@@ -13,9 +13,9 @@
  */
 
 import { STAR_TECH_COMPANIES } from "../config.js";
-import { fetchSeekingAlphaSearch } from "./seekingAlpha.js";
+import { fetchSeekingAlphaRealTimeQuotesBySlugs } from "./seekingAlpha.js";
 import { getKvBinding } from "./kvBinding.js";
-import { writeSearchMetaToKv } from "./searchMetaStore.js";
+import { getSearchMeta, writeSearchMetaToKv } from "./searchMetaStore.js";
 
 export const STAR_TECH_LIST_KEY = "index:star-tech:list";
 
@@ -26,50 +26,44 @@ function normalizeCompany(item) {
   return { symbol, nameCN };
 }
 
-function sanitizeTopSearchResult(symbol, top) {
-  if (!top) return null;
+function buildDefaultIconLight(symbol) {
+  return `https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/${encodeURIComponent(symbol)}.svg`;
+}
 
-  return {
+function buildDefaultIconDark(symbol) {
+  return `https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_dark/${encodeURIComponent(symbol)}.svg`;
+}
+
+async function validateAndSeedSearchMeta(symbol, env) {
+  const quotes = await fetchSeekingAlphaRealTimeQuotesBySlugs(symbol.toLowerCase());
+  const quote = Array.isArray(quotes)
+    ? quotes.find((item) => String(item?.symbol || "").trim().toUpperCase() === symbol)
+    : null;
+
+  if (!quote) {
+    throw new Error(`Symbol ${symbol} not found`);
+  }
+
+  const cachedMeta = await getSearchMeta(symbol, env, {
+    allowFetch: false,
+    allowFallback: true,
+  });
+
+  const tickerId = Number.isFinite(+quote.ticker_id) ? +quote.ticker_id : (Number.isFinite(+quote.sa_id) ? +quote.sa_id : null);
+  if (!tickerId) {
+    throw new Error(`Quote result for ${symbol} has no tickerId`);
+  }
+
+  const meta = {
     symbol,
-    tickerId: Number.isFinite(+top.id) ? +top.id : null,
-    nameEn: String(top.content || symbol).replace(/<[^>]+>/g, ""),
-    slug: String(top.slug || symbol).toLowerCase(),
-    iconLight: top.image?.light || null,
-    iconDark: top.image?.dark || null,
+    tickerId,
+    nameEn: cachedMeta?.nameEn || symbol,
+    slug: String(quote.sa_slug || symbol).trim().toLowerCase(),
+    iconLight: cachedMeta?.iconLight || buildDefaultIconLight(symbol),
+    iconDark: cachedMeta?.iconDark || buildDefaultIconDark(symbol),
     updatedAt: new Date().toISOString(),
-    source: "live",
+    source: cachedMeta?.source || "live-quote",
   };
-}
-
-function getSearchSymbolCandidate(top) {
-  const slug = String(top?.slug || "").trim().toUpperCase();
-  if (slug) return slug;
-
-  const urlMatch = String(top?.url || "").match(/\/symbol\/([^/?#]+)/i);
-  if (urlMatch?.[1]) return String(urlMatch[1]).trim().toUpperCase();
-
-  const nameText = String(top?.name || "").replace(/<[^>]+>/g, "").trim().toUpperCase();
-  if (nameText && /^[A-Z0-9.\-]+$/.test(nameText)) return nameText;
-
-  return "";
-}
-
-async function validateAndSeedSearchMeta(symbol) {
-  const payload = await fetchSeekingAlphaSearch(symbol);
-  const top = payload?.symbols?.[0];
-  if (!top) {
-    throw new Error(`Symbol ${symbol} not found in search`);
-  }
-
-  const matchedSymbol = getSearchSymbolCandidate(top);
-  if (matchedSymbol !== symbol) {
-    throw new Error(`Search top result mismatch: expected ${symbol}, got ${matchedSymbol || "unknown"}`);
-  }
-
-  const meta = sanitizeTopSearchResult(symbol, top);
-  if (!meta?.tickerId) {
-    throw new Error(`Search result for ${symbol} has no tickerId`);
-  }
 
   return {
     meta,
@@ -156,7 +150,7 @@ export async function addStarTechCompany(env, item) {
     throw new Error(`Symbol ${symbol} already exists`);
   }
 
-  const validation = await validateAndSeedSearchMeta(symbol);
+  const validation = await validateAndSeedSearchMeta(symbol, env);
   await writeSearchMetaToKv(env, validation.meta);
 
   const company = {
