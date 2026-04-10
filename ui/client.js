@@ -1295,11 +1295,15 @@ export function getClientScript() {
               '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>',
               '<div class="sectorHeatTrend">',
                 sparklineSvgHTML(item, "sectorHeatSparkline"),
-                '<div class="sectorHeatLatest sectorHeatLatestInline">' + esc(cardLatestTimeText(item.latestT)) + '</div>',
+                '<strong class="sectorHeatDeltaInline">' + signPrice(item.change) + '</strong>',
               '</div>',
             '</div>'
           ].join("")
         : '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>';
+      var metaClass = hasSparkline ? 'sectorHeatMeta sectorHeatMetaWithLatest' : 'sectorHeatMeta';
+      var metaRightHtml = hasSparkline
+        ? '<span class="sectorHeatMetaLatest">' + esc(cardLatestTimeText(item.latestT)) + '</span>'
+        : '<strong>' + signPrice(item.change) + '</strong>';
       var footerHtml = hasSparkline
         ? ""
         : '<div class="sectorHeatLatest">' + esc(cardLatestTimeText(item.latestT)) + '</div>';
@@ -1319,9 +1323,9 @@ export function getClientScript() {
             '<div class="sectorHeatPrice">' + fmtPrice(item.lastClose) + '</div>',
           '</div>',
           mainHtml,
-          '<div class="sectorHeatMeta">',
+          '<div class="' + metaClass + '">',
             '<span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>',
-            '<strong>' + signPrice(item.change) + '</strong>',
+            metaRightHtml,
           '</div>',
           footerHtml,
         '</article>'

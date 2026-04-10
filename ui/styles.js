@@ -1214,6 +1214,19 @@ export function getStyles() {
       color: rgba(244,247,252,.96);
     }
 
+    .sectorHeatMetaWithLatest{
+      align-items: flex-end;
+    }
+
+    .sectorHeatMetaLatest{
+      margin-left: auto;
+      font-size: 11px;
+      line-height: 1.2;
+      color: rgba(200,214,236,.84);
+      text-align: right;
+      white-space: nowrap;
+    }
+
     .sectorHeatLatest{
       justify-self: end;
       font-family: var(--mono);
@@ -1266,26 +1279,32 @@ export function getStyles() {
       color: rgba(226,232,240,.94);
     }
 
-    .sectorHeatLatestInline{
-      justify-self: end;
-      max-width: 120px;
+    .sectorHeatDeltaInline{
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.2;
+      color: rgba(244,247,252,.96);
+      white-space: nowrap;
     }
 
     .sectorHeatTile.up .sectorHeatPrice,
     .sectorHeatTile.up .sectorHeatPct,
-    .sectorHeatTile.up .sectorHeatMeta strong{
+    .sectorHeatTile.up .sectorHeatMeta strong,
+    .sectorHeatTile.up .sectorHeatDeltaInline{
       color: var(--up);
     }
 
     .sectorHeatTile.down .sectorHeatPrice,
     .sectorHeatTile.down .sectorHeatPct,
-    .sectorHeatTile.down .sectorHeatMeta strong{
+    .sectorHeatTile.down .sectorHeatMeta strong,
+    .sectorHeatTile.down .sectorHeatDeltaInline{
       color: var(--down);
     }
 
     .sectorHeatTile.flat .sectorHeatPrice,
     .sectorHeatTile.flat .sectorHeatPct,
-    .sectorHeatTile.flat .sectorHeatMeta strong{
+    .sectorHeatTile.flat .sectorHeatMeta strong,
+    .sectorHeatTile.flat .sectorHeatDeltaInline{
       color: rgba(226,232,240,.94);
     }
 
@@ -1899,6 +1918,12 @@ export function getStyles() {
         align-items:flex-start;
       }
 
+      .sectorHeatMetaWithLatest{
+        flex-direction: row;
+        align-items: flex-end;
+        justify-content: space-between;
+      }
+
       .sectorHeatLatest{
         justify-self: end;
         text-align: right;
@@ -1911,8 +1936,8 @@ export function getStyles() {
         height: 38px;
       }
 
-      .sectorHeatLatestInline{
-        max-width: 104px;
+      .sectorHeatMetaLatest{
+        margin-left: 10px;
       }
 
       .sectorBarRow{
