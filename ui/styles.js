@@ -2016,8 +2016,8 @@ export function getStyles() {
       }
 
       .starManageOverlay{
-        padding: 12px;
-        align-items: end;
+        padding: max(12px, env(safe-area-inset-top)) 12px 12px 12px;
+        place-items: start center;
       }
 
       .starManageModal{
