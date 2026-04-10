@@ -1,7 +1,8 @@
 import { SP500_SECTOR_ETFS, STAR_TECH_COMPANIES } from "../config.js";
 import { getLatestIndexWeightSymbols } from "../services/indexWeightsService.js";
 import { STAR_TECH_LIST_KEY } from "../services/starTechListStore.js";
-import { fetchSeekingAlphaSearch } from "../services/seekingAlpha.js";
+import { fetchSeekingAlphaRealTimeQuotesBySlugs } from "../services/seekingAlpha.js";
+import { INDEX_WEIGHTS_FALLBACK_META } from "../services/indexWeightsFallback.js";
 
 const BASE_URL = process.env.BASE_URL || "https://stock.caoyinchat.top";
 const BATCH_SIZE = 2;
@@ -15,14 +16,15 @@ function unique(items) {
   return Array.from(new Set(items.filter(Boolean)));
 }
 
-function normalizeTopResult(symbol, top) {
+function normalizeTopResult(symbol, quote) {
+  const fallback = INDEX_WEIGHTS_FALLBACK_META[symbol] || null;
   return {
     symbol,
-    tickerId: Number.isFinite(+top?.id) ? +top.id : null,
-    nameEn: String(top?.content || symbol).replace(/<[^>]+>/g, ""),
-    slug: String(top?.slug || symbol).toLowerCase(),
-    iconLight: top?.image?.light || null,
-    iconDark: top?.image?.dark || null,
+    tickerId: Number.isFinite(+quote?.ticker_id) ? +quote.ticker_id : (Number.isFinite(+quote?.sa_id) ? +quote.sa_id : null),
+    nameEn: fallback?.nameEn || symbol,
+    slug: String(quote?.sa_slug || fallback?.slug || symbol).toLowerCase(),
+    iconLight: fallback?.iconLight || `https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/${encodeURIComponent(symbol)}.svg`,
+    iconDark: fallback?.iconDark || `https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_dark/${encodeURIComponent(symbol)}.svg`,
     updatedAt: new Date().toISOString(),
     source: "seed-script",
   };
@@ -107,19 +109,19 @@ async function main() {
     const batch = missingSymbols.slice(i, i + BATCH_SIZE);
     console.log(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.join(", ")}`);
 
-    const results = await Promise.allSettled(
-      batch.map(async (symbol) => {
-        const payload = await fetchSeekingAlphaSearch(symbol);
-        const top = payload?.symbols?.[0];
-        if (!top) {
-          throw new Error(`No search result for ${symbol}`);
-        }
+    const quotes = await fetchSeekingAlphaRealTimeQuotesBySlugs(batch.map((symbol) => symbol.toLowerCase()));
+    const quoteMap = new Map((quotes || []).map((quote) => [String(quote?.symbol || quote?.sa_slug || "").trim().toUpperCase(), quote]));
 
-        const value = normalizeTopResult(symbol, top);
-        await writeKv(`search:${symbol}`, value);
-        return value;
-      })
-    );
+    const results = await Promise.allSettled(batch.map(async (symbol) => {
+      const quote = quoteMap.get(symbol);
+      if (!quote) {
+        throw new Error(`No slug quote for ${symbol}`);
+      }
+
+      const value = normalizeTopResult(symbol, quote);
+      await writeKv(`search:${symbol}`, value);
+      return value;
+    }));
 
     results.forEach((result, index) => {
       const symbol = batch[index];

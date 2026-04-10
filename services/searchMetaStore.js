@@ -1,17 +1,4 @@
-/**
- * Search metadata cache layer.
- *
- * Data source priority:
- * 1. in-memory cache inside the isolate
- * 2. Worker KV (`NasdaqDashboard`)
- * 3. live Seeking Alpha search API
- *
- * When live fetching is needed, requests are rate-limited:
- * - maximum 2 concurrent requests per batch
- * - 5 seconds pause between batches
- */
-
-import { fetchSeekingAlphaSearch } from "./seekingAlpha.js";
+import { fetchSeekingAlphaRealTimeQuotesBySlugs } from "./seekingAlpha.js";
 import { INDEX_WEIGHTS_FALLBACK_META } from "./indexWeightsFallback.js";
 import { getKvBinding } from "./kvBinding.js";
 
@@ -29,21 +16,24 @@ function normalizeSymbol(symbol) {
   return String(symbol || "").trim().toUpperCase();
 }
 
-export function getSearchMetaKey(symbol) {
-  return `${SEARCH_META_PREFIX}${normalizeSymbol(symbol)}`;
+function buildDefaultIconLight(symbol) {
+  return `https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/${encodeURIComponent(symbol)}.svg`;
 }
 
-function sanitizeTopSearchResult(symbol, top) {
-  if (!top) return null;
+function buildDefaultIconDark(symbol) {
+  return `https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_dark/${encodeURIComponent(symbol)}.svg`;
+}
 
+function normalizeStoredMeta(symbol, value) {
   return {
-    symbol,
-    tickerId: Number.isFinite(+top.id) ? +top.id : null,
-    nameEn: String(top.content || symbol).replace(/<[^>]+>/g, ""),
-    slug: String(top.slug || symbol).toLowerCase(),
-    iconLight: top.image?.light || null,
-    iconDark: top.image?.dark || null,
-    updatedAt: new Date().toISOString(),
+    symbol: normalizeSymbol(value?.symbol || symbol),
+    tickerId: Number.isFinite(+value?.tickerId) ? +value.tickerId : null,
+    nameEn: String(value?.nameEn || normalizeSymbol(symbol)).trim(),
+    slug: String(value?.slug || normalizeSymbol(symbol)).trim().toLowerCase(),
+    iconLight: value?.iconLight || buildDefaultIconLight(symbol),
+    iconDark: value?.iconDark || buildDefaultIconDark(symbol),
+    updatedAt: value?.updatedAt || null,
+    source: value?.source || "kv",
   };
 }
 
@@ -51,16 +41,47 @@ function buildFallbackMeta(symbol) {
   const fallback = INDEX_WEIGHTS_FALLBACK_META[symbol];
   if (!fallback) return null;
 
-  return {
+  return normalizeStoredMeta(symbol, {
     symbol,
-    tickerId: Number.isFinite(+fallback.tickerId) ? +fallback.tickerId : null,
+    tickerId: fallback.tickerId,
     nameEn: fallback.nameEn || symbol,
     slug: fallback.slug || symbol.toLowerCase(),
-    iconLight: fallback.iconLight || null,
-    iconDark: fallback.iconDark || null,
+    iconLight: fallback.iconLight || buildDefaultIconLight(symbol),
+    iconDark: fallback.iconDark || buildDefaultIconDark(symbol),
     updatedAt: new Date().toISOString(),
     source: "fallback",
-  };
+  });
+}
+
+function buildMetaFromQuote(symbol, quote, baseMeta = null) {
+  const normalizedSymbol = normalizeSymbol(symbol);
+  const quoteSymbol = normalizeSymbol(quote?.symbol || quote?.sa_slug || normalizedSymbol);
+  if (quoteSymbol !== normalizedSymbol) {
+    return null;
+  }
+
+  const tickerId = Number.isFinite(+quote?.ticker_id)
+    ? +quote.ticker_id
+    : (Number.isFinite(+quote?.sa_id) ? +quote.sa_id : null);
+
+  if (!tickerId) {
+    return null;
+  }
+
+  return normalizeStoredMeta(normalizedSymbol, {
+    symbol: normalizedSymbol,
+    tickerId,
+    nameEn: baseMeta?.nameEn || normalizedSymbol,
+    slug: String(quote?.sa_slug || normalizedSymbol).trim().toLowerCase(),
+    iconLight: baseMeta?.iconLight || buildDefaultIconLight(normalizedSymbol),
+    iconDark: baseMeta?.iconDark || buildDefaultIconDark(normalizedSymbol),
+    updatedAt: new Date().toISOString(),
+    source: "live-slug",
+  });
+}
+
+export function getSearchMetaKey(symbol) {
+  return `${SEARCH_META_PREFIX}${normalizeSymbol(symbol)}`;
 }
 
 export async function readSearchMetaFromKv(env, symbol) {
@@ -72,26 +93,16 @@ export async function readSearchMetaFromKv(env, symbol) {
 
   try {
     const raw = await kv.get(key);
-    if (raw != null) {
-      const value = JSON.parse(raw);
-      const normalized = {
-        symbol: normalizeSymbol(value.symbol || symbol),
-        tickerId: Number.isFinite(+value.tickerId) ? +value.tickerId : null,
-        nameEn: value.nameEn || normalizeSymbol(symbol),
-        slug: value.slug || normalizeSymbol(symbol).toLowerCase(),
-        iconLight: value.iconLight || null,
-        iconDark: value.iconDark || null,
-        updatedAt: value.updatedAt || null,
-        source: value.source || "kv",
-      };
-      SEARCH_META_MEM_CACHE.set(normalized.symbol, normalized);
-      return normalized;
-    }
+    if (raw == null) return null;
+
+    const value = JSON.parse(raw);
+    const normalized = normalizeStoredMeta(symbol, value);
+    SEARCH_META_MEM_CACHE.set(normalized.symbol, normalized);
+    return normalized;
   } catch (error) {
     console.error(`KV read failed for search meta ${key}:`, error);
+    return null;
   }
-
-  return null;
 }
 
 export async function writeSearchMetaToKv(env, meta) {
@@ -100,16 +111,17 @@ export async function writeSearchMetaToKv(env, meta) {
     return false;
   }
 
-  const key = getSearchMetaKey(meta.symbol);
+  const normalized = normalizeStoredMeta(meta.symbol, meta);
+  const key = getSearchMetaKey(normalized.symbol);
 
   try {
-    await kv.put(key, JSON.stringify(meta), {
+    await kv.put(key, JSON.stringify(normalized), {
       metadata: {
         kind: "search-meta",
-        symbol: meta.symbol,
+        symbol: normalized.symbol,
       },
     });
-    SEARCH_META_MEM_CACHE.set(meta.symbol, meta);
+    SEARCH_META_MEM_CACHE.set(normalized.symbol, normalized);
     return true;
   } catch (error) {
     console.error(`KV write failed for search meta ${key}:`, error);
@@ -117,18 +129,25 @@ export async function writeSearchMetaToKv(env, meta) {
   }
 }
 
-async function fetchLiveSearchMeta(symbol, env) {
+async function fetchLiveSlugMeta(symbol, env) {
+  const normalizedSymbol = normalizeSymbol(symbol);
+  const kvMeta = await readSearchMetaFromKv(env, normalizedSymbol);
+  const cached = SEARCH_META_MEM_CACHE.get(normalizedSymbol) || null;
+  const fallback = buildFallbackMeta(normalizedSymbol);
+  const baseMeta = kvMeta || cached || fallback || null;
+
   try {
-    const payload = await fetchSeekingAlphaSearch(symbol);
-    const top = payload?.symbols?.[0];
-    const meta = sanitizeTopSearchResult(symbol, top);
+    const quotes = await fetchSeekingAlphaRealTimeQuotesBySlugs(normalizedSymbol.toLowerCase());
+    const quote = Array.isArray(quotes)
+      ? quotes.find((item) => normalizeSymbol(item?.symbol || item?.sa_slug) === normalizedSymbol)
+      : null;
+    const meta = buildMetaFromQuote(normalizedSymbol, quote, baseMeta);
     if (meta) {
-      meta.source = "live";
       await writeSearchMetaToKv(env, meta);
       return meta;
     }
   } catch (error) {
-    console.error(`Live search fetch failed for ${symbol}:`, error);
+    console.error(`Live slug metadata fetch failed for ${normalizedSymbol}:`, error);
   }
 
   return null;
@@ -137,7 +156,7 @@ async function fetchLiveSearchMeta(symbol, env) {
 export async function refreshSearchMeta(symbol, env) {
   const normalizedSymbol = normalizeSymbol(symbol);
   if (!normalizedSymbol) return null;
-  return fetchLiveSearchMeta(normalizedSymbol, env);
+  return fetchLiveSlugMeta(normalizedSymbol, env);
 }
 
 export async function getSearchMeta(symbol, env, options = {}) {
@@ -156,8 +175,8 @@ export async function getSearchMeta(symbol, env, options = {}) {
   if (fromKv?.tickerId) return fromKv;
 
   if (allowFetch) {
-    const live = await fetchLiveSearchMeta(normalizedSymbol, env);
-    if (live) return live;
+    const live = await fetchLiveSlugMeta(normalizedSymbol, env);
+    if (live?.tickerId) return live;
   }
 
   if (fromKv) return fromKv;
@@ -200,21 +219,37 @@ export async function getSearchMetaBatch(symbols, env, options = {}) {
 
   for (let i = 0; i < missing.length; i += SEARCH_META_BATCH_SIZE) {
     const batch = missing.slice(i, i + SEARCH_META_BATCH_SIZE);
-    const settled = await Promise.allSettled(batch.map((symbol) => fetchLiveSearchMeta(symbol, env)));
+    const quotes = await fetchSeekingAlphaRealTimeQuotesBySlugs(batch.map((symbol) => symbol.toLowerCase())).catch((error) => {
+      console.error(`Batch slug metadata fetch failed for ${batch.join(", ")}:`, error);
+      return [];
+    });
+    const quoteMap = new Map(
+      (Array.isArray(quotes) ? quotes : [])
+        .map((quote) => [normalizeSymbol(quote?.symbol || quote?.sa_slug), quote])
+    );
 
-    settled.forEach((result, index) => {
-      const symbol = batch[index];
-      if (result.status === "fulfilled" && result.value) {
-        results.set(symbol, result.value);
-        return;
+    for (const symbol of batch) {
+      const kvMeta = await readSearchMetaFromKv(env, symbol);
+      const cached = SEARCH_META_MEM_CACHE.get(symbol) || null;
+      const fallback = buildFallbackMeta(symbol);
+      const meta = buildMetaFromQuote(symbol, quoteMap.get(symbol), kvMeta || cached || fallback || null);
+
+      if (meta) {
+        await writeSearchMetaToKv(env, meta);
+        results.set(symbol, meta);
+        continue;
       }
 
-      const fallback = buildFallbackMeta(symbol);
+      if (kvMeta) {
+        results.set(symbol, kvMeta);
+        continue;
+      }
+
       if (fallback) {
         SEARCH_META_MEM_CACHE.set(symbol, fallback);
         results.set(symbol, fallback);
       }
-    });
+    }
 
     if (i + SEARCH_META_BATCH_SIZE < missing.length) {
       await sleep(SEARCH_META_BATCH_DELAY_MS);

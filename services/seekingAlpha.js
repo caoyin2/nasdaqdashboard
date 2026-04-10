@@ -1,7 +1,3 @@
-/**
- * Seeking Alpha 上游请求
- */
-
 import { UPSTREAM } from "../config.js";
 
 const SEEKING_ALPHA_TIMEOUT_MS = 12000;
@@ -35,24 +31,6 @@ async function fetchWithTimeout(url, label, options = {}) {
   return res;
 }
 
-function buildSearchUrl(query) {
-  return `https://seekingalpha.com/api/v3/searches?filter[query]=${encodeURIComponent(query)}&filter[type]=symbols`;
-}
-
-function buildSearchHeaders() {
-  return {
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Referer": "https://seekingalpha.com/",
-    "Origin": "https://seekingalpha.com",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-origin",
-  };
-}
-
 function buildChartHeaders() {
   return {
     "User-Agent":
@@ -67,11 +45,23 @@ function buildChartHeaders() {
   };
 }
 
-async function runSearchAttempt(query, label) {
-  const url = buildSearchUrl(query);
+function normalizeSlugs(saSlugs) {
+  return Array.from(
+    new Set(
+      (Array.isArray(saSlugs) ? saSlugs : [saSlugs])
+        .map((value) => String(value || "").trim().toLowerCase())
+        .filter(Boolean)
+    )
+  );
+}
+
+async function runSlugAttempt(query, label) {
+  const slugs = normalizeSlugs(query);
+  const url = `https://finance-api.seekingalpha.com/real_time_quotes?sa_slugs=${encodeURIComponent(slugs.join(","))}`;
+
   try {
     const res = await fetchWithTimeout(url, label, {
-      headers: buildSearchHeaders(),
+      headers: buildChartHeaders(),
     });
     const text = await res.text();
 
@@ -82,18 +72,19 @@ async function runSearchAttempt(query, label) {
       json = null;
     }
 
-    const first = json?.symbols?.[0] ?? null;
+    const first = json?.real_time_quotes?.[0] ?? null;
 
     return {
       ok: res.ok,
       status: res.status,
       statusText: res.statusText,
-      symbolsCount: Array.isArray(json?.symbols) ? json.symbols.length : 0,
-      firstSymbol: first
+      quotesCount: Array.isArray(json?.real_time_quotes) ? json.real_time_quotes.length : 0,
+      firstQuote: first
         ? {
-            id: first.id ?? null,
-            slug: first.slug ?? null,
-            content: first.content ?? null,
+            ticker_id: first.ticker_id ?? null,
+            sa_id: first.sa_id ?? null,
+            sa_slug: first.sa_slug ?? null,
+            symbol: first.symbol ?? null,
           }
         : null,
       bodySnippet: text.slice(0, 240),
@@ -103,8 +94,8 @@ async function runSearchAttempt(query, label) {
       ok: false,
       status: null,
       statusText: null,
-      symbolsCount: 0,
-      firstSymbol: null,
+      quotesCount: 0,
+      firstQuote: null,
       bodySnippet: "",
       error: error?.message || String(error),
     };
@@ -153,13 +144,7 @@ export async function fetchSeekingAlphaRealTimeQuotes(saIds) {
 }
 
 export async function fetchSeekingAlphaRealTimeQuotesBySlugs(saSlugs) {
-  const slugs = Array.from(
-    new Set(
-      (Array.isArray(saSlugs) ? saSlugs : [saSlugs])
-        .map((value) => String(value || "").trim().toLowerCase())
-        .filter(Boolean)
-    )
-  );
+  const slugs = normalizeSlugs(saSlugs);
 
   if (!slugs.length) {
     return [];
@@ -179,40 +164,26 @@ export async function fetchSeekingAlphaRealTimeQuotesBySlugs(saSlugs) {
   return Array.isArray(json?.real_time_quotes) ? json.real_time_quotes : [];
 }
 
-export async function fetchSeekingAlphaSearch(query) {
-  const url = buildSearchUrl(query);
-  const res = await fetchWithTimeout(url, `SeekingAlpha search ${query}`, {
-    headers: buildSearchHeaders(),
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`SeekingAlpha search ${query} failed: HTTP ${res.status} ${text.slice(0, 120)}`);
-  }
-
-  return res.json();
-}
-
-export async function probeSeekingAlphaSearch(query, options = {}) {
+export async function probeSeekingAlphaSlugs(query, options = {}) {
   const sequentialCount = Math.max(1, Math.min(6, Number.parseInt(options.sequentialCount ?? "3", 10) || 3));
   const parallelCount = Math.max(1, Math.min(6, Number.parseInt(options.parallelCount ?? "3", 10) || 3));
 
-  const single = await runSearchAttempt(query, `SeekingAlpha search probe single ${query}`);
+  const single = await runSlugAttempt(query, `SeekingAlpha slug probe single ${query}`);
 
   const sequential = [];
   for (let i = 0; i < sequentialCount; i += 1) {
-    sequential.push(await runSearchAttempt(query, `SeekingAlpha search probe sequential ${query} #${i + 1}`));
+    sequential.push(await runSlugAttempt(query, `SeekingAlpha slug probe sequential ${query} #${i + 1}`));
   }
 
   const parallel = await Promise.all(
     Array.from({ length: parallelCount }, (_, i) =>
-      runSearchAttempt(query, `SeekingAlpha search probe parallel ${query} #${i + 1}`)
+      runSlugAttempt(query, `SeekingAlpha slug probe parallel ${query} #${i + 1}`)
     )
   );
 
   return {
     ok: true,
-    query,
+    query: String(query || "").trim(),
     testedAt: new Date().toISOString(),
     single,
     sequential,

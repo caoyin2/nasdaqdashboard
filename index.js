@@ -13,7 +13,7 @@ import { fetchCnnFearGreedSummary } from "./services/cnnFearGreed.js";
 import { buildIndexWeightsPayload } from "./services/indexWeightsService.js";
 import { getKvBinding, resolveKvBinding } from "./services/kvBinding.js";
 import { buildQuotePayload } from "./services/quoteService.js";
-import { probeSeekingAlphaSearch } from "./services/seekingAlpha.js";
+import { probeSeekingAlphaSlugs } from "./services/seekingAlpha.js";
 import { getSearchMeta, refreshSearchMeta } from "./services/searchMetaStore.js";
 import { buildSp500SectorPayload } from "./services/sp500SectorService.js";
 import { addStarTechCompany, getStarTechCompanyList, removeStarTechCompany } from "./services/starTechListStore.js";
@@ -339,7 +339,7 @@ export default {
         const sequentialCount = url.searchParams.get("sequential") || "3";
         const parallelCount = url.searchParams.get("parallel") || "3";
 
-        const payload = await probeSeekingAlphaSearch(query, {
+        const payload = await probeSeekingAlphaSlugs(query, {
           sequentialCount,
           parallelCount,
         });
