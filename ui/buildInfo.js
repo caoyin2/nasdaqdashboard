@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "ff334d1",
-  fullSha: "ff334d1add4292181c27b18def839ec6a26fb672",
-  message: "feat: relax star and sector success rules",
-  committedAt: "2026-04-10 08:36:28",
+  shortSha: "611a570",
+  fullSha: "611a570ef550552216823428a1c720d7e1780f3d",
+  message: "feat: show overview card quote times",
+  committedAt: "2026-04-10 08:41:59",
 };
