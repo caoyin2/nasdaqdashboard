@@ -14,10 +14,17 @@ import {
   patchBarsWithLatest1D,
   pickFirstCloseFromBars,
   pickPrevCloseSmart,
-  validateLatestTimes,
 } from "../lib/time.js";
 import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
 import { getSearchMetaBatch } from "./searchMetaStore.js";
+
+function maxLatestTime(items) {
+  const values = (items || [])
+    .map((item) => item?.latestT)
+    .filter((value) => Number.isFinite(value));
+
+  return values.length ? Math.max(...values) : null;
+}
 
 export async function buildQuotePayload(period, env) {
   const iconSymbols = Array.from(
@@ -122,13 +129,13 @@ export async function buildQuotePayload(period, env) {
     throw new Error(`Index upstream request incomplete: expected ${INDEXES.length}, got ${items.length}`);
   }
 
-  const latestInfo = validateLatestTimes(items, "Index", 5000);
-  const asOfUTC = fmtUTC(latestInfo.asOfMs);
+  const asOfMs = maxLatestTime(items);
+  const asOfUTC = Number.isFinite(asOfMs) ? fmtUTC(asOfMs) : null;
 
   return {
     ok: true,
     period,
-    asOfMs: Number.isFinite(latestInfo.asOfMs) ? latestInfo.asOfMs : null,
+    asOfMs: Number.isFinite(asOfMs) ? asOfMs : null,
     asOfUTC,
     items,
   };
