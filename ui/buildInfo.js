@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "6e1a8be",
-  fullSha: "6e1a8bea337e9749648cb92e75b906987f7324e8",
-  message: "fix: validate star additions via sa slugs",
-  committedAt: "2026-04-10 14:01:00",
+  shortSha: "7d1cde8",
+  fullSha: "7d1cde8f0bbf4e7b6c8366dfeddd7865f99b53f6",
+  message: "fix: allow star manager delete clicks",
+  committedAt: "2026-04-10 14:08:57",
 };
