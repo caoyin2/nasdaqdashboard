@@ -154,6 +154,49 @@ export function getClientScript() {
       return Number.isFinite(ms) ? ("\u6700\u65b0 " + fmtBJSeconds(ms)) : "\u6700\u65b0 --";
     }
 
+    function getSparklineValues(item) {
+      return (item && Array.isArray(item.sparkline) ? item.sparkline : []).filter(function (value) {
+        return Number.isFinite(value);
+      });
+    }
+
+    function sparklineSvgHTML(item, className) {
+      var values = getSparklineValues(item);
+      if (values.length < 2) return "";
+
+      var width = 120;
+      var height = 42;
+      var padX = 2;
+      var padY = 3;
+      var min = Math.min.apply(null, values);
+      var max = Math.max.apply(null, values);
+      var span = max - min;
+      var points = values.map(function (value, index) {
+        var x = padX + ((width - padX * 2) * index / Math.max(1, values.length - 1));
+        var y;
+        if (span <= 0) {
+          y = height / 2;
+        } else {
+          y = padY + (max - value) * ((height - padY * 2) / span);
+        }
+        return x.toFixed(2) + "," + y.toFixed(2);
+      }).join(" ");
+
+      var lastX = padX + (width - padX * 2);
+      var lastY = span <= 0
+        ? height / 2
+        : padY + (max - values[values.length - 1]) * ((height - padY * 2) / span);
+
+      return [
+        '<div class="' + className + " " + starToneClass(item) + '">',
+          '<svg viewBox="0 0 ' + width + ' ' + height + '" aria-hidden="true" focusable="false">',
+            '<polyline points="' + points + '" />',
+            '<circle cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="2.6" />',
+          '</svg>',
+        '</div>'
+      ].join("");
+    }
+
     var canvas = $("c");
     var ctx = canvas && canvas.getContext ? canvas.getContext("2d") : null;
 
@@ -742,7 +785,9 @@ export function getClientScript() {
         baseClose: item.cardBaseClose,
         change: item.cardChg,
         changePct: item.cardChgPct,
-        baseLabel: period === "1D" ? "\u6628\u6536" : "\u8d77\u70b9"
+        baseLabel: period === "1D" ? "\u6628\u6536" : "\u8d77\u70b9",
+        period: period,
+        showSparkline: false,
       };
     }
 
@@ -1136,7 +1181,9 @@ export function getClientScript() {
       var previousPositions = captureStarPositions(root);
       var periodLabel = PERIOD_LABELS[starsState.period] || starsState.period;
       var cached = starsState.cache.get(starsState.period);
-      var items = cached && cached.items ? sortStarItems(cached.items) : null;
+      var items = cached && cached.items ? sortStarItems(cached.items).map(function (item) {
+        return Object.assign({}, item, { showSparkline: true });
+      }) : null;
       var latestText = latestDataText(cached && cached.asOfMs);
       var statusClass = starsState.statusType === "err" ? "err" : "ok";
       var maxAbs = items && items.length ? sectorMaxAbsChange(items) : 1;
@@ -1241,6 +1288,9 @@ export function getClientScript() {
       var border = sectorTint(item, 0.26 + intensity * 0.30);
       var glow = sectorTint(item, 0.16 + intensity * 0.24);
       var tone = starToneClass(item);
+      var footerHtml = (item && item.showSparkline && item.period !== "1D" && getSparklineValues(item).length > 1)
+        ? sparklineSvgHTML(item, "sectorHeatSparkline")
+        : '<div class="sectorHeatLatest">' + esc(cardLatestTimeText(item.latestT)) + '</div>';
 
       return [
         '<article class="sectorHeatTile ' + tone + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
@@ -1261,7 +1311,7 @@ export function getClientScript() {
             '<span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>',
             '<strong>' + signPrice(item.change) + '</strong>',
           '</div>',
-          '<div class="sectorHeatLatest">' + esc(cardLatestTimeText(item.latestT)) + '</div>',
+          footerHtml,
         '</article>'
       ].join("");
     }
@@ -1310,7 +1360,9 @@ export function getClientScript() {
 
     function renderSectorView(items) {
       var maxAbs = sectorMaxAbsChange(items);
-      return '<div class="sectorHeatGrid">' + items.map(function (item) { return sectorHeatTileHTML(item, maxAbs); }).join("") + '</div>';
+      return '<div class="sectorHeatGrid">' + items.map(function (item) {
+        return sectorHeatTileHTML(Object.assign({}, item, { showSparkline: true }), maxAbs);
+      }).join("") + '</div>';
     }
 
     function formatBasketDate(ymd) {

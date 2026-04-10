@@ -13,6 +13,7 @@
 import { SP500_SECTOR_ETFS } from "../config.js";
 import {
   getLastBar,
+  patchBarsWithLatest1D,
   parseTimeKeyToUTCms,
   parseBarsFromAttributes,
   pickFirstCloseFromBars,
@@ -27,6 +28,14 @@ function maxLatestTime(items) {
     .filter((value) => Number.isFinite(value));
 
   return values.length ? Math.max(...values) : null;
+}
+
+function buildSparklineSeries(bars) {
+  const values = (bars || [])
+    .map((bar) => (Number.isFinite(bar?.close) ? +bar.close : null))
+    .filter((value) => Number.isFinite(value));
+
+  return values.length > 1 ? values : null;
 }
 
 function buildSectorCard(period, etf, meta, bars1D, periodBarsRaw, ytdBars) {
@@ -59,6 +68,10 @@ function buildSectorCard(period, etf, meta, bars1D, periodBarsRaw, ytdBars) {
     ? (change / baseClose) * 100
     : null;
 
+  const sparklineBars = period === "1D"
+    ? null
+    : patchBarsWithLatest1D(periodBarsRaw || [], last1DBar);
+
   return {
     tickerId: meta.tickerId,
     symbol: etf.symbol,
@@ -71,6 +84,7 @@ function buildSectorCard(period, etf, meta, bars1D, periodBarsRaw, ytdBars) {
     baseClose,
     change: Number.isFinite(change) ? change : null,
     changePct: Number.isFinite(changePct) ? changePct : null,
+    sparkline: buildSparklineSeries(sparklineBars),
   };
 }
 
@@ -97,6 +111,7 @@ function buildSectorCardFromRealTimeQuote(etf, meta, quote) {
     baseClose,
     change: Number.isFinite(change) ? change : null,
     changePct: Number.isFinite(changePct) ? changePct : null,
+    sparkline: null,
   };
 }
 

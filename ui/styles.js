@@ -1208,6 +1208,48 @@ export function getStyles() {
       white-space: nowrap;
     }
 
+    .sectorHeatSparkline{
+      justify-self: end;
+      align-self: end;
+      width: 120px;
+      height: 42px;
+      color: rgba(226,232,240,.94);
+    }
+
+    .sectorHeatSparkline svg{
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    .sectorHeatSparkline polyline{
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 8px currentColor);
+      opacity: .96;
+    }
+
+    .sectorHeatSparkline circle{
+      fill: currentColor;
+      filter: drop-shadow(0 0 8px currentColor);
+    }
+
+    .sectorHeatSparkline.up{
+      color: var(--up);
+    }
+
+    .sectorHeatSparkline.down{
+      color: var(--down);
+    }
+
+    .sectorHeatSparkline.flat{
+      color: rgba(226,232,240,.94);
+    }
+
     .sectorHeatTile.up .sectorHeatPrice,
     .sectorHeatTile.up .sectorHeatPct,
     .sectorHeatTile.up .sectorHeatMeta strong{
@@ -1829,6 +1871,10 @@ export function getStyles() {
       .sectorHeatLatest{
         justify-self: start;
         text-align: left;
+      }
+
+      .sectorHeatSparkline{
+        justify-self: start;
       }
 
       .sectorBarRow{
