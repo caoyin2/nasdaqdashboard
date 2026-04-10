@@ -16,6 +16,7 @@ import { buildQuotePayload } from "./services/quoteService.js";
 import { probeSeekingAlphaSearch } from "./services/seekingAlpha.js";
 import { getSearchMeta, refreshSearchMeta } from "./services/searchMetaStore.js";
 import { buildSp500SectorPayload } from "./services/sp500SectorService.js";
+import { addStarTechCompany, getStarTechCompanyList, removeStarTechCompany } from "./services/starTechListStore.js";
 import { buildStarTechPayload } from "./services/starTechService.js";
 import { getClientScript } from "./ui/client.js";
 import { getHtml } from "./ui/html.js";
@@ -165,6 +166,57 @@ async function handleSearchMetaRoute(url, origin, env) {
   }
 }
 
+async function handleStarTechListRoute(request, url, origin, env) {
+  if (request.method === "GET") {
+    try {
+      const items = await getStarTechCompanyList(env);
+      return jsonResponse({ ok: true, items }, origin, 200, { cacheSeconds: 0 });
+    } catch (error) {
+      return jsonResponse(
+        { ok: false, error: error?.message || String(error) },
+        origin,
+        502,
+        { cacheSeconds: 0 }
+      );
+    }
+  }
+
+  if (request.method === "POST") {
+    try {
+      const payload = await request.json();
+      const items = await addStarTechCompany(env, payload);
+      return jsonResponse({ ok: true, items }, origin, 200, { cacheSeconds: 0 });
+    } catch (error) {
+      return jsonResponse(
+        { ok: false, error: error?.message || String(error) },
+        origin,
+        400,
+        { cacheSeconds: 0 }
+      );
+    }
+  }
+
+  if (request.method === "DELETE") {
+    try {
+      const symbol = String(url.searchParams.get("symbol") || "").trim().toUpperCase();
+      const items = await removeStarTechCompany(env, symbol);
+      return jsonResponse({ ok: true, items }, origin, 200, { cacheSeconds: 0 });
+    } catch (error) {
+      return jsonResponse(
+        { ok: false, error: error?.message || String(error) },
+        origin,
+        400,
+        { cacheSeconds: 0 }
+      );
+    }
+  }
+
+  return new Response("Method Not Allowed", {
+    status: 405,
+    headers: corsHeaders(origin),
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -180,6 +232,10 @@ export default {
 
     if (url.pathname === "/api/search-meta") {
       return handleSearchMetaRoute(url, origin, env);
+    }
+
+    if (url.pathname === "/api/star-tech-list") {
+      return handleStarTechListRoute(request, url, origin, env);
     }
 
     if (request.method !== "GET") {

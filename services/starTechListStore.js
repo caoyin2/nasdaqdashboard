@@ -57,9 +57,6 @@ export async function writeStarTechListToKv(env, list) {
   }
 
   const normalized = normalizeCompanyList(list);
-  if (!normalized.length) {
-    return false;
-  }
 
   try {
     await kv.put(STAR_TECH_LIST_KEY, JSON.stringify(normalized), {
@@ -86,4 +83,43 @@ export async function getStarTechCompanyList(env) {
     await writeStarTechListToKv(env, fallback);
   }
   return fallback;
+}
+
+export async function setStarTechCompanyList(env, list) {
+  const normalized = normalizeCompanyList(list);
+  await writeStarTechListToKv(env, normalized);
+  return normalized;
+}
+
+export async function addStarTechCompany(env, item) {
+  const company = normalizeCompany(item);
+  if (!company) {
+    throw new Error("Missing symbol or 中文名");
+  }
+
+  const current = await getStarTechCompanyList(env);
+  if (current.some((entry) => entry.symbol === company.symbol)) {
+    throw new Error(`Symbol ${company.symbol} already exists`);
+  }
+
+  const next = current.concat(company);
+  await writeStarTechListToKv(env, next);
+  return next;
+}
+
+export async function removeStarTechCompany(env, symbol) {
+  const normalizedSymbol = String(symbol || "").trim().toUpperCase();
+  if (!normalizedSymbol) {
+    throw new Error("Missing symbol");
+  }
+
+  const current = await getStarTechCompanyList(env);
+  const next = current.filter((entry) => entry.symbol !== normalizedSymbol);
+
+  if (next.length === current.length) {
+    throw new Error(`Symbol ${normalizedSymbol} not found`);
+  }
+
+  await writeStarTechListToKv(env, next);
+  return next;
 }

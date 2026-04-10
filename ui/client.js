@@ -245,6 +245,15 @@ export function getClientScript() {
       touched: false,
       mobileVisible: false
     };
+    var starListState = {
+      open: false,
+      items: [],
+      loading: false,
+      saving: false,
+      error: "",
+      symbolInput: "",
+      nameCNInput: ""
+    };
     var sectorsState = {
       period: "1D",
       view: "heatmap",
@@ -1187,6 +1196,52 @@ export function getClientScript() {
       var latestText = latestDataText(cached && cached.asOfMs);
       var statusClass = starsState.statusType === "err" ? "err" : "ok";
       var maxAbs = items && items.length ? sectorMaxAbsChange(items) : 1;
+      var manageStatus = starListState.loading
+        ? "\u6b63\u5728\u4ece KV \u8bfb\u53d6\u5217\u8868..."
+        : (starListState.saving
+          ? "\u6b63\u5728\u4fdd\u5b58\u5217\u8868..."
+          : (starListState.error || ""));
+      var manageStatusClass = starListState.error ? "err" : "ok";
+      var modalHtml = starListState.open
+        ? [
+            '<div class="starManageOverlay" data-star-manage-close="overlay">',
+              '<div class="starManageModal" role="dialog" aria-modal="true" aria-label="\u660e\u661f\u79d1\u6280\u80a1\u5217\u8868\u7ba1\u7406">',
+                '<div class="starManageHead">',
+                  '<div class="starManageTitle">',
+                    '<strong>\u7ba1\u7406\u660e\u661f\u79d1\u6280\u80a1</strong>',
+                    '<span>\u5217\u8868\u4f18\u5148\u5b58\u5728 Worker KV \uff08index:star-tech:list\uff09</span>',
+                  '</div>',
+                  '<button class="starManageClose" type="button" data-star-manage-close="button">\u5173\u95ed</button>',
+                '</div>',
+                '<div class="starManageStatus ' + manageStatusClass + '">' + esc(manageStatus || "\u53ef\u5728\u8fd9\u91cc\u6dfb\u52a0\u6216\u5220\u9664\u660e\u661f\u79d1\u6280\u80a1\u3002") + '</div>',
+                '<form class="starManageForm" id="starManageForm">',
+                  '<div class="starManageField">',
+                    '<label for="starManageSymbol">Symbol</label>',
+                    '<input id="starManageSymbol" name="symbol" type="text" value="' + esc(starListState.symbolInput) + '" placeholder="例如 NVDA" maxlength="12" />',
+                  '</div>',
+                  '<div class="starManageField">',
+                    '<label for="starManageNameCN">\u4e2d\u6587\u540d</label>',
+                    '<input id="starManageNameCN" name="nameCN" type="text" value="' + esc(starListState.nameCNInput) + '" placeholder="例如 英伟达" maxlength="24" />',
+                  '</div>',
+                  '<button class="starManageSubmit" type="submit"' + (starListState.loading || starListState.saving ? ' disabled' : '') + '>\u6dfb\u52a0</button>',
+                '</form>',
+                '<div class="starManageList">',
+                  (starListState.items || []).map(function (item) {
+                    return [
+                      '<div class="starManageItem" data-symbol="' + esc(item.symbol) + '">',
+                        '<div class="starManageItemMain">',
+                          '<strong>' + esc(item.symbol) + '</strong>',
+                          '<span>' + esc(item.nameCN) + '</span>',
+                        '</div>',
+                        '<button class="starManageDelete" type="button" data-star-delete="' + esc(item.symbol) + '"' + (starListState.loading || starListState.saving ? ' disabled' : '') + '>\u5220\u9664</button>',
+                      '</div>'
+                    ].join("");
+                  }).join(""),
+                '</div>',
+              '</div>',
+            '</div>'
+          ].join("")
+        : "";
       var gridHtml = items && items.length
         ? '<div class="sectorHeatGrid">' + items.map(function (item) { return sectorHeatTileHTML(item, maxAbs); }).join("") + '</div>'
         : '<div class="starPanelEmpty">\u70b9\u51fb\u4e0a\u65b9\u5468\u671f\u6309\u94ae\u540e\u52a0\u8f7d\u5bf9\u5e94\u6570\u636e\u3002<br />\u4e3a\u4e86\u63a7\u5236\u8bf7\u6c42\u91cf\uff0c\u660e\u661f\u79d1\u6280\u516c\u53f8\u9762\u677f\u4e0d\u4f1a\u5728\u9875\u9762\u521d\u59cb\u65f6\u4e00\u6b21\u6027\u8bfb\u53d6\u5168\u90e8\u5468\u671f\u3002</div>';
@@ -1198,13 +1253,16 @@ export function getClientScript() {
               '<span>\u6309\u5468\u671f\u67e5\u770b\u660e\u661f\u79d1\u6280\u516c\u53f8\u80a1\u4ef7\u8868\u73b0</span>',
               '<strong>\u660e\u661f\u79d1\u6280\u516c\u53f8</strong>',
             '</div>',
-            '<div class="starPeriodSeg" id="starPeriodSeg">',
-              '<button data-star-p="1D"' + (starsState.period === "1D" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1D"]) + '</button>',
-              '<button data-star-p="5D"' + (starsState.period === "5D" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["5D"]) + '</button>',
-              '<button data-star-p="1M"' + (starsState.period === "1M" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1M"]) + '</button>',
-              '<button data-star-p="6M"' + (starsState.period === "6M" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["6M"]) + '</button>',
-              '<button data-star-p="YTD"' + (starsState.period === "YTD" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["YTD"]) + '</button>',
-              '<button data-star-p="1Y"' + (starsState.period === "1Y" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1Y"]) + '</button>',
+            '<div class="starPanelTools">',
+              '<div class="starPeriodSeg" id="starPeriodSeg">',
+                '<button data-star-p="1D"' + (starsState.period === "1D" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1D"]) + '</button>',
+                '<button data-star-p="5D"' + (starsState.period === "5D" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["5D"]) + '</button>',
+                '<button data-star-p="1M"' + (starsState.period === "1M" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1M"]) + '</button>',
+                '<button data-star-p="6M"' + (starsState.period === "6M" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["6M"]) + '</button>',
+                '<button data-star-p="YTD"' + (starsState.period === "YTD" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["YTD"]) + '</button>',
+                '<button data-star-p="1Y"' + (starsState.period === "1Y" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1Y"]) + '</button>',
+              '</div>',
+              '<button class="starManageBtn" type="button" data-star-manage-open="1">\u7ba1\u7406\u5217\u8868</button>',
             '</div>',
           '</div>',
           '<div class="starPanelMeta">',
@@ -1213,6 +1271,7 @@ export function getClientScript() {
             '<div class="starPanelMetaText">' + esc(latestText) + '</div>',
           '</div>',
           gridHtml,
+          modalHtml,
         '</div>'
       ].join("");
 
@@ -1607,6 +1666,74 @@ export function getClientScript() {
       startStarAutoRefresh();
     }
 
+    async function fetchStarTechList() {
+      var res = await fetch("/api/star-tech-list?_ts=" + Date.now(), {
+        cache: "no-store"
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      var payload = await res.json();
+      if (!payload.ok) throw new Error(payload.error || "Star tech list API error");
+      return payload.items || [];
+    }
+
+    async function openStarListManager() {
+      starListState.open = true;
+      starListState.loading = true;
+      starListState.error = "";
+      renderStarPanel();
+      try {
+        starListState.items = await fetchStarTechList();
+      } catch (error) {
+        starListState.error = error && error.message ? error.message : "\u5217\u8868\u8bfb\u53d6\u5931\u8d25";
+      } finally {
+        starListState.loading = false;
+        renderStarPanel();
+      }
+    }
+
+    function closeStarListManager() {
+      starListState.open = false;
+      starListState.loading = false;
+      starListState.saving = false;
+      starListState.error = "";
+      starListState.symbolInput = "";
+      starListState.nameCNInput = "";
+      starListState.items = [];
+      renderStarPanel();
+    }
+
+    async function refreshStarListAndPanel() {
+      starListState.items = await fetchStarTechList();
+      starsState.cache.clear();
+      await loadStarPeriod(starsState.period, { force: true });
+    }
+
+    async function addStarListItem(symbol, nameCN) {
+      var res = await fetch("/api/star-tech-list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        cache: "no-store",
+        body: JSON.stringify({ symbol: symbol, nameCN: nameCN })
+      });
+      var payload = await res.json();
+      if (!res.ok || !payload.ok) {
+        throw new Error(payload && payload.error ? payload.error : "添加失败");
+      }
+      return payload.items || [];
+    }
+
+    async function deleteStarListItem(symbol) {
+      var res = await fetch("/api/star-tech-list?symbol=" + encodeURIComponent(symbol), {
+        method: "DELETE",
+        cache: "no-store"
+      });
+      var payload = await res.json();
+      if (!res.ok || !payload.ok) {
+        throw new Error(payload && payload.error ? payload.error : "删除失败");
+      }
+      return payload.items || [];
+    }
+
     async function fetchSectorPeriod(period, options) {
       var opts = options || {};
       if (sectorsState.fetchCtrl) {
@@ -1924,10 +2051,80 @@ export function getClientScript() {
     if (starTechPanel) {
       starTechPanel.addEventListener("click", function (e) {
         var btn = e.target && e.target.closest ? e.target.closest("button[data-star-p]") : null;
-        if (!btn) return;
-        var period = btn.getAttribute("data-star-p");
-        if (!period) return;
-        loadStarPeriod(period, { force: false });
+        if (btn) {
+          var period = btn.getAttribute("data-star-p");
+          if (!period) return;
+          loadStarPeriod(period, { force: false });
+          return;
+        }
+
+        var openBtn = e.target && e.target.closest ? e.target.closest("button[data-star-manage-open]") : null;
+        if (openBtn) {
+          openStarListManager();
+          return;
+        }
+
+        var closeBtn = e.target && e.target.closest ? e.target.closest("[data-star-manage-close]") : null;
+        if (closeBtn) {
+          if (closeBtn.getAttribute("data-star-manage-close") === "overlay" && e.target !== closeBtn) {
+            return;
+          }
+          closeStarListManager();
+          return;
+        }
+
+        var deleteBtn = e.target && e.target.closest ? e.target.closest("button[data-star-delete]") : null;
+        if (deleteBtn) {
+          if (starListState.loading || starListState.saving) return;
+          var symbol = deleteBtn.getAttribute("data-star-delete");
+          if (!symbol) return;
+          starListState.saving = true;
+          starListState.error = "";
+          renderStarPanel();
+          deleteStarListItem(symbol)
+            .then(function () {
+              return refreshStarListAndPanel();
+            })
+            .catch(function (error) {
+              console.error("star tech list delete failed:", error);
+              starListState.error = error && error.message ? error.message : "\u5220\u9664\u5931\u8d25";
+            })
+            .finally(function () {
+              starListState.saving = false;
+              renderStarPanel();
+            });
+        }
+      });
+
+      starTechPanel.addEventListener("submit", function (e) {
+        var form = e.target && e.target.closest ? e.target.closest("#starManageForm") : null;
+        if (!form) return;
+        e.preventDefault();
+        if (starListState.loading || starListState.saving) return;
+
+        var formData = new FormData(form);
+        var symbol = String(formData.get("symbol") || "").trim().toUpperCase();
+        var nameCN = String(formData.get("nameCN") || "").trim();
+        starListState.symbolInput = symbol;
+        starListState.nameCNInput = nameCN;
+        starListState.saving = true;
+        starListState.error = "";
+        renderStarPanel();
+
+        addStarListItem(symbol, nameCN)
+          .then(function () {
+            starListState.symbolInput = "";
+            starListState.nameCNInput = "";
+            return refreshStarListAndPanel();
+          })
+          .catch(function (error) {
+            console.error("star tech list add failed:", error);
+            starListState.error = error && error.message ? error.message : "\u6dfb\u52a0\u5931\u8d25";
+          })
+          .finally(function () {
+            starListState.saving = false;
+            renderStarPanel();
+          });
       });
     }
 

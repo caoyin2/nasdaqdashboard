@@ -877,6 +877,19 @@ export function getStyles() {
       box-shadow: inset 0 0 0 1px rgba(255,180,0,.24);
     }
 
+    .starManageBtn{
+      appearance:none;
+      border: 1px solid rgba(0,224,255,.24);
+      cursor:pointer;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: rgba(0,224,255,.10);
+      color: rgba(230,237,247,.94);
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
     .sectorViewSeg{
       display:inline-flex;
       gap: 6px;
@@ -1127,6 +1140,166 @@ export function getStyles() {
       color: var(--muted);
       font-family: var(--mono);
       font-size: 13px;
+    }
+
+    .starManageOverlay{
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(3,7,18,.68);
+      backdrop-filter: blur(8px);
+      display:grid;
+      place-items:center;
+      padding: 18px;
+    }
+
+    .starManageModal{
+      width: min(760px, 100%);
+      max-height: min(84vh, 860px);
+      overflow: auto;
+      border-radius: 18px;
+      border: 1px solid rgba(31,43,61,.88);
+      background:
+        radial-gradient(900px 260px at 0% 0%, rgba(0,224,255,.08), transparent 58%),
+        linear-gradient(180deg, rgba(10,15,26,.96), rgba(12,18,30,.94));
+      box-shadow: 0 24px 80px rgba(0,0,0,.42);
+      padding: 18px;
+      display:grid;
+      gap: 14px;
+    }
+
+    .starManageHead{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+    }
+
+    .starManageTitle{
+      display:grid;
+      gap: 4px;
+    }
+
+    .starManageTitle strong{
+      font-size: 20px;
+      line-height: 1.1;
+      color: rgba(244,247,252,.98);
+    }
+
+    .starManageTitle span{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .starManageClose,
+    .starManageDelete,
+    .starManageSubmit{
+      appearance:none;
+      border: 1px solid rgba(31,43,61,.88);
+      cursor:pointer;
+      border-radius: 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(230,237,247,.94);
+      background: rgba(255,255,255,.05);
+    }
+
+    .starManageClose{
+      padding: 9px 14px;
+    }
+
+    .starManageStatus{
+      min-height: 18px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .starManageStatus.ok{ color: rgba(0,224,255,.85); }
+    .starManageStatus.err{ color: rgba(255,77,109,.90); }
+
+    .starManageForm{
+      display:grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items:end;
+    }
+
+    .starManageField{
+      display:grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .starManageField label{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .starManageField input{
+      width: 100%;
+      min-width: 0;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(31,43,61,.88);
+      background: rgba(255,255,255,.04);
+      color: rgba(244,247,252,.98);
+      font-size: 14px;
+    }
+
+    .starManageSubmit{
+      padding: 11px 16px;
+      background: rgba(0,224,255,.12);
+      border-color: rgba(0,224,255,.24);
+    }
+
+    .starManageSubmit[disabled],
+    .starManageDelete[disabled]{
+      opacity: .55;
+      cursor: default;
+    }
+
+    .starManageList{
+      display:grid;
+      gap: 10px;
+    }
+
+    .starManageItem{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(31,43,61,.85);
+      background: rgba(255,255,255,.04);
+    }
+
+    .starManageItemMain{
+      display:grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .starManageItemMain strong{
+      font-family: var(--mono);
+      font-size: 13px;
+      color: rgba(244,247,252,.98);
+    }
+
+    .starManageItemMain span{
+      color: rgba(226,232,240,.90);
+      font-size: 14px;
+    }
+
+    .starManageDelete{
+      padding: 9px 14px;
+      color: rgba(255,113,140,.94);
+      border-color: rgba(255,77,109,.22);
+      background: rgba(255,77,109,.08);
+      white-space: nowrap;
     }
 
     .sectorHeatGrid{
@@ -1829,6 +2002,10 @@ export function getStyles() {
         justify-items: stretch;
       }
 
+      .starManageBtn{
+        width: 100%;
+      }
+
       .starPanelTitle strong{
         font-size: 18px;
       }
@@ -1836,6 +2013,35 @@ export function getStyles() {
       .starGrid{
         grid-template-columns: 1fr;
         gap: 10px;
+      }
+
+      .starManageOverlay{
+        padding: 12px;
+      }
+
+      .starManageModal{
+        padding: 14px;
+        gap: 12px;
+      }
+
+      .starManageHead{
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .starManageForm{
+        grid-template-columns: 1fr;
+      }
+
+      .starManageDelete,
+      .starManageClose,
+      .starManageSubmit{
+        width: 100%;
+      }
+
+      .starManageItem{
+        flex-direction: column;
+        align-items: stretch;
       }
 
       #idxCards{
