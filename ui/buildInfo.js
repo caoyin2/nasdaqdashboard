@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "611a570",
-  fullSha: "611a570ef550552216823428a1c720d7e1780f3d",
-  message: "feat: show overview card quote times",
-  committedAt: "2026-04-10 08:41:59",
+  shortSha: "8600687",
+  fullSha: "86006871115bbaea5b3e04f3fed658520f63b1bd",
+  message: "fix: preserve overview quote times in cards",
+  committedAt: "2026-04-10 08:48:00",
 };
