@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "6f536d1",
-  fullSha: "6f536d1dabf943a9166cbb461d4c8f531f6b47b9",
-  message: "fix: include year in card quote times",
-  committedAt: "2026-04-10 08:53:12",
+  shortSha: "3cc3a39",
+  fullSha: "3cc3a39dbd6adfc3e1d961a5b2734e4332c5b6a6",
+  message: "feat: add non-1d sparklines to star and sector cards",
+  committedAt: "2026-04-10 10:12:34",
 };
