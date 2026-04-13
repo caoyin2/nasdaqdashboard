@@ -164,6 +164,7 @@ export function getStyles() {
       padding: 8px 12px;
       border-radius: 999px;
       white-space: nowrap;
+      flex: 0 0 auto;
     }
 
     .seg button.active{
@@ -827,6 +828,7 @@ export function getStyles() {
       gap: 10px;
       justify-items:end;
       min-width: 0;
+      max-width: 100%;
     }
 
     .starPanelTitle{
@@ -853,7 +855,10 @@ export function getStyles() {
       border-radius: 999px;
       background: rgba(255,255,255,.04);
       border: 1px solid rgba(31,43,61,.85);
+      width: max-content;
+      max-width: 100%;
       overflow-x: auto;
+      overflow-y: hidden;
       -webkit-overflow-scrolling: touch;
     }
 

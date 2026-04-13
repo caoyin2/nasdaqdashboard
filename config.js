@@ -78,11 +78,14 @@ export const PERIOD_LABELS = {
   "6M": "6\u6708",
   "YTD": "\u5e74\u521d\u81f3\u4eca",
   "1Y": "1\u5e74",
+  "5Y": "5\u5e74",
+  "10Y": "10\u5e74",
+  "MAX": "\u6700\u957f",
 };
 
 export const API_MEM_TTL_MS = 3000;
 
 export function normalizePeriod(raw) {
   const p = String(raw || "1D").toUpperCase();
-  return p === "5D" || p === "1M" || p === "6M" || p === "YTD" || p === "1Y" ? p : "1D";
+  return p === "5D" || p === "1M" || p === "6M" || p === "YTD" || p === "1Y" || p === "5Y" || p === "10Y" || p === "MAX" ? p : "1D";
 }

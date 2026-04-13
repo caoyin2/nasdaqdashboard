@@ -358,6 +358,23 @@ export function getClientScript() {
       return (new Date(state.times[state.times.length - 1]) - new Date(state.times[0])) > 36 * 3600 * 1000;
     }
 
+    function axisLabelForTime(ms) {
+      var d = new Date(ms);
+      var yyyy = String(d.getUTCFullYear());
+      var mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+      var dd = String(d.getUTCDate()).padStart(2, "0");
+      var hh = String(d.getUTCHours()).padStart(2, "0");
+      var mi = String(d.getUTCMinutes()).padStart(2, "0");
+
+      if (state.times.length >= 2) {
+        var spanMs = state.times[state.times.length - 1] - state.times[0];
+        if (spanMs > 730 * 24 * 3600 * 1000) return yyyy;
+        if (spanMs > 90 * 24 * 3600 * 1000) return yyyy.slice(2) + "-" + mm;
+      }
+
+      return spanIsMultiDay() ? (mm + "-" + dd) : (hh + ":" + mi);
+    }
+
     function measureEndLabelMaxWidth(font) {
       ctx.save();
       ctx.font = font;
@@ -610,7 +627,6 @@ export function getClientScript() {
         ctx.restore();
       });
 
-      var multiDay = spanIsMultiDay();
       ctx.save();
       ctx.fillStyle = "rgba(138,160,198,.92)";
       ctx.font = axisFont;
@@ -620,12 +636,7 @@ export function getClientScript() {
       for (var labelIndex = 0; labelIndex <= 6; labelIndex++) {
         var i2 = Math.floor((state.times.length - 1) * (labelIndex / 6));
         var x2 = xOf(i2);
-        var d = new Date(state.times[i2]);
-        var mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-        var dd = String(d.getUTCDate()).padStart(2, "0");
-        var hh = String(d.getUTCHours()).padStart(2, "0");
-        var mi = String(d.getUTCMinutes()).padStart(2, "0");
-        ctx.fillText(multiDay ? (mm + "-" + dd) : (hh + ":" + mi), x2, padT + plotH + 6 * DPR);
+        ctx.fillText(axisLabelForTime(state.times[i2]), x2, padT + plotH + 6 * DPR);
       }
 
       ctx.restore();
@@ -1261,6 +1272,9 @@ export function getClientScript() {
                 '<button data-star-p="6M"' + (starsState.period === "6M" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["6M"]) + '</button>',
                 '<button data-star-p="YTD"' + (starsState.period === "YTD" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["YTD"]) + '</button>',
                 '<button data-star-p="1Y"' + (starsState.period === "1Y" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1Y"]) + '</button>',
+                '<button data-star-p="5Y"' + (starsState.period === "5Y" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["5Y"]) + '</button>',
+                '<button data-star-p="10Y"' + (starsState.period === "10Y" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["10Y"]) + '</button>',
+                '<button data-star-p="MAX"' + (starsState.period === "MAX" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["MAX"]) + '</button>',
               '</div>',
               '<button class="starManageBtn" type="button" data-star-manage-open="1">\u7ba1\u7406\u5217\u8868</button>',
             '</div>',
@@ -1309,6 +1323,9 @@ export function getClientScript() {
                 '<button data-sector-p="6M"' + (sectorsState.period === "6M" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["6M"]) + '</button>',
                 '<button data-sector-p="YTD"' + (sectorsState.period === "YTD" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["YTD"]) + '</button>',
                 '<button data-sector-p="1Y"' + (sectorsState.period === "1Y" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["1Y"]) + '</button>',
+                '<button data-sector-p="5Y"' + (sectorsState.period === "5Y" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["5Y"]) + '</button>',
+                '<button data-sector-p="10Y"' + (sectorsState.period === "10Y" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["10Y"]) + '</button>',
+                '<button data-sector-p="MAX"' + (sectorsState.period === "MAX" ? ' class="active"' : "") + '>' + esc(PERIOD_LABELS["MAX"]) + '</button>',
               '</div>',
             '</div>',
           '</div>',

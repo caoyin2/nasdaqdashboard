@@ -100,6 +100,9 @@ export function getHtml() {
                 <button data-p="6M">${PERIOD_LABELS["6M"]}</button>
                 <button data-p="YTD">${PERIOD_LABELS["YTD"]}</button>
                 <button data-p="1Y">${PERIOD_LABELS["1Y"]}</button>
+                <button data-p="5Y">${PERIOD_LABELS["5Y"]}</button>
+                <button data-p="10Y">${PERIOD_LABELS["10Y"]}</button>
+                <button data-p="MAX">${PERIOD_LABELS["MAX"]}</button>
               </div>
 
               <div class="blockTitleRow">
