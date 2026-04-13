@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "0054234",
-  fullSha: "00542349b53d4aa01451e41282279068d835afed",
-  message: "feat: add long-range periods to market panels",
-  committedAt: "2026-04-13 09:34:21",
+  shortSha: "c49d408",
+  fullSha: "c49d408a8b46d8152eb8373f7b3e132a2e389642",
+  message: "fix: constrain mobile panel period tabs",
+  committedAt: "2026-04-13 09:47:21",
 };
