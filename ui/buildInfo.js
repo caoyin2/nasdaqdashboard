@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "c49d408",
-  fullSha: "c49d408a8b46d8152eb8373f7b3e132a2e389642",
-  message: "fix: constrain mobile panel period tabs",
-  committedAt: "2026-04-13 09:47:21",
+  shortSha: "1aac491",
+  fullSha: "1aac491a6271b57f1dfa6939746de1166e2f28b3",
+  message: "fix: preserve mobile period tab scroll",
+  committedAt: "2026-04-13 13:52:34",
 };
