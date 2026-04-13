@@ -828,6 +828,7 @@ export function getStyles() {
       gap: 10px;
       justify-items:end;
       min-width: 0;
+      width: min(100%, 680px);
       max-width: 100%;
     }
 
@@ -849,14 +850,16 @@ export function getStyles() {
     }
 
     .starPeriodSeg{
-      display:inline-flex;
+      display:flex;
       gap: 6px;
       padding: 4px;
       border-radius: 999px;
       background: rgba(255,255,255,.04);
       border: 1px solid rgba(31,43,61,.85);
-      width: max-content;
+      width: 100%;
+      min-width: 0;
       max-width: 100%;
+      justify-content: flex-start;
       overflow-x: auto;
       overflow-y: hidden;
       -webkit-overflow-scrolling: touch;
