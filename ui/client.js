@@ -1100,6 +1100,17 @@ export function getClientScript() {
       return positions;
     }
 
+    function captureScrollLeft(root, selector) {
+      var node = root && root.querySelector ? root.querySelector(selector) : null;
+      return node ? node.scrollLeft : 0;
+    }
+
+    function restoreScrollLeft(root, selector, scrollLeft) {
+      var node = root && root.querySelector ? root.querySelector(selector) : null;
+      if (!node || !Number.isFinite(scrollLeft)) return;
+      node.scrollLeft = scrollLeft;
+    }
+
     function animateStarCards(root, previousPositions) {
       if (!root || !previousPositions || !previousPositions.size) return;
       if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -1199,6 +1210,7 @@ export function getClientScript() {
       if (!root) return;
 
       var previousPositions = captureStarPositions(root);
+      var periodScrollLeft = captureScrollLeft(root, "#starPeriodSeg");
       var periodLabel = PERIOD_LABELS[starsState.period] || starsState.period;
       var cached = starsState.cache.get(starsState.period);
       var items = cached && cached.items ? sortStarItems(cached.items).map(function (item) {
@@ -1288,8 +1300,10 @@ export function getClientScript() {
           modalHtml,
         '</div>'
       ].join("");
+      restoreScrollLeft(root, "#starPeriodSeg", periodScrollLeft);
 
       requestAnimationFrame(function () {
+        restoreScrollLeft(root, "#starPeriodSeg", periodScrollLeft);
         animateStarCards(root, previousPositions);
       });
     }
@@ -1299,6 +1313,7 @@ export function getClientScript() {
       if (!root) return;
 
       var previousPositions = captureStarPositions(root);
+      var periodScrollLeft = captureScrollLeft(root, "#sectorPeriodSeg");
       var periodLabel = PERIOD_LABELS[sectorsState.period] || sectorsState.period;
       var cached = sectorsState.cache.get(sectorsState.period);
       var items = cached && cached.items ? sortStarItems(cached.items) : null;
@@ -1337,8 +1352,10 @@ export function getClientScript() {
           gridHtml,
         '</div>'
       ].join("");
+      restoreScrollLeft(root, "#sectorPeriodSeg", periodScrollLeft);
 
       requestAnimationFrame(function () {
+        restoreScrollLeft(root, "#sectorPeriodSeg", periodScrollLeft);
         animateStarCards(root, previousPositions);
       });
     }
