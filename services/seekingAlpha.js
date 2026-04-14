@@ -103,8 +103,14 @@ async function runSlugAttempt(query, label) {
 }
 
 export async function fetchSeekingAlphaPeriod(period, tickerId) {
-  const url = `${UPSTREAM}?period=${encodeURIComponent(period)}&ticker_id=${encodeURIComponent(tickerId)}`;
-  const res = await fetchWithTimeout(url, `SeekingAlpha ${period} ticker_id=${tickerId}`, {
+  const url = new URL(UPSTREAM);
+  url.searchParams.set("period", period);
+  url.searchParams.set("ticker_id", tickerId);
+  // SeekingAlpha serves lua_charts from a static CDN. Some symbols can get stuck
+  // on stale CDN objects, so every chart request must use a unique URL.
+  url.searchParams.set("_", `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+
+  const res = await fetchWithTimeout(url.toString(), `SeekingAlpha ${period} ticker_id=${tickerId}`, {
     headers: buildChartHeaders(),
   });
 
