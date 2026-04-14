@@ -150,8 +150,21 @@ export function getClientScript() {
       return Number.isFinite(ms) ? ("\u6700\u65b0\u6570\u636e\uff1a" + fmtBJ(ms)) : "\u6700\u65b0\u6570\u636e\uff1a--";
     }
 
-    function cardLatestTimeText(ms) {
-      return Number.isFinite(ms) ? ("\u6700\u65b0 " + fmtBJSeconds(ms)) : "\u6700\u65b0 --";
+    var CARD_TIME_ANOMALY_MS = 5 * 60 * 60 * 1000;
+
+    function isCardLatestTimeAnomaly(ms, referenceMs) {
+      return Number.isFinite(ms) &&
+        Number.isFinite(referenceMs) &&
+        Math.abs(ms - referenceMs) >= CARD_TIME_ANOMALY_MS;
+    }
+
+    function cardLatestTimeText(ms, referenceMs) {
+      var label = isCardLatestTimeAnomaly(ms, referenceMs) ? "\u5f02\u5e38\u65f6\u95f4" : "\u6700\u65b0\u65f6\u95f4";
+      return Number.isFinite(ms) ? (label + " " + fmtBJSeconds(ms)) : (label + " --");
+    }
+
+    function cardLatestTimeClass(ms, referenceMs) {
+      return isCardLatestTimeAnomaly(ms, referenceMs) ? " cardTimeAnomaly" : "";
     }
 
     function getSparklineValues(item) {
@@ -795,12 +808,13 @@ export function getClientScript() {
       ].join("");
     }
 
-    function overviewHeatItem(item, period) {
+    function overviewHeatItem(item, period, referenceLatestT) {
       return {
         symbol: item.symbol,
         icon: item.iconLight || "",
         nameCN: item.nameCN,
         latestT: item.latestT,
+        referenceLatestT: referenceLatestT,
         lastClose: item.lastClose,
         baseClose: item.cardBaseClose,
         change: item.cardChg,
@@ -1199,7 +1213,7 @@ export function getClientScript() {
               '<div>\u57fa\u51c6</div><div>' + fmtPrice(item.baseClose) + '</div>',
               '<div>\u6da8\u8dcc</div><div><strong>' + signPrice(item.change) + '</strong></div>',
             '</div>',
-            '<div class="starCardLatest">' + esc(cardLatestTimeText(item.latestT)) + '</div>',
+            '<div class="starCardLatest' + cardLatestTimeClass(item.latestT, item.referenceLatestT) + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>',
           '</div>',
         '</article>'
       ].join("");
@@ -1214,7 +1228,7 @@ export function getClientScript() {
       var periodLabel = PERIOD_LABELS[starsState.period] || starsState.period;
       var cached = starsState.cache.get(starsState.period);
       var items = cached && cached.items ? sortStarItems(cached.items).map(function (item) {
-        return Object.assign({}, item, { showSparkline: true });
+        return Object.assign({}, item, { showSparkline: true, referenceLatestT: cached.asOfMs });
       }) : null;
       var latestText = latestDataText(cached && cached.asOfMs);
       var statusClass = starsState.statusType === "err" ? "err" : "ok";
@@ -1316,7 +1330,9 @@ export function getClientScript() {
       var periodScrollLeft = captureScrollLeft(root, "#sectorPeriodSeg");
       var periodLabel = PERIOD_LABELS[sectorsState.period] || sectorsState.period;
       var cached = sectorsState.cache.get(sectorsState.period);
-      var items = cached && cached.items ? sortStarItems(cached.items) : null;
+      var items = cached && cached.items ? sortStarItems(cached.items).map(function (item) {
+        return Object.assign({}, item, { referenceLatestT: cached.asOfMs });
+      }) : null;
       var latestText = latestDataText(cached && cached.asOfMs);
       var statusClass = sectorsState.statusType === "err" ? "err" : "ok";
       var gridHtml = items && items.length
@@ -1394,12 +1410,13 @@ export function getClientScript() {
           ].join("")
         : '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>';
       var metaClass = hasSparkline ? 'sectorHeatMeta sectorHeatMetaWithLatest' : 'sectorHeatMeta';
+      var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT);
       var metaRightHtml = hasSparkline
-        ? '<span class="sectorHeatMetaLatest">' + esc(cardLatestTimeText(item.latestT)) + '</span>'
+        ? '<span class="sectorHeatMetaLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</span>'
         : '<strong>' + signPrice(item.change) + '</strong>';
       var footerHtml = hasSparkline
         ? ""
-        : '<div class="sectorHeatLatest">' + esc(cardLatestTimeText(item.latestT)) + '</div>';
+        : '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>';
 
       return [
         '<article class="sectorHeatTile ' + tone + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
@@ -1913,7 +1930,7 @@ export function getClientScript() {
 
       state.items = items;
       rebuildTimes();
-      var overviewItems = items.map(function (item) { return overviewHeatItem(item, q.period); });
+      var overviewItems = items.map(function (item) { return overviewHeatItem(item, q.period, q.asOfMs); });
       var overviewMaxAbs = sectorMaxAbsChange(overviewItems);
       $("idxCards").innerHTML = '<div class="idxHeatGrid">' + overviewItems.map(function (item) {
         return sectorHeatTileHTML(item, overviewMaxAbs);

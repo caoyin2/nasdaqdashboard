@@ -1418,6 +1418,12 @@ export function getStyles() {
       white-space: nowrap;
     }
 
+    .cardTimeAnomaly{
+      color: rgba(255,77,109,.98) !important;
+      font-weight: 800;
+      text-shadow: 0 0 14px rgba(255,77,109,.36);
+    }
+
     .sectorHeatSparkline{
       justify-self: end;
       align-self: center;
