@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "7c5eb5b",
-  fullSha: "7c5eb5b138a568e99adf5f26f8bd70519a2ad763",
-  message: "fix: target mobile overview index label",
-  committedAt: "2026-04-15 08:28:14",
+  shortSha: "b4b11fc",
+  fullSha: "b4b11fc181af455054cc07bdda4d5bbfeb6f038f",
+  message: "fix: align overview data status layout",
+  committedAt: "2026-04-15 09:11:16",
 };
