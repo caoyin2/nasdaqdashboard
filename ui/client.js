@@ -18,7 +18,10 @@ export function getClientScript() {
     var el = $("status");
     if (!el) return;
     el.textContent = text;
-    el.className = "status " + (type === "err" ? "err" : "ok");
+    var stateClass = type === "err" ? "err" : "ok";
+    el.className = el.dataset && el.dataset.metaStatus === "1"
+      ? "starPanelMetaText status " + stateClass
+      : "status " + stateClass;
   }
 
   function fmt(n, digits) {
@@ -148,6 +151,12 @@ export function getClientScript() {
 
     function latestDataText(ms) {
       return Number.isFinite(ms) ? ("\u6700\u65b0\u6570\u636e\uff1a" + fmtBJ(ms)) : "\u6700\u65b0\u6570\u636e\uff1a--";
+    }
+
+    function setOverviewCurrentPeriod(period) {
+      var el = $("idxCurrentPeriod");
+      if (!el) return;
+      el.textContent = "\u5f53\u524d\u5468\u671f\uff1a" + (PERIOD_LABELS[period] || period);
     }
 
     var CARD_TIME_ANOMALY_MS = 5 * 60 * 60 * 1000;
@@ -1939,6 +1948,7 @@ export function getClientScript() {
       if (idxLatestTime) {
         idxLatestTime.textContent = latestDataText(q.asOfMs);
       }
+      setOverviewCurrentPeriod(q.period || state.period);
       $("periodCN").textContent = getPanelTitle(state.page);
       resizeCanvas();
     }
@@ -2052,12 +2062,13 @@ export function getClientScript() {
     async function renderPeriod(period, options) {
       var opts = options || {};
       try {
-        setStatus(opts.force ? "\u4ece\u7f51\u7edc\u83b7\u53d6\u4e2d..." : "\u52a0\u8f7d\u4e2d...", "ok");
+        setOverviewCurrentPeriod(period);
+        setStatus(opts.force ? "\u4ece\u7f51\u7edc\u83b7\u53d6\u4e2d..." : ("\u6b63\u5728\u52a0\u8f7d " + (PERIOD_LABELS[period] || period) + " \u6570\u636e..."), "ok");
         var result = await ensureData(period, opts);
         if (!result) return;
         if (period !== state.period) return;
         applyData(result.q);
-        setStatus(result.fromCache ? "\u5df2\u4f7f\u7528\u672c\u9875\u9762\u7f13\u5b58\u6570\u636e" : "\u52a0\u8f7d\u6210\u529f", "ok");
+        setStatus(result.fromCache ? "\u5df2\u4f7f\u7528\u7f13\u5b58\u6570\u636e" : "\u5df2\u7f13\u5b58\u5f53\u524d\u5468\u671f\u6570\u636e", "ok");
       } catch (error) {
         console.error(error);
         setStatus(error && error.message ? error.message : "\u52a0\u8f7d\u5931\u8d25", "err");

@@ -84,7 +84,6 @@ export function getHtml() {
             </div>
 
             <div class="footer">
-              <div class="status ok" id="status">\u52a0\u8f7d\u4e2d\u2026</div>
               <div id="hint">\u60ac\u6d6e\u6216\u62d6\u52a8\u67e5\u770b\u6570\u636e\uff08\u5317\u4eac\u65f6\u95f4\uff09</div>
             </div>
           </div>
@@ -105,9 +104,10 @@ export function getHtml() {
                 <button data-p="MAX">${PERIOD_LABELS["MAX"]}</button>
               </div>
 
-              <div class="blockTitleRow">
-                <div class="blockTitle">\u6307\u6570</div>
-                <div class="blockMeta" id="idxLatestTime"></div>
+              <div class="overviewMeta">
+                <div class="starPanelMetaText status ok" id="status" data-meta-status="1">\u52a0\u8f7d\u4e2d\u2026</div>
+                <div class="starPanelMetaText" id="idxCurrentPeriod">\u5f53\u524d\u5468\u671f\uff1a${PERIOD_LABELS["1D"]}</div>
+                <div class="starPanelMetaText overviewLatestTime" id="idxLatestTime"></div>
               </div>
               <div id="idxCards"></div>
             </div>

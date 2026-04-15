@@ -269,6 +269,20 @@ export function getStyles() {
       white-space: nowrap;
     }
 
+    .overviewMeta{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      min-height: 20px;
+      padding: 0 6px;
+    }
+
+    .overviewLatestTime{
+      flex: 0 0 100%;
+    }
+
     .chartWrap{
       height: 660px;
       position:relative;
@@ -1996,19 +2010,13 @@ export function getStyles() {
         gap: 12px;
       }
 
-      .blockTitleRow{
-        align-items:flex-start;
-        flex-direction: column;
-        gap: 6px;
-      }
-
-      .page[data-page="overview"] .blockTitleRow .blockTitle{
-        display: none;
-      }
-
       .blockMeta{
         text-align:left;
         white-space: normal;
+      }
+
+      .overviewMeta{
+        padding: 0;
       }
 
       .starPanelHead{
