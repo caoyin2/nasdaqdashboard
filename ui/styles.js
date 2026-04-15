@@ -2002,6 +2002,10 @@ export function getStyles() {
         gap: 6px;
       }
 
+      .page-overview .blockTitleRow .blockTitle{
+        display: none;
+      }
+
       .blockMeta{
         text-align:left;
         white-space: normal;
