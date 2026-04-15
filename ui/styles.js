@@ -1479,6 +1479,11 @@ export function getStyles() {
       box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
     }
 
+    .fundIcon{
+      border-radius: 8px;
+      filter: brightness(1.48) saturate(1.18) contrast(1.08);
+    }
+
     .cardTimeAnomaly{
       color: rgba(255,77,109,.98) !important;
       font-weight: 800;
@@ -2207,6 +2212,11 @@ export function getStyles() {
       .sectorHeatMeta{
         flex-direction: column;
         align-items:flex-start;
+      }
+
+      .fundPremiumMetaRight{
+        justify-items:start;
+        text-align:left;
       }
 
       .sectorHeatMetaWithLatest{

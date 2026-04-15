@@ -14,7 +14,8 @@
  * - 30: quote timestamp, formatted as yyyyMMddHHmmss in Beijing time
  * - 31: price change
  * - 32: price change percent
- * - 63: premium/discount percent
+ * - 77: premium/discount percent shown by Tencent's fund page
+ * - 78: reference NAV used to derive field 77
  */
 
 import { FUND_PREMIUM_FUNDS } from "../config.js";
@@ -31,8 +32,14 @@ function toMarketSymbol(code) {
 }
 
 function toFiniteNumber(value) {
+  if (value === null || value === undefined || String(value).trim() === "") return null;
   const number = +value;
   return Number.isFinite(number) ? number : null;
+}
+
+function cleanName(value, fallback) {
+  const text = String(value || "").trim();
+  return text || fallback || "";
 }
 
 function parseTencentBeijingTime(value) {
@@ -72,13 +79,19 @@ function buildFundItem(fund, fields) {
   const latestT = parseTencentBeijingTime(fields[30]);
   const change = toFiniteNumber(fields[31]);
   const changePct = toFiniteNumber(fields[32]);
-  const premiumPct = toFiniteNumber(fields[63]);
+  const premiumPctFromTencent = toFiniteNumber(fields[77]);
+  const premiumReferenceNav = toFiniteNumber(fields[78]);
+  const premiumPct = Number.isFinite(premiumPctFromTencent)
+    ? premiumPctFromTencent
+    : Number.isFinite(lastClose) && Number.isFinite(premiumReferenceNav) && premiumReferenceNav !== 0
+      ? ((lastClose / premiumReferenceNav) - 1) * 100
+      : null;
 
   return {
     symbol: fund.marketSymbol,
     code: fund.code,
-    nameCN: fund.nameCN,
-    icon: null,
+    nameCN: cleanName(fields[1], fund.fallbackName),
+    icon: fund.icon || null,
     latestT,
     period: "1D",
     baseLabel: "\u6628\u6536",
@@ -87,6 +100,7 @@ function buildFundItem(fund, fields) {
     change,
     changePct,
     premiumPct,
+    premiumReferenceNav,
   };
 }
 
@@ -123,7 +137,13 @@ export async function buildFundPremiumPayload() {
     throw new Error(`Tencent fund quote request failed: HTTP ${response.status}`);
   }
 
-  const text = await response.text();
+  const buffer = await response.arrayBuffer();
+  let text;
+  try {
+    text = new TextDecoder("gbk").decode(buffer);
+  } catch {
+    text = new TextDecoder().decode(buffer);
+  }
   const variableMap = parseQtVariables(text);
 
   const items = funds.map((fund) => {

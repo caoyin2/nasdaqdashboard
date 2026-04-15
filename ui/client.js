@@ -232,7 +232,7 @@ export function getClientScript() {
     var OVERVIEW_API_TIMEOUT_MS = 30000;
     var INDEX_WEIGHTS_API_VERSION = "20260403h";
     var SP500_SECTOR_API_VERSION = "20260406a";
-    var FUND_PREMIUM_API_VERSION = "20260415a";
+    var FUND_PREMIUM_API_VERSION = "20260415b";
     var WEIGHTS_INDEX_OPTIONS = [
       { code: "NDXTMC", label: "\\u7eb3\\u65af\\u8fbe\\u514b\\u79d1\\u6280\\u5e02\\u503c\\u52a0\\u6743" },
       { code: "SP500-45", label: "\\u6807\\u666e500\\u4fe1\\u606f\\u79d1\\u6280" },
@@ -1518,7 +1518,9 @@ export function getClientScript() {
           '<div class="sectorHeatHeader">',
             '<div class="starIdentity">',
               '<div class="starIconWrap fundIconWrap">',
-                '<div class="fundIconBlank" aria-hidden="true"></div>',
+                item.icon
+                  ? '<img class="starIcon fundIcon" src="' + esc(item.icon) + '" alt="' + esc(item.nameCN) + '" loading="lazy" />'
+                  : '<div class="fundIconBlank" aria-hidden="true"></div>',
               '</div>',
               '<div class="starNameBox">',
                 '<div class="starName">' + esc(item.nameCN) + '</div>',

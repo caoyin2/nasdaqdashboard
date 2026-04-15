@@ -63,20 +63,20 @@ export const SP500_SECTOR_ETFS = [
 ];
 
 export const FUND_PREMIUM_FUNDS = [
-  { code: "513100", nameCN: "\u56fd\u6cf0\u7eb3\u6307ETF" },
-  { code: "513300", nameCN: "\u534e\u590f\u7eb3\u65af\u8fbe100ETF" },
-  { code: "159941", nameCN: "\u5e7f\u53d1\u7eb3\u65af\u8fbe\u514b100ETF" },
-  { code: "159696", nameCN: "\u6613\u65b9\u8fbe\u7eb3\u65af\u8fbe\u514b100ETF" },
-  { code: "513390", nameCN: "\u535a\u65f6\u7eb3\u65af\u8fbe\u514b100ETF" },
-  { code: "159660", nameCN: "\u6c47\u6dfb\u5bcc\u7eb3\u65af\u8fbe\u514b100ETF" },
-  { code: "159501", nameCN: "\u5609\u5b9e\u7eb3\u65af\u8fbe\u514b100ETF" },
-  { code: "159513", nameCN: "\u5927\u6210\u7eb3\u65af\u8fbe\u514b100ETF" },
-  { code: "159632", nameCN: "\u534e\u5b89\u7eb3\u65af\u8fbe\u514bETF" },
-  { code: "513110", nameCN: "\u534e\u6cf0\u67cf\u745e\u7eb3\u65af\u8fbe\u514b100ETF" },
-  { code: "513870", nameCN: "\u5bcc\u56fd\u7eb3\u65af\u8fbe\u514b100ETF" },
-  { code: "159659", nameCN: "\u62db\u5546\u7eb3\u65af\u8fbe\u514b100ETF" },
-  { code: "161128", nameCN: "\u6613\u65b9\u8fbe\u6807\u666e\u4fe1\u606f\u79d1\u6280LOF" },
-  { code: "159509", nameCN: "\u666f\u987a\u957f\u57ce\u7eb3\u6307\u79d1\u6280" },
+  { code: "513100", fallbackName: "\u56fd\u6cf0\u7eb3\u6307ETF", icon: "https://www.gtfund.com/favicon.ico" },
+  { code: "513300", fallbackName: "\u534e\u590f\u7eb3\u65af\u8fbe100ETF", icon: "https://www.chinaamc.com/favicon.ico" },
+  { code: "159941", fallbackName: "\u5e7f\u53d1\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.gffunds.com.cn/favicon.ico" },
+  { code: "159696", fallbackName: "\u6613\u65b9\u8fbe\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.efunds.com.cn/favicon.ico" },
+  { code: "513390", fallbackName: "\u535a\u65f6\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.bosera.com/favicon.ico" },
+  { code: "159660", fallbackName: "\u6c47\u6dfb\u5bcc\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.99fund.com/favicon.ico" },
+  { code: "159501", fallbackName: "\u5609\u5b9e\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.jsfund.cn/favicon.ico" },
+  { code: "159513", fallbackName: "\u5927\u6210\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.dcfund.com.cn/ws/images/favicon.ico" },
+  { code: "159632", fallbackName: "\u534e\u5b89\u7eb3\u65af\u8fbe\u514bETF", icon: "https://www.huaan.com.cn/favicon.ico" },
+  { code: "513110", fallbackName: "\u534e\u6cf0\u67cf\u745e\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.huatai-pb.com/favicon.ico" },
+  { code: "513870", fallbackName: "\u5bcc\u56fd\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.fullgoal.com.cn/favicon.ico" },
+  { code: "159659", fallbackName: "\u62db\u5546\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.cmfchina.com/favicon.ico" },
+  { code: "161128", fallbackName: "\u6613\u65b9\u8fbe\u6807\u666e\u4fe1\u606f\u79d1\u6280LOF", icon: "https://www.efunds.com.cn/favicon.ico" },
+  { code: "159509", fallbackName: "\u666f\u987a\u957f\u57ce\u7eb3\u6307\u79d1\u6280", icon: "https://www.igwfmc.com/favicon.ico" },
 ];
 
 export const LINE_COLORS = [
