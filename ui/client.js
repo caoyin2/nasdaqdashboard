@@ -232,6 +232,7 @@ export function getClientScript() {
     var OVERVIEW_API_TIMEOUT_MS = 30000;
     var INDEX_WEIGHTS_API_VERSION = "20260403h";
     var SP500_SECTOR_API_VERSION = "20260406a";
+    var FUND_PREMIUM_API_VERSION = "20260415a";
     var WEIGHTS_INDEX_OPTIONS = [
       { code: "NDXTMC", label: "\\u7eb3\\u65af\\u8fbe\\u514b\\u79d1\\u6280\\u5e02\\u503c\\u52a0\\u6743" },
       { code: "SP500-45", label: "\\u6807\\u666e500\\u4fe1\\u606f\\u79d1\\u6280" },
@@ -285,6 +286,13 @@ export function getClientScript() {
       statusType: "ok",
       touched: false
     };
+    var fundPremiumState = {
+      cache: null,
+      fetchCtrl: null,
+      statusText: "\u8fdb\u5165\u9762\u677f\u540e\u52a0\u8f7d\u6700\u65b0\u57fa\u91d1\u884c\u60c5",
+      statusType: "ok",
+      touched: false
+    };
     var weightsState = {
       activeIndex: "NDXTMC",
       cache: new Map(),
@@ -301,6 +309,7 @@ export function getClientScript() {
       if (page === "stars") return "\u9762\u677f\uff1a\u660e\u661f\u79d1\u6280\u516c\u53f8";
       if (page === "weights") return "\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd";
       if (page === "sectors") return "\u9762\u677f\uff1a\u6807\u666e500\u677f\u5757ETF";
+      if (page === "fundPremiums") return "\u9762\u677f\uff1a\u57fa\u91d1\u6298\u6ea2\u4ef7\uff08\u5f00\u53d1\u4e2d\uff09";
       return "\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f";
     }
 
@@ -1385,6 +1394,39 @@ export function getClientScript() {
       });
     }
 
+    function renderFundPremiumPanel() {
+      var root = $("fundPremiumPanel");
+      if (!root) return;
+
+      var cached = fundPremiumState.cache;
+      var items = cached && cached.items ? cached.items.map(function (item) {
+        return Object.assign({}, item, { referenceLatestT: cached.asOfMs });
+      }) : null;
+      var latestText = latestDataText(cached && cached.asOfMs);
+      var statusClass = fundPremiumState.statusType === "err" ? "err" : "ok";
+      var maxAbs = items && items.length ? sectorMaxAbsChange(items) : 1;
+      var gridHtml = items && items.length
+        ? '<div class="sectorHeatGrid fundPremiumGrid">' + items.map(function (item) { return fundPremiumTileHTML(item, maxAbs); }).join("") + '</div>'
+        : '<div class="starPanelEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u4ece\u817e\u8baf\u8d22\u7ecf\u8bfb\u53d6\u573a\u5185\u57fa\u91d1\u6700\u65b0\u4ef7\u683c\u548c\u6298\u6ea2\u4ef7\u7387\u3002<br />\u8be5\u9762\u677f\u6682\u65f6\u4e0d\u63a5 KV\uff0c\u57fa\u91d1\u5217\u8868\u5728\u4ee3\u7801\u4e2d\u56fa\u5b9a\u3002</div>';
+
+      root.innerHTML = [
+        '<div class="card starPanel fundPremiumPanel">',
+          '<div class="starPanelHead">',
+            '<div class="starPanelTitle">',
+              '<span>\u4f7f\u7528\u817e\u8baf\u8d22\u7ecf\u5b9e\u65f6\u884c\u60c5\u663e\u793a\u573a\u5185\u57fa\u91d1\u6298\u6ea2\u4ef7</span>',
+              '<strong>\u57fa\u91d1\u6298\u6ea2\u4ef7\uff08\u5f00\u53d1\u4e2d\uff09</strong>',
+            '</div>',
+          '</div>',
+          '<div class="starPanelMeta">',
+            '<div class="starPanelMetaText ' + statusClass + '">' + esc(fundPremiumState.statusText) + '</div>',
+            '<div class="starPanelMetaText">\u6570\u636e\u6e90\uff1a\u817e\u8baf\u8d22\u7ecf qt.gtimg.cn</div>',
+            '<div class="starPanelMetaText">' + esc(latestText) + '</div>',
+          '</div>',
+          gridHtml,
+        '</div>'
+      ].join("");
+    }
+
     function sectorMaxAbsChange(items) {
       var values = (items || []).map(function (item) {
         return Math.abs(Number.isFinite(item && item.changePct) ? item.changePct : 0);
@@ -1447,6 +1489,53 @@ export function getClientScript() {
             metaRightHtml,
           '</div>',
           footerHtml,
+        '</article>'
+      ].join("");
+    }
+
+    function fundPremiumRateClass(value) {
+      if (!Number.isFinite(value)) return "flat";
+      if (value > 0) return "premiumPositive";
+      if (value < 0) return "premiumNegative";
+      return "flat";
+    }
+
+    function fundPremiumRateText(value) {
+      return "\u6298\u6ea2\u4ef7 " + signPct(value);
+    }
+
+    function fundPremiumTileHTML(item, maxAbs) {
+      var intensity = clamp(Math.abs(Number.isFinite(item && item.changePct) ? item.changePct : 0) / (maxAbs || 1), 0, 1);
+      var bg = sectorTint(item, 0.12 + intensity * 0.34);
+      var border = sectorTint(item, 0.26 + intensity * 0.30);
+      var glow = sectorTint(item, 0.16 + intensity * 0.24);
+      var tone = starToneClass(item);
+      var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT);
+      var premiumClass = fundPremiumRateClass(item.premiumPct);
+
+      return [
+        '<article class="sectorHeatTile fundPremiumTile ' + tone + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
+          '<div class="sectorHeatHeader">',
+            '<div class="starIdentity">',
+              '<div class="starIconWrap fundIconWrap">',
+                '<div class="fundIconBlank" aria-hidden="true"></div>',
+              '</div>',
+              '<div class="starNameBox">',
+                '<div class="starName">' + esc(item.nameCN) + '</div>',
+                '<div class="starSymbol">' + esc(item.symbol) + '</div>',
+              '</div>',
+            '</div>',
+            '<div class="sectorHeatPrice">' + fmtPrice(item.lastClose) + '</div>',
+          '</div>',
+          '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>',
+          '<div class="sectorHeatMeta fundPremiumMeta">',
+            '<span>' + esc(item.baseLabel || "\u6628\u6536") + ' ' + fmtPrice(item.baseClose) + '</span>',
+            '<div class="fundPremiumMetaRight">',
+              '<strong>' + signPrice(item.change) + '</strong>',
+              '<span class="fundPremiumRate ' + premiumClass + '">' + esc(fundPremiumRateText(item.premiumPct)) + '</span>',
+            '</div>',
+          '</div>',
+          '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>',
         '</article>'
       ].join("");
     }
@@ -1865,6 +1954,76 @@ export function getClientScript() {
       }
     }
 
+    async function fetchFundPremiums(options) {
+      var opts = options || {};
+      if (fundPremiumState.fetchCtrl) {
+        fundPremiumState.fetchCtrl.abort();
+      }
+
+      var controller = new AbortController();
+      var timedOut = false;
+      fundPremiumState.fetchCtrl = controller;
+
+      var timer = setTimeout(function () {
+        timedOut = true;
+        controller.abort();
+      }, API_TIMEOUT_MS);
+
+      try {
+        var res = await fetch("/api/fund-premiums?v=" + encodeURIComponent(FUND_PREMIUM_API_VERSION), {
+          cache: "no-store",
+          signal: controller.signal
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        var payload = await res.json();
+        if (!payload.ok) throw new Error(payload.error || "Fund premium API error");
+        return payload;
+      } catch (error) {
+        if (controller.signal.aborted && !timedOut) {
+          return null;
+        }
+        if (timedOut) {
+          throw new Error("\u57fa\u91d1\u6298\u6ea2\u4ef7\u9762\u677f\u8bf7\u6c42\u8d85\u65f6\uff0815\u79d2\uff09");
+        }
+        throw error;
+      } finally {
+        clearTimeout(timer);
+        if (fundPremiumState.fetchCtrl === controller) {
+          fundPremiumState.fetchCtrl = null;
+        }
+      }
+    }
+
+    async function loadFundPremiums(options) {
+      var opts = options || {};
+      fundPremiumState.touched = true;
+
+      if (!opts.force && fundPremiumState.cache) {
+        fundPremiumState.statusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u6570\u636e";
+        fundPremiumState.statusType = "ok";
+        renderFundPremiumPanel();
+        return;
+      }
+
+      fundPremiumState.statusText = "\u6b63\u5728\u52a0\u8f7d\u6700\u65b0\u57fa\u91d1\u884c\u60c5...";
+      fundPremiumState.statusType = "ok";
+      renderFundPremiumPanel();
+
+      try {
+        var payload = await fetchFundPremiums(opts);
+        if (!payload) return;
+        fundPremiumState.cache = payload;
+        fundPremiumState.statusText = "\u5df2\u7f13\u5b58\u6700\u65b0\u57fa\u91d1\u884c\u60c5";
+        fundPremiumState.statusType = "ok";
+        renderFundPremiumPanel();
+      } catch (error) {
+        console.error("fund premium load failed:", error);
+        fundPremiumState.statusText = error && error.message ? error.message : "\u57fa\u91d1\u6298\u6ea2\u4ef7\u9762\u677f\u52a0\u8f7d\u5931\u8d25";
+        fundPremiumState.statusType = "err";
+        renderFundPremiumPanel();
+      }
+    }
+
     function startStarAutoRefresh() {
       clearInterval(starsState.refreshTimer);
       starsState.refreshTimer = null;
@@ -1893,6 +2052,7 @@ export function getClientScript() {
         wrap.classList.toggle("stars-active", page === "stars");
         wrap.classList.toggle("weights-active", page === "weights");
         wrap.classList.toggle("sectors-active", page === "sectors");
+        wrap.classList.toggle("fund-premiums-active", page === "fundPremiums");
       }
 
       if (periodLabel) {
@@ -1911,6 +2071,10 @@ export function getClientScript() {
 
       if (page === "sectors" && !sectorsState.touched) {
         loadSectorPeriod(sectorsState.period, { force: true });
+      }
+
+      if (page === "fundPremiums" && !fundPremiumState.touched) {
+        loadFundPremiums({ force: true });
       }
 
       startStarAutoRefresh();

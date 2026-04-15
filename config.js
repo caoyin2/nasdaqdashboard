@@ -62,6 +62,23 @@ export const SP500_SECTOR_ETFS = [
   { symbol: "XLU", nameCN: "\u516c\u7528\u4e8b\u4e1a" },
 ];
 
+export const FUND_PREMIUM_FUNDS = [
+  { code: "513100", nameCN: "\u56fd\u6cf0\u7eb3\u6307ETF" },
+  { code: "513300", nameCN: "\u534e\u590f\u7eb3\u65af\u8fbe100ETF" },
+  { code: "159941", nameCN: "\u5e7f\u53d1\u7eb3\u65af\u8fbe\u514b100ETF" },
+  { code: "159696", nameCN: "\u6613\u65b9\u8fbe\u7eb3\u65af\u8fbe\u514b100ETF" },
+  { code: "513390", nameCN: "\u535a\u65f6\u7eb3\u65af\u8fbe\u514b100ETF" },
+  { code: "159660", nameCN: "\u6c47\u6dfb\u5bcc\u7eb3\u65af\u8fbe\u514b100ETF" },
+  { code: "159501", nameCN: "\u5609\u5b9e\u7eb3\u65af\u8fbe\u514b100ETF" },
+  { code: "159513", nameCN: "\u5927\u6210\u7eb3\u65af\u8fbe\u514b100ETF" },
+  { code: "159632", nameCN: "\u534e\u5b89\u7eb3\u65af\u8fbe\u514bETF" },
+  { code: "513110", nameCN: "\u534e\u6cf0\u67cf\u745e\u7eb3\u65af\u8fbe\u514b100ETF" },
+  { code: "513870", nameCN: "\u5bcc\u56fd\u7eb3\u65af\u8fbe\u514b100ETF" },
+  { code: "159659", nameCN: "\u62db\u5546\u7eb3\u65af\u8fbe\u514b100ETF" },
+  { code: "161128", nameCN: "\u6613\u65b9\u8fbe\u6807\u666e\u4fe1\u606f\u79d1\u6280LOF" },
+  { code: "159509", nameCN: "\u666f\u987a\u957f\u57ce\u7eb3\u6307\u79d1\u6280" },
+];
+
 export const LINE_COLORS = [
   "rgba(0,224,255,.95)",
   "rgba(255,180,0,.95)",

@@ -10,6 +10,7 @@
 import { normalizePeriod } from "./config.js";
 import { corsHeaders, htmlResponse, jsonResponse } from "./lib/http.js";
 import { fetchCnnFearGreedSummary } from "./services/cnnFearGreed.js";
+import { buildFundPremiumPayload } from "./services/fundPremiumService.js";
 import { buildIndexWeightsPayload } from "./services/indexWeightsService.js";
 import { getKvBinding, resolveKvBinding } from "./services/kvBinding.js";
 import { buildQuotePayload } from "./services/quoteService.js";
@@ -307,6 +308,20 @@ export default {
       try {
         const period = normalizePeriod(url.searchParams.get("p"));
         const payload = await buildSp500SectorPayload(period, env);
+        return jsonResponse(payload, origin, 200, { cacheSeconds: 0 });
+      } catch (error) {
+        return jsonResponse(
+          { ok: false, error: error?.message || String(error) },
+          origin,
+          502,
+          { cacheSeconds: 0 }
+        );
+      }
+    }
+
+    if (url.pathname === "/api/fund-premiums") {
+      try {
+        const payload = await buildFundPremiumPayload();
         return jsonResponse(payload, origin, 200, { cacheSeconds: 0 });
       } catch (error) {
         return jsonResponse(

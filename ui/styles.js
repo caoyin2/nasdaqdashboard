@@ -1432,6 +1432,53 @@ export function getStyles() {
       white-space: nowrap;
     }
 
+    .fundPremiumMeta{
+      align-items:flex-start;
+    }
+
+    .fundPremiumMetaRight{
+      display:grid;
+      justify-items:end;
+      gap: 4px;
+      min-width: max-content;
+    }
+
+    .fundPremiumRate{
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .2px;
+      color: rgba(226,232,240,.92);
+      text-shadow: 0 0 12px rgba(226,232,240,.18);
+      white-space: nowrap;
+    }
+
+    .fundPremiumRate.premiumPositive{
+      color: var(--up);
+      text-shadow: 0 0 14px rgba(255,77,109,.32);
+    }
+
+    .fundPremiumRate.premiumNegative{
+      color: var(--down);
+      text-shadow: 0 0 14px rgba(34,197,94,.30);
+    }
+
+    .fundIconWrap{
+      border-style: dashed;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(0,224,255,.10), rgba(0,224,255,0) 62%),
+        linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+    }
+
+    .fundIconBlank{
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      border: 1px dashed rgba(200,214,236,.30);
+      background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
     .cardTimeAnomaly{
       color: rgba(255,77,109,.98) !important;
       font-weight: 800;
