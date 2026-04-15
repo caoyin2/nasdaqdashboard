@@ -63,7 +63,7 @@ export const SP500_SECTOR_ETFS = [
 ];
 
 // Keep the fund premium list in this root config file so Cloudflare Git
-// watch-path rules can detect and publish fund-panel behavior changes reliably.
+// watch-path rules can detect and publish fund-panel behavior or logo changes reliably.
 function fundLogoSvg(label, bg, fg) {
   return "data:image/svg+xml;utf8," + encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
