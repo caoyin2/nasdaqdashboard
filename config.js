@@ -63,7 +63,7 @@ export const SP500_SECTOR_ETFS = [
 ];
 
 // Keep the fund premium list in this root config file so Cloudflare Git
-// watch-path rules can detect fund-panel behavior changes reliably.
+// watch-path rules can detect and publish fund-panel behavior changes reliably.
 export const FUND_PREMIUM_FUNDS = [
   { code: "513100", fallbackName: "\u56fd\u6cf0\u7eb3\u6307ETF", icon: "https://www.gtfund.com/Public/static/etrade/1/dist/i/common/fav.png" },
   { code: "513300", fallbackName: "\u534e\u590f\u7eb3\u65af\u8fbe100ETF", icon: "https://www.chinaamc.com/favicon.ico" },
