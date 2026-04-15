@@ -15,12 +15,16 @@
  * - 31: price change
  * - 32: price change percent
  * - 77: premium/discount percent shown by Tencent's fund page
- * - 78: reference NAV used to derive field 77
+ * - 78: reference NAV, kept for diagnostics only; premium display uses field 77
  */
 
-import { FUND_PREMIUM_FUNDS } from "../config.js";
+import { FUND_PREMIUM_FUNDS, INDEXES } from "../config.js";
+import { getLastBar, parseBarsFromAttributes, pickPrevCloseSmart } from "../lib/time.js";
+import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
 
 const TENCENT_QT_URL = "https://qt.gtimg.cn/";
+const LOF_SP500_TECH_CODE = "161128";
+const SP500_TECH_INDEX_SYMBOL = "SP500-45";
 
 function toMarketSymbol(code) {
   const value = String(code || "").trim();
@@ -73,7 +77,41 @@ function parseQtVariables(text) {
   return map;
 }
 
-function buildFundItem(fund, fields) {
+async function fetchSp500TechOneDayChangePct() {
+  const index = INDEXES.find((item) => item.symbol === SP500_TECH_INDEX_SYMBOL);
+  if (!index?.tickerId) {
+    throw new Error(`${SP500_TECH_INDEX_SYMBOL} ticker_id missing`);
+  }
+
+  const [oneDayRaw, ytdRaw] = await Promise.all([
+    fetchSeekingAlphaPeriod("1D", index.tickerId),
+    fetchSeekingAlphaPeriod("YTD", index.tickerId),
+  ]);
+
+  const bars1D = parseBarsFromAttributes(oneDayRaw?.attributes);
+  const ytdBars = parseBarsFromAttributes(ytdRaw?.attributes);
+  const last1DBar = getLastBar(bars1D);
+  const latestClose = last1DBar?.close;
+  const baseClose = pickPrevCloseSmart(ytdBars, bars1D);
+  const change = Number.isFinite(latestClose) && Number.isFinite(baseClose)
+    ? latestClose - baseClose
+    : null;
+  const changePct = Number.isFinite(change) && Number.isFinite(baseClose) && baseClose !== 0
+    ? (change / baseClose) * 100
+    : null;
+
+  if (!Number.isFinite(changePct)) {
+    throw new Error(`${SP500_TECH_INDEX_SYMBOL} 1D change percent unavailable`);
+  }
+
+  return {
+    symbol: SP500_TECH_INDEX_SYMBOL,
+    changePct,
+    latestT: Number.isFinite(last1DBar?.t) ? last1DBar.t : null,
+  };
+}
+
+function buildFundItem(fund, fields, context) {
   const lastClose = toFiniteNumber(fields[3]);
   const baseClose = toFiniteNumber(fields[4]);
   const latestT = parseTencentBeijingTime(fields[30]);
@@ -81,11 +119,22 @@ function buildFundItem(fund, fields) {
   const changePct = toFiniteNumber(fields[32]);
   const premiumPctFromTencent = toFiniteNumber(fields[77]);
   const premiumReferenceNav = toFiniteNumber(fields[78]);
-  const premiumPct = Number.isFinite(premiumPctFromTencent)
-    ? premiumPctFromTencent
-    : Number.isFinite(lastClose) && Number.isFinite(premiumReferenceNav) && premiumReferenceNav !== 0
-      ? ((lastClose / premiumReferenceNav) - 1) * 100
-      : null;
+  let premiumPct = premiumPctFromTencent;
+  let premiumFormula = null;
+
+  if (fund.code === LOF_SP500_TECH_CODE && Number.isFinite(premiumPctFromTencent)) {
+    const indexChangePct = context?.sp500TechOneDay?.changePct;
+    if (Number.isFinite(indexChangePct)) {
+      premiumPct = premiumPctFromTencent - indexChangePct;
+      premiumFormula = {
+        rawPct: premiumPctFromTencent,
+        indexSymbol: SP500_TECH_INDEX_SYMBOL,
+        indexChangePct,
+        indexLatestT: context?.sp500TechOneDay?.latestT ?? null,
+        resultPct: premiumPct,
+      };
+    }
+  }
 
   return {
     symbol: fund.marketSymbol,
@@ -100,7 +149,9 @@ function buildFundItem(fund, fields) {
     change,
     changePct,
     premiumPct,
+    premiumRawPct: premiumPctFromTencent,
     premiumReferenceNav,
+    premiumFormula,
   };
 }
 
@@ -146,13 +197,14 @@ export async function buildFundPremiumPayload() {
   }
   const variableMap = parseQtVariables(text);
 
+  const sp500TechOneDay = await fetchSp500TechOneDayChangePct();
   const items = funds.map((fund) => {
     const fields = variableMap.get(fund.marketSymbol);
-    if (!fields || fields.length < 64) {
+    if (!fields || fields.length <= 77) {
       throw new Error(`Tencent fund quote missing or incomplete for ${fund.marketSymbol}`);
     }
 
-    return buildFundItem(fund, fields);
+    return buildFundItem(fund, fields, { sp500TechOneDay });
   });
 
   return {

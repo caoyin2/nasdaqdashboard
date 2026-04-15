@@ -1407,7 +1407,7 @@ export function getClientScript() {
       var maxAbs = items && items.length ? sectorMaxAbsChange(items) : 1;
       var gridHtml = items && items.length
         ? '<div class="sectorHeatGrid fundPremiumGrid">' + items.map(function (item) { return fundPremiumTileHTML(item, maxAbs); }).join("") + '</div>'
-        : '<div class="starPanelEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u4ece\u817e\u8baf\u8d22\u7ecf\u8bfb\u53d6\u573a\u5185\u57fa\u91d1\u6700\u65b0\u4ef7\u683c\u548c\u6298\u6ea2\u4ef7\u7387\u3002<br />\u8be5\u9762\u677f\u6682\u65f6\u4e0d\u63a5 KV\uff0c\u57fa\u91d1\u5217\u8868\u5728\u4ee3\u7801\u4e2d\u56fa\u5b9a\u3002</div>';
+        : '<div class="starPanelEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u8bfb\u53d6\u573a\u5185\u57fa\u91d1\u6700\u65b0\u4ef7\u683c\u548c\u6298\u6ea2\u4ef7\u7387\u3002<br />\u8be5\u9762\u677f\u6682\u65f6\u4e0d\u63a5 KV\uff0c\u57fa\u91d1\u5217\u8868\u5728\u4ee3\u7801\u4e2d\u56fa\u5b9a\u3002</div>';
 
       root.innerHTML = [
         '<div class="card starPanel fundPremiumPanel">',
@@ -1419,7 +1419,6 @@ export function getClientScript() {
           '</div>',
           '<div class="starPanelMeta">',
             '<div class="starPanelMetaText ' + statusClass + '">' + esc(fundPremiumState.statusText) + '</div>',
-            '<div class="starPanelMetaText">\u6570\u636e\u6e90\uff1a\u817e\u8baf\u8d22\u7ecf qt.gtimg.cn</div>',
             '<div class="starPanelMetaText">' + esc(latestText) + '</div>',
           '</div>',
           gridHtml,
@@ -1501,7 +1500,17 @@ export function getClientScript() {
     }
 
     function fundPremiumRateText(value) {
-      return "\u6298\u6ea2\u4ef7 " + signPct(value);
+      if (!Number.isFinite(value)) return "\u6298\u6ea2\u4ef7 --";
+      if (value > 0) return "\u6ea2\u4ef7 " + value.toFixed(2) + "%";
+      if (value < 0) return "\u6298\u4ef7 " + Math.abs(value).toFixed(2) + "%";
+      return "\u5e73\u4ef7 0.00%";
+    }
+
+    function fundPremiumFormulaText(item) {
+      var formula = item && item.premiumFormula;
+      if (!formula) return "";
+      if (!Number.isFinite(formula.rawPct) || !Number.isFinite(formula.indexChangePct) || !Number.isFinite(formula.resultPct)) return "";
+      return "\u8ba1\u7b97\uff1a\u539f\u59cb " + signPct(formula.rawPct) + " - " + String(formula.indexSymbol || "SP500-45") + " 1\u65e5 " + signPct(formula.indexChangePct) + " = " + fundPremiumRateText(formula.resultPct);
     }
 
     function fundPremiumTileHTML(item, maxAbs) {
@@ -1512,6 +1521,7 @@ export function getClientScript() {
       var tone = starToneClass(item);
       var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT);
       var premiumClass = fundPremiumRateClass(item.premiumPct);
+      var formulaText = fundPremiumFormulaText(item);
 
       return [
         '<article class="sectorHeatTile fundPremiumTile ' + tone + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
@@ -1535,6 +1545,7 @@ export function getClientScript() {
             '<div class="fundPremiumMetaRight">',
               '<strong>' + signPrice(item.change) + '</strong>',
               '<span class="fundPremiumRate ' + premiumClass + '">' + esc(fundPremiumRateText(item.premiumPct)) + '</span>',
+              formulaText ? '<span class="fundPremiumFormula">' + esc(formulaText) + '</span>' : '',
             '</div>',
           '</div>',
           '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>',

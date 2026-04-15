@@ -1463,11 +1463,35 @@ export function getStyles() {
       text-shadow: 0 0 14px rgba(34,197,94,.30);
     }
 
+    .fundPremiumFormula{
+      max-width: 280px;
+      font-family: var(--mono);
+      font-size: 10px;
+      line-height: 1.45;
+      color: rgba(200,214,236,.76);
+      text-align: right;
+      white-space: normal;
+    }
+
     .fundIconWrap{
       border-style: dashed;
       background:
         radial-gradient(circle at 50% 45%, rgba(0,224,255,.10), rgba(0,224,255,0) 62%),
         linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+    }
+
+    .fundPremiumTile .starIconWrap{
+      width: 58px;
+      height: 58px;
+    }
+
+    .fundPremiumTile .starIcon{
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      object-fit: cover;
+      object-position: left center;
+      filter: brightness(1.55) saturate(1.45) contrast(1.18);
     }
 
     .fundIconBlank{
@@ -2216,6 +2240,11 @@ export function getStyles() {
 
       .fundPremiumMetaRight{
         justify-items:start;
+        text-align:left;
+      }
+
+      .fundPremiumFormula{
+        max-width: 100%;
         text-align:left;
       }
 

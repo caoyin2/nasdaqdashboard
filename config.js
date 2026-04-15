@@ -63,14 +63,14 @@ export const SP500_SECTOR_ETFS = [
 ];
 
 // Keep the fund premium list in this root config file so Cloudflare Git
-// watch-path rules can detect fund-panel changes reliably.
+// watch-path rules can detect fund-panel behavior changes reliably.
 export const FUND_PREMIUM_FUNDS = [
-  { code: "513100", fallbackName: "\u56fd\u6cf0\u7eb3\u6307ETF", icon: "https://www.gtfund.com/favicon.ico" },
+  { code: "513100", fallbackName: "\u56fd\u6cf0\u7eb3\u6307ETF", icon: "https://www.gtfund.com/Public/static/etrade/1/dist/i/common/fav.png" },
   { code: "513300", fallbackName: "\u534e\u590f\u7eb3\u65af\u8fbe100ETF", icon: "https://www.chinaamc.com/favicon.ico" },
   { code: "159941", fallbackName: "\u5e7f\u53d1\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.gffunds.com.cn/favicon.ico" },
   { code: "159696", fallbackName: "\u6613\u65b9\u8fbe\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.efunds.com.cn/favicon.ico" },
   { code: "513390", fallbackName: "\u535a\u65f6\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.bosera.com/favicon.ico" },
-  { code: "159660", fallbackName: "\u6c47\u6dfb\u5bcc\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.99fund.com/favicon.ico" },
+  { code: "159660", fallbackName: "\u6c47\u6dfb\u5bcc\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.99fund.com/upload/20160104/201601041451875032384.jpg" },
   { code: "159501", fallbackName: "\u5609\u5b9e\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.jsfund.cn/favicon.ico" },
   { code: "159513", fallbackName: "\u5927\u6210\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.dcfund.com.cn/ws/images/favicon.ico" },
   { code: "159632", fallbackName: "\u534e\u5b89\u7eb3\u65af\u8fbe\u514bETF", icon: "https://www.huaan.com.cn/favicon.ico" },
