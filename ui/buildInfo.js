@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "b4b11fc",
-  fullSha: "b4b11fc181af455054cc07bdda4d5bbfeb6f038f",
-  message: "fix: align overview data status layout",
-  committedAt: "2026-04-15 09:11:16",
+  shortSha: "335f573",
+  fullSha: "335f57358b9bb43b9b16e7b74d0c555292cc6045",
+  message: "feat: add fund premium panel",
+  committedAt: "2026-04-15 14:14:36",
 };
