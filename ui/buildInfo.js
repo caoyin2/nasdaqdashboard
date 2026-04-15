@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "335f573",
-  fullSha: "335f57358b9bb43b9b16e7b74d0c555292cc6045",
-  message: "feat: add fund premium panel",
-  committedAt: "2026-04-15 14:14:36",
+  shortSha: "c24670c",
+  fullSha: "c24670c1cbee9a3c1f1639d22d34629c485be98d",
+  message: "fix: correct fund premium cards",
+  committedAt: "2026-04-15 14:40:47",
 };
