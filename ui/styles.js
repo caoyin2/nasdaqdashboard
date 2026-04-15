@@ -2002,7 +2002,7 @@ export function getStyles() {
         gap: 6px;
       }
 
-      .page-overview .blockTitleRow .blockTitle{
+      .page[data-page="overview"] .blockTitleRow .blockTitle{
         display: none;
       }
 
