@@ -54,7 +54,6 @@ export function getHtml() {
       </div>
       <div class="buildInfo" title="${BUILD_INFO.fullSha}">
         <div class="buildInfoLine">\u7248\u672c\uff1a${BUILD_INFO.shortSha} ${BUILD_INFO.message}</div>
-        <div class="buildInfoLine">\u63d0\u4ea4\uff1a${BUILD_INFO.committedAt}\uff08\u5317\u4eac\u65f6\u95f4\uff09</div>
       </div>
     </div>
 

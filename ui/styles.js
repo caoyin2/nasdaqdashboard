@@ -1481,17 +1481,22 @@ export function getStyles() {
     }
 
     .fundPremiumTile .starIconWrap{
-      width: 58px;
+      width: 76px;
       height: 58px;
+      padding: 7px;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(255,255,255,.95), rgba(255,255,255,.42) 72%),
+        linear-gradient(145deg, rgba(237,244,255,.96), rgba(176,199,232,.78));
+      border-color: rgba(255,255,255,.38);
     }
 
     .fundPremiumTile .starIcon{
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      object-fit: cover;
-      object-position: left center;
-      filter: brightness(1.55) saturate(1.45) contrast(1.18);
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      object-fit: contain;
+      object-position: center;
+      filter: saturate(1.18) contrast(1.08);
     }
 
     .fundIconBlank{
