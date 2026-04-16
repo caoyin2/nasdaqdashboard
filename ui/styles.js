@@ -123,12 +123,53 @@ export function getStyles() {
       min-width:0;
     }
 
+    .titleHead{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      min-width:0;
+    }
+
     .title .h{
       margin:0;
       font-size: 13px;
       font-weight: 700;
       letter-spacing: .6px;
       white-space:nowrap;
+    }
+
+    .globalRefreshBtn{
+      appearance:none;
+      border: 1px solid rgba(0,224,255,.34);
+      border-radius: 999px;
+      padding: 3px 9px;
+      color: rgba(190,246,255,.96);
+      background:
+        radial-gradient(circle at 50% 0%, rgba(0,224,255,.20), transparent 64%),
+        rgba(0,224,255,.07);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.08),
+        0 0 16px rgba(0,224,255,.10);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.25;
+      cursor:pointer;
+      white-space:nowrap;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease, opacity .18s ease;
+    }
+
+    .globalRefreshBtn:hover{
+      transform: translateY(-1px);
+      border-color: rgba(0,224,255,.62);
+      background:
+        radial-gradient(circle at 50% 0%, rgba(0,224,255,.28), transparent 64%),
+        rgba(0,224,255,.11);
+    }
+
+    .globalRefreshBtn:disabled{
+      cursor: wait;
+      opacity: .68;
+      transform: none;
     }
 
     .title .sub{
@@ -2179,8 +2220,17 @@ export function getStyles() {
         min-width: 160px;
       }
 
+      .titleHead{
+        justify-content: flex-start;
+      }
+
       .title .h{ font-size: 12px; }
       .title .sub{ font-size: 12px; }
+
+      .globalRefreshBtn{
+        padding: 3px 8px;
+        font-size: 10px;
+      }
 
       .seg{
         width: 100%;

@@ -2213,6 +2213,64 @@ export function getClientScript() {
       }
     }
 
+    function setGlobalRefreshBusy(isBusy) {
+      var btn = $("globalRefreshBtn");
+      if (!btn) return;
+
+      btn.disabled = !!isBusy;
+      btn.textContent = isBusy ? "\u5237\u65b0\u4e2d" : "\u5237\u65b0";
+      btn.setAttribute("aria-busy", isBusy ? "true" : "false");
+    }
+
+    function clearAllPanelCaches() {
+      periodCache.clear();
+      fearGreedCache = null;
+      starsState.cache.clear();
+      sectorsState.cache.clear();
+      weightsState.cache.clear();
+      fundPremiumState.cache = null;
+      fundPremiumState.detailSymbol = null;
+    }
+
+    async function forceRefreshAllPanels() {
+      var currentPage = state.page;
+      setGlobalRefreshBusy(true);
+      clearAllPanelCaches();
+
+      setStatus("\u5df2\u6e05\u7a7a\u6240\u6709\u9762\u677f\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u6700\u65b0\u6570\u636e...", "ok");
+      starsState.statusText = "\u5df2\u6e05\u7a7a\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u5f53\u524d\u5468\u671f\u6570\u636e...";
+      starsState.statusType = "ok";
+      sectorsState.statusText = "\u5df2\u6e05\u7a7a\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u5f53\u524d\u5468\u671f\u6570\u636e...";
+      sectorsState.statusType = "ok";
+      weightsState.statusText = "\u5df2\u6e05\u7a7a\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u5f53\u524d\u6307\u6570\u6743\u91cd...";
+      weightsState.statusType = "ok";
+      fundPremiumState.statusText = "\u5df2\u6e05\u7a7a\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u6700\u65b0\u57fa\u91d1\u884c\u60c5...";
+      fundPremiumState.statusType = "ok";
+      renderStarPanel();
+      renderSectorPanel();
+      renderWeightsPanel();
+      renderFundPremiumPanel();
+
+      try {
+        await Promise.allSettled([
+          loadFearGreed({ force: true }),
+          renderPeriod(state.period, { force: true }),
+          loadStarPeriod(starsState.period, { force: true }),
+          loadSectorPeriod(sectorsState.period, { force: true }),
+          loadIndexWeights(weightsState.activeIndex, { force: true }),
+          loadFundPremiums({ force: true }),
+        ]);
+      } finally {
+        setGlobalRefreshBusy(false);
+        if (state.page !== currentPage) {
+          setActivePage(currentPage);
+        } else {
+          var periodLabel = $("periodCN");
+          if (periodLabel) periodLabel.textContent = getPanelTitle(currentPage);
+        }
+      }
+    }
+
     function startStarAutoRefresh() {
       clearInterval(starsState.refreshTimer);
       starsState.refreshTimer = null;
@@ -2459,6 +2517,13 @@ export function getClientScript() {
         var page = btn.getAttribute("data-page");
         if (!page || page === state.page) return;
         setActivePage(page);
+      });
+    }
+
+    var globalRefreshBtn = $("globalRefreshBtn");
+    if (globalRefreshBtn) {
+      globalRefreshBtn.addEventListener("click", function () {
+        forceRefreshAllPanels();
       });
     }
 
