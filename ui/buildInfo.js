@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "12ede11",
-  fullSha: "12ede11aa1dc6dbb39d9093128350a2feceea9bb",
-  message: "fix: improve fund logo display",
-  committedAt: "2026-04-15 16:13:23",
+  shortSha: "e0082b6",
+  fullSha: "e0082b6dc3653dc9d0f8811968b81ac3ef76c02c",
+  message: "fix: refine fund premium panel",
+  committedAt: "2026-04-16 08:57:03",
 };
