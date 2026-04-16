@@ -1401,10 +1401,16 @@ export function getClientScript() {
       var cached = fundPremiumState.cache;
       var items = cached && cached.items ? cached.items.map(function (item) {
         return Object.assign({}, item, { referenceLatestT: cached.asOfMs });
+      }).sort(function (a, b) {
+        var delta =
+          (Number.isFinite(b && b.premiumPct) ? b.premiumPct : -Infinity) -
+          (Number.isFinite(a && a.premiumPct) ? a.premiumPct : -Infinity);
+        if (Math.abs(delta) > 1e-9) return delta;
+        return String(a && a.symbol || "").localeCompare(String(b && b.symbol || ""));
       }) : null;
       var latestText = latestDataText(cached && cached.asOfMs);
       var statusClass = fundPremiumState.statusType === "err" ? "err" : "ok";
-      var maxAbs = items && items.length ? sectorMaxAbsChange(items) : 1;
+      var maxAbs = items && items.length ? fundPremiumMaxAbs(items) : 1;
       var gridHtml = items && items.length
         ? '<div class="sectorHeatGrid fundPremiumGrid">' + items.map(function (item) { return fundPremiumTileHTML(item, maxAbs); }).join("") + '</div>'
         : '<div class="starPanelEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u8bfb\u53d6\u573a\u5185\u57fa\u91d1\u6700\u65b0\u4ef7\u683c\u548c\u6298\u6ea2\u4ef7\u7387\u3002<br />\u8be5\u9762\u677f\u6682\u65f6\u4e0d\u63a5 KV\uff0c\u57fa\u91d1\u5217\u8868\u5728\u4ee3\u7801\u4e2d\u56fa\u5b9a\u3002</div>';
@@ -1499,6 +1505,28 @@ export function getClientScript() {
       return "flat";
     }
 
+    function fundPremiumToneClass(value) {
+      if (!Number.isFinite(value)) return "flat";
+      if (value > 0) return "up";
+      if (value < 0) return "down";
+      return "flat";
+    }
+
+    function fundPremiumTint(value, alpha) {
+      var a = Number.isFinite(alpha) ? alpha : 0.18;
+      if (Number.isFinite(value) && value > 0) return "rgba(255,77,109," + a.toFixed(3) + ")";
+      if (Number.isFinite(value) && value < 0) return "rgba(34,197,94," + a.toFixed(3) + ")";
+      return "rgba(148,163,184," + a.toFixed(3) + ")";
+    }
+
+    function fundPremiumMaxAbs(items) {
+      var values = (items || []).map(function (item) {
+        return Math.abs(Number.isFinite(item && item.premiumPct) ? item.premiumPct : 0);
+      }).filter(function (value) { return value > 0; });
+      if (!values.length) return 1;
+      return Math.max.apply(null, values);
+    }
+
     function fundPremiumRateText(value) {
       if (!Number.isFinite(value)) return "\u6298\u6ea2\u4ef7 --";
       if (value > 0) return "\u6ea2\u4ef7 " + value.toFixed(2) + "%";
@@ -1507,11 +1535,12 @@ export function getClientScript() {
     }
 
     function fundPremiumTileHTML(item, maxAbs) {
-      var intensity = clamp(Math.abs(Number.isFinite(item && item.changePct) ? item.changePct : 0) / (maxAbs || 1), 0, 1);
-      var bg = sectorTint(item, 0.12 + intensity * 0.34);
-      var border = sectorTint(item, 0.26 + intensity * 0.30);
-      var glow = sectorTint(item, 0.16 + intensity * 0.24);
-      var tone = starToneClass(item);
+      var premiumValue = Number.isFinite(item && item.premiumPct) ? item.premiumPct : NaN;
+      var intensity = clamp(Math.abs(Number.isFinite(premiumValue) ? premiumValue : 0) / (maxAbs || 1), 0, 1);
+      var bg = fundPremiumTint(premiumValue, 0.12 + intensity * 0.34);
+      var border = fundPremiumTint(premiumValue, 0.26 + intensity * 0.30);
+      var glow = fundPremiumTint(premiumValue, 0.16 + intensity * 0.24);
+      var tone = fundPremiumToneClass(premiumValue);
       var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT);
       var premiumClass = fundPremiumRateClass(item.premiumPct);
 

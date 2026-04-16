@@ -2,6 +2,7 @@
  * Global configuration shared by the Worker and the frontend.
  */
 import { FUND_LOGOS } from "./assets/fundLogos.js";
+import { FUND_LOGO_OVERRIDES } from "./assets/fundLogoOverrides.js";
 
 export const UPSTREAM = "https://static.seekingalpha.com/cdn/finance-api/lua_charts";
 export const CNN_FG_UPSTREAM = "https://production.dataviz.cnn.io/index/fearandgreed/graphdata";
@@ -65,21 +66,25 @@ export const SP500_SECTOR_ETFS = [
 
 // Keep the fund premium list in this root config file so Cloudflare Git
 // watch-path rules can detect and publish fund-panel behavior, logo, or LOF pricing changes reliably.
+function fundLogo(code) {
+  return FUND_LOGO_OVERRIDES[code] ?? FUND_LOGOS[code];
+}
+
 export const FUND_PREMIUM_FUNDS = [
-  { code: "513100", fallbackName: "\u56fd\u6cf0\u7eb3\u6307ETF", icon: FUND_LOGOS["513100"] },
-  { code: "513300", fallbackName: "\u534e\u590f\u7eb3\u65af\u8fbe100ETF", icon: FUND_LOGOS["513300"] },
-  { code: "159941", fallbackName: "\u5e7f\u53d1\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["159941"] },
-  { code: "159696", fallbackName: "\u6613\u65b9\u8fbe\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["159696"] },
-  { code: "513390", fallbackName: "\u535a\u65f6\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["513390"] },
-  { code: "159660", fallbackName: "\u6c47\u6dfb\u5bcc\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["159660"] },
-  { code: "159501", fallbackName: "\u5609\u5b9e\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["159501"] },
-  { code: "159513", fallbackName: "\u5927\u6210\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["159513"] },
-  { code: "159632", fallbackName: "\u534e\u5b89\u7eb3\u65af\u8fbe\u514bETF", icon: FUND_LOGOS["159632"] },
-  { code: "513110", fallbackName: "\u534e\u6cf0\u67cf\u745e\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["513110"] },
-  { code: "513870", fallbackName: "\u5bcc\u56fd\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["513870"] },
-  { code: "159659", fallbackName: "\u62db\u5546\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["159659"] },
-  { code: "161128", fallbackName: "\u6613\u65b9\u8fbe\u6807\u666e\u4fe1\u606f\u79d1\u6280LOF", icon: FUND_LOGOS["161128"] },
-  { code: "159509", fallbackName: "\u666f\u987a\u957f\u57ce\u7eb3\u6307\u79d1\u6280", icon: FUND_LOGOS["159509"] },
+  { code: "513100", fallbackName: "\u56fd\u6cf0\u7eb3\u6307ETF", icon: fundLogo("513100") },
+  { code: "513300", fallbackName: "\u534e\u590f\u7eb3\u65af\u8fbe100ETF", icon: fundLogo("513300") },
+  { code: "159941", fallbackName: "\u5e7f\u53d1\u7eb3\u65af\u8fbe\u514b100ETF", icon: fundLogo("159941") },
+  { code: "159696", fallbackName: "\u6613\u65b9\u8fbe\u7eb3\u65af\u8fbe\u514b100ETF", icon: fundLogo("159696") },
+  { code: "513390", fallbackName: "\u535a\u65f6\u7eb3\u65af\u8fbe\u514b100ETF", icon: fundLogo("513390") },
+  { code: "159660", fallbackName: "\u6c47\u6dfb\u5bcc\u7eb3\u65af\u8fbe\u514b100ETF", icon: fundLogo("159660") },
+  { code: "159501", fallbackName: "\u5609\u5b9e\u7eb3\u65af\u8fbe\u514b100ETF", icon: fundLogo("159501") },
+  { code: "159513", fallbackName: "\u5927\u6210\u7eb3\u65af\u8fbe\u514b100ETF", icon: fundLogo("159513") },
+  { code: "159632", fallbackName: "\u534e\u5b89\u7eb3\u65af\u8fbe\u514bETF", icon: fundLogo("159632") },
+  { code: "513110", fallbackName: "\u534e\u6cf0\u67cf\u745e\u7eb3\u65af\u8fbe\u514b100ETF", icon: fundLogo("513110") },
+  { code: "513870", fallbackName: "\u5bcc\u56fd\u7eb3\u65af\u8fbe\u514b100ETF", icon: fundLogo("513870") },
+  { code: "159659", fallbackName: "\u62db\u5546\u7eb3\u65af\u8fbe\u514b100ETF", icon: fundLogo("159659") },
+  { code: "161128", fallbackName: "\u6613\u65b9\u8fbe\u6807\u666e\u4fe1\u606f\u79d1\u6280LOF", icon: fundLogo("161128") },
+  { code: "159509", fallbackName: "\u666f\u987a\u957f\u57ce\u7eb3\u6307\u79d1\u6280", icon: fundLogo("159509") },
 ];
 
 export const LINE_COLORS = [
