@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "1454997",
-  fullSha: "14549974f30f4e6c2d2cd72d59bfe728d2850fb7",
-  message: "fix: clear rendered data on refresh",
-  committedAt: "2026-04-16 13:57:07",
+  shortSha: "68f87af",
+  fullSha: "68f87af9c4b73ac6c00f310710f3ec7f1e7f0410",
+  message: "fix: show fund prices with three decimals",
+  committedAt: "2026-04-16 14:35:52",
 };
