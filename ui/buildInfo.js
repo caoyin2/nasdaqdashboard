@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "07e801e",
-  fullSha: "07e801e40684841c500d1fa40dfd1cc683882832",
-  message: "fix: refine fund icon backgrounds",
-  committedAt: "2026-04-16 09:55:49",
+  shortSha: "84b5fc6",
+  fullSha: "84b5fc67357d5bf0d34ce894151acb026eb93787",
+  message: "fix: use compact fund icons",
+  committedAt: "2026-04-16 10:09:11",
 };
