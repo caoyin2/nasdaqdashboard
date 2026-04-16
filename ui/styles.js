@@ -1477,20 +1477,38 @@ export function getStyles() {
     .fundPremiumTile .starIconWrap{
       width: 50px;
       height: 50px;
-      padding: 5px;
-      background:
-        radial-gradient(circle at 18% 12%, rgba(255,255,255,.95), rgba(255,255,255,.42) 72%),
-        linear-gradient(145deg, rgba(237,244,255,.96), rgba(176,199,232,.78));
-      border-color: rgba(255,255,255,.38);
+      padding: 0;
+      overflow: hidden;
+      background: transparent;
+      border-color: rgba(255,255,255,.24);
     }
 
     .fundPremiumTile .starIcon{
       width: 100%;
       height: 100%;
-      border-radius: 8px;
+      border-radius: 13px;
       object-fit: contain;
       object-position: center;
       filter: saturate(1.18) contrast(1.08);
+    }
+
+    .fundPremiumTile[data-symbol="sz159509"] .starIconWrap{
+      background: #10168a;
+    }
+
+    .fundPremiumTile[data-symbol="sz159513"] .starIconWrap{
+      background: #f5a4ad;
+    }
+
+    .fundPremiumTile[data-symbol="sz159660"] .starIconWrap{
+      background: #fffef4;
+    }
+
+    .fundPremiumTile[data-symbol="sz159941"] .starIconWrap,
+    .fundPremiumTile[data-symbol="sz159696"] .starIconWrap,
+    .fundPremiumTile[data-symbol="sz161128"] .starIconWrap,
+    .fundPremiumTile[data-symbol="sz159632"] .starIconWrap{
+      background: #ffffff;
     }
 
     .fundIconBlank{
