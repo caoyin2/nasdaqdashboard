@@ -62,7 +62,7 @@ export function getHtml() {
       <button data-page="stars">\u660e\u661f\u79d1\u6280\u516c\u53f8</button>
       <button data-page="weights">\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd</button>
       <button data-page="sectors">\u6807\u666e500\u677f\u5757ETF</button>
-      <button data-page="fundPremiums">\u57fa\u91d1\u6298\u6ea2\u4ef7\uff08\u5f00\u53d1\u4e2d\uff09</button>
+      <button data-page="fundPremiums">\u57fa\u91d1\u6298\u6ea2\u4ef7</button>
     </div>
 
     <div class="pages" id="pages">
