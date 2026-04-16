@@ -51,6 +51,14 @@ export function getClientScript() {
     return Number.isFinite(n) ? ((n >= 0 ? "+" : "") + n.toFixed(2)) : "--";
   }
 
+  function fmtFundPrice(n) {
+    return Number.isFinite(n) ? n.toFixed(3) : "--";
+  }
+
+  function signFundPrice(n) {
+    return Number.isFinite(n) ? ((n >= 0 ? "+" : "") + n.toFixed(3)) : "--";
+  }
+
   function clamp(n, min, max) {
     return Math.max(min, Math.min(max, n));
   }
@@ -1472,7 +1480,7 @@ export function getClientScript() {
         calcNumberText(calc.fxMultiplier, 8) + " = " +
         calcNumberText(calc.estimatedNav, 6);
       var premiumFormula = "\u6298\u6ea2\u4ef7 = (" +
-        calcNumberText(calc.tradePrice, 6) + " / " +
+        calcNumberText(calc.tradePrice, 3) + " / " +
         calcNumberText(calc.estimatedNav, 6) + " - 1) \u00d7 100 = " +
         calcPctText(calc.premiumPct);
       var fieldText = "\u4ef7\u683c\u5b57\u6bb5 3\uff0c\u65f6\u95f4\u5b57\u6bb5 30\uff0c\u817e\u8baf\u6298\u6ea2\u4ef7\u5b57\u6bb5 77\uff0c\u53c2\u8003\u51c0\u503c\u5b57\u6bb5 78";
@@ -1494,11 +1502,11 @@ export function getClientScript() {
             '</div>',
             fundCalcSectionHTML("1. \u573a\u5185\u4ea4\u6613\u4ef7\u683c", [
               ["\u57fa\u91d1\u4ee3\u7801", item.symbol || "--"],
-              ["\u4ea4\u6613\u4ef7\u683c", calcNumberText(calc.tradePrice, 4)],
+              ["\u4ea4\u6613\u4ef7\u683c", calcNumberText(calc.tradePrice, 3)],
               ["\u4ea4\u6613\u4ef7\u65e5\u671f", calc.tradeDate || item.tradeDate || "--"],
               ["\u884c\u60c5\u65f6\u95f4", calcTimeText(calc.quoteTime || item.latestT)],
               ["\u817e\u8baf\u539f\u59cb\u65f6\u95f4", quote.rawTimestamp || "--"],
-              ["\u6628\u65e5\u6536\u76d8", calcNumberText(item.baseClose, 4)],
+              ["\u6628\u65e5\u6536\u76d8", calcNumberText(item.baseClose, 3)],
               ["\u65e5\u6da8\u8dcc\u5e45", calcPctText(item.changePct)],
               ["\u5b57\u6bb5\u4f4d\u7f6e", fieldText],
             ]),
@@ -1713,13 +1721,13 @@ export function getClientScript() {
                 '<div class="starSymbol">' + esc(item.symbol) + '</div>',
               '</div>',
             '</div>',
-            '<div class="sectorHeatPrice">' + fmtPrice(item.lastClose) + '</div>',
+            '<div class="sectorHeatPrice">' + fmtFundPrice(item.lastClose) + '</div>',
           '</div>',
           '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>',
           '<div class="sectorHeatMeta fundPremiumMeta">',
-            '<span>' + esc(item.baseLabel || "\u6628\u6536") + ' ' + fmtPrice(item.baseClose) + '</span>',
+            '<span>' + esc(item.baseLabel || "\u6628\u6536") + ' ' + fmtFundPrice(item.baseClose) + '</span>',
             '<div class="fundPremiumMetaRight">',
-              '<strong>' + signPrice(item.change) + '</strong>',
+              '<strong>' + signFundPrice(item.change) + '</strong>',
               '<span class="fundPremiumRate ' + premiumClass + '">' + esc(fundPremiumRateText(item.premiumPct)) + '</span>',
             '</div>',
           '</div>',
