@@ -73,6 +73,15 @@ function parseTencentBeijingDateKey(value) {
   return match ? `${match[1]}-${match[2]}-${match[3]}` : null;
 }
 
+function latestTradeDate(items) {
+  const values = (items || [])
+    .map((item) => item?.tradeDate)
+    .filter(Boolean)
+    .sort();
+
+  return values.length ? values[values.length - 1] : null;
+}
+
 function normalizeDateKey(value) {
   const text = String(value || "").trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
@@ -266,6 +275,7 @@ function buildFundItem(fund, fields, context) {
   const lastClose = toFiniteNumber(fields[3]);
   const baseClose = toFiniteNumber(fields[4]);
   const latestT = parseTencentBeijingTime(fields[30]);
+  const tradeDate = parseTencentBeijingDateKey(fields[30]);
   const change = toFiniteNumber(fields[31]);
   const changePct = toFiniteNumber(fields[32]);
   const premiumPctFromTencent = toFiniteNumber(fields[77]);
@@ -279,6 +289,7 @@ function buildFundItem(fund, fields, context) {
     nameCN: cleanName(fields[1], fund.fallbackName),
     icon: fund.icon || null,
     latestT,
+    tradeDate,
     period: "1D",
     baseLabel: "\u6628\u6536",
     lastClose,
@@ -361,6 +372,7 @@ export async function buildFundPremiumPayload() {
     ok: true,
     title: "\u57fa\u91d1\u6298\u6ea2\u4ef7",
     asOfMs: maxLatestTime(items),
+    tradeDate: latestTradeDate(items),
     items,
   };
 }

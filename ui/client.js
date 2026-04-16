@@ -153,6 +153,10 @@ export function getClientScript() {
       return Number.isFinite(ms) ? ("\u6700\u65b0\u6570\u636e\uff1a" + fmtBJ(ms)) : "\u6700\u65b0\u6570\u636e\uff1a--";
     }
 
+    function latestTradeDateText(dateText) {
+      return dateText ? ("\u6700\u65b0\u6570\u636e\uff1a" + String(dateText)) : "\u6700\u65b0\u6570\u636e\uff1a--";
+    }
+
     function setOverviewCurrentPeriod(period) {
       var el = $("idxCurrentPeriod");
       if (!el) return;
@@ -170,6 +174,10 @@ export function getClientScript() {
     function cardLatestTimeText(ms, referenceMs) {
       var label = isCardLatestTimeAnomaly(ms, referenceMs) ? "\u5f02\u5e38\u65f6\u95f4" : "\u6700\u65b0\u65f6\u95f4";
       return Number.isFinite(ms) ? (label + " " + fmtBJSeconds(ms)) : (label + " --");
+    }
+
+    function fundTradeDateText(dateText) {
+      return dateText ? ("\u6700\u65b0\u65e5\u671f " + String(dateText)) : "\u6700\u65b0\u65e5\u671f --";
     }
 
     function cardLatestTimeClass(ms, referenceMs) {
@@ -1408,7 +1416,7 @@ export function getClientScript() {
         if (Math.abs(delta) > 1e-9) return delta;
         return String(a && a.symbol || "").localeCompare(String(b && b.symbol || ""));
       }) : null;
-      var latestText = latestDataText(cached && cached.asOfMs);
+      var latestText = latestTradeDateText(cached && cached.tradeDate);
       var statusClass = fundPremiumState.statusType === "err" ? "err" : "ok";
       var maxAbs = items && items.length ? fundPremiumMaxAbs(items) : 1;
       var gridHtml = items && items.length
@@ -1541,7 +1549,6 @@ export function getClientScript() {
       var border = fundPremiumTint(premiumValue, 0.26 + intensity * 0.30);
       var glow = fundPremiumTint(premiumValue, 0.16 + intensity * 0.24);
       var tone = fundPremiumToneClass(premiumValue);
-      var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT);
       var premiumClass = fundPremiumRateClass(item.premiumPct);
 
       return [
@@ -1568,7 +1575,7 @@ export function getClientScript() {
               '<span class="fundPremiumRate ' + premiumClass + '">' + esc(fundPremiumRateText(item.premiumPct)) + '</span>',
             '</div>',
           '</div>',
-          '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>',
+          '<div class="sectorHeatLatest">' + esc(fundTradeDateText(item.tradeDate)) + '</div>',
         '</article>'
       ].join("");
     }
