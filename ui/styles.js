@@ -1475,40 +1475,23 @@ export function getStyles() {
     }
 
     .fundPremiumTile .starIconWrap{
-      width: 50px;
-      height: 50px;
+      width: 52px;
+      height: 52px;
       padding: 0;
-      overflow: hidden;
-      background: transparent;
-      border-color: rgba(255,255,255,.24);
+      overflow: visible;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255,255,255,.14), rgba(255,255,255,0) 62%),
+        linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      border-color: rgba(255,255,255,.14);
     }
 
     .fundPremiumTile .starIcon{
-      width: 100%;
-      height: 100%;
-      border-radius: 13px;
+      width: 32px;
+      height: 32px;
+      border-radius: 0;
       object-fit: contain;
       object-position: center;
-      filter: saturate(1.18) contrast(1.08);
-    }
-
-    .fundPremiumTile[data-symbol="sz159509"] .starIconWrap{
-      background: #10168a;
-    }
-
-    .fundPremiumTile[data-symbol="sz159513"] .starIconWrap{
-      background: #f5a4ad;
-    }
-
-    .fundPremiumTile[data-symbol="sz159660"] .starIconWrap{
-      background: #fffef4;
-    }
-
-    .fundPremiumTile[data-symbol="sz159941"] .starIconWrap,
-    .fundPremiumTile[data-symbol="sz159696"] .starIconWrap,
-    .fundPremiumTile[data-symbol="sz161128"] .starIconWrap,
-    .fundPremiumTile[data-symbol="sz159632"] .starIconWrap{
-      background: #ffffff;
+      filter: saturate(1.22) contrast(1.12);
     }
 
     .fundIconBlank{
@@ -2424,6 +2407,16 @@ export function getStyles() {
 
       .fundPremiumTile .starIdentity{
         align-items:center;
+      }
+
+      .fundPremiumTile .starIconWrap{
+        width: 46px;
+        height: 46px;
+      }
+
+      .fundPremiumTile .starIcon{
+        width: 28px;
+        height: 28px;
       }
 
       .starNameBox{
