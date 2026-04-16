@@ -1463,16 +1463,6 @@ export function getStyles() {
       text-shadow: 0 0 14px rgba(34,197,94,.30);
     }
 
-    .fundPremiumFormula{
-      max-width: 280px;
-      font-family: var(--mono);
-      font-size: 10px;
-      line-height: 1.45;
-      color: rgba(200,214,236,.76);
-      text-align: right;
-      white-space: normal;
-    }
-
     .fundIconWrap{
       border-style: dashed;
       background:
@@ -1480,10 +1470,14 @@ export function getStyles() {
         linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
     }
 
+    .fundPremiumTile .starIdentity{
+      align-items:center;
+    }
+
     .fundPremiumTile .starIconWrap{
-      width: 76px;
-      height: 58px;
-      padding: 7px;
+      width: 50px;
+      height: 50px;
+      padding: 5px;
       background:
         radial-gradient(circle at 18% 12%, rgba(255,255,255,.95), rgba(255,255,255,.42) 72%),
         linear-gradient(145deg, rgba(237,244,255,.96), rgba(176,199,232,.78));
@@ -2248,11 +2242,6 @@ export function getStyles() {
         text-align:left;
       }
 
-      .fundPremiumFormula{
-        max-width: 100%;
-        text-align:left;
-      }
-
       .sectorHeatMetaWithLatest{
         flex-direction: row;
         align-items: flex-end;
@@ -2413,6 +2402,10 @@ export function getStyles() {
 
       .starIdentity{
         align-items: flex-start;
+      }
+
+      .fundPremiumTile .starIdentity{
+        align-items:center;
       }
 
       .starNameBox{

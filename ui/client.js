@@ -1506,13 +1506,6 @@ export function getClientScript() {
       return "\u5e73\u4ef7 0.00%";
     }
 
-    function fundPremiumFormulaText(item) {
-      var formula = item && item.premiumFormula;
-      if (!formula) return "";
-      if (!Number.isFinite(formula.rawPct) || !Number.isFinite(formula.indexChangePct) || !Number.isFinite(formula.resultPct)) return "";
-      return "\u8ba1\u7b97\uff1a\u539f\u59cb " + signPct(formula.rawPct) + " - " + String(formula.indexSymbol || "SP500-45") + " 1\u65e5 " + signPct(formula.indexChangePct) + " = " + fundPremiumRateText(formula.resultPct);
-    }
-
     function fundPremiumTileHTML(item, maxAbs) {
       var intensity = clamp(Math.abs(Number.isFinite(item && item.changePct) ? item.changePct : 0) / (maxAbs || 1), 0, 1);
       var bg = sectorTint(item, 0.12 + intensity * 0.34);
@@ -1521,7 +1514,6 @@ export function getClientScript() {
       var tone = starToneClass(item);
       var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT);
       var premiumClass = fundPremiumRateClass(item.premiumPct);
-      var formulaText = fundPremiumFormulaText(item);
 
       return [
         '<article class="sectorHeatTile fundPremiumTile ' + tone + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
@@ -1545,7 +1537,6 @@ export function getClientScript() {
             '<div class="fundPremiumMetaRight">',
               '<strong>' + signPrice(item.change) + '</strong>',
               '<span class="fundPremiumRate ' + premiumClass + '">' + esc(fundPremiumRateText(item.premiumPct)) + '</span>',
-              formulaText ? '<span class="fundPremiumFormula">' + esc(formulaText) + '</span>' : '',
             '</div>',
           '</div>',
           '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>',

@@ -19,10 +19,12 @@
  */
 
 import { FUND_PREMIUM_FUNDS, INDEXES } from "../config.js";
-import { getLastBar, parseBarsFromAttributes, pickPrevCloseSmart } from "../lib/time.js";
+import { marketDateKey, parseBarsFromAttributes } from "../lib/time.js";
 import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
 
 const TENCENT_QT_URL = "https://qt.gtimg.cn/";
+const TENCENT_FUND_PRICE_ZONE_URL = "https://web.ifzq.gtimg.cn/fund/newfund/fundBase/getPriceZone";
+const CHINA_MONEY_USD_CNY_URL = "https://www.chinamoney.com.cn/ags/ms/cm-u-bk-ccpr/CcprHisNew";
 const LOF_SP500_TECH_CODE = "161128";
 const SP500_TECH_INDEX_SYMBOL = "SP500-45";
 
@@ -65,6 +67,28 @@ function parseTencentBeijingTime(value) {
   return Number.isFinite(utcMs) ? utcMs : null;
 }
 
+function parseTencentBeijingDateKey(value) {
+  const text = String(value || "").trim();
+  const match = text.match(/^(\d{4})(\d{2})(\d{2})/);
+  return match ? `${match[1]}-${match[2]}-${match[3]}` : null;
+}
+
+function normalizeDateKey(value) {
+  const text = String(value || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  if (/^\d{8}$/.test(text)) return `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}`;
+  return null;
+}
+
+function addDays(dateKey, days) {
+  const [year, month, day] = String(dateKey || "").split("-").map(Number);
+  if (![year, month, day].every(Number.isFinite)) return null;
+  const date = new Date(Date.UTC(year, month - 1, day + days));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(
+    date.getUTCDate()
+  ).padStart(2, "0")}`;
+}
+
 function parseQtVariables(text) {
   const map = new Map();
   const pattern = /v_([^=]+)="([^"]*)";/g;
@@ -77,37 +101,164 @@ function parseQtVariables(text) {
   return map;
 }
 
-async function fetchSp500TechOneDayChangePct() {
+function pickOnOrBefore(rows, targetDate, dateSelector) {
+  const target = normalizeDateKey(targetDate);
+  if (!target) return null;
+
+  const sorted = (rows || [])
+    .map((row) => ({ row, date: normalizeDateKey(dateSelector(row)) }))
+    .filter((item) => item.date && item.date <= target)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  return sorted.length ? sorted[sorted.length - 1] : null;
+}
+
+async function fetchSp500TechDailyContext(navDate, tradeDate) {
   const index = INDEXES.find((item) => item.symbol === SP500_TECH_INDEX_SYMBOL);
   if (!index?.tickerId) {
     throw new Error(`${SP500_TECH_INDEX_SYMBOL} ticker_id missing`);
   }
 
-  const [oneDayRaw, ytdRaw] = await Promise.all([
-    fetchSeekingAlphaPeriod("1D", index.tickerId),
-    fetchSeekingAlphaPeriod("YTD", index.tickerId),
-  ]);
+  const raw = await fetchSeekingAlphaPeriod("1Y", index.tickerId);
+  const bars = parseBarsFromAttributes(raw?.attributes).map((bar) => ({
+    date: marketDateKey(bar.t),
+    close: bar.close,
+    t: bar.t,
+  }));
 
-  const bars1D = parseBarsFromAttributes(oneDayRaw?.attributes);
-  const ytdBars = parseBarsFromAttributes(ytdRaw?.attributes);
-  const last1DBar = getLastBar(bars1D);
-  const latestClose = last1DBar?.close;
-  const baseClose = pickPrevCloseSmart(ytdBars, bars1D);
-  const change = Number.isFinite(latestClose) && Number.isFinite(baseClose)
-    ? latestClose - baseClose
-    : null;
-  const changePct = Number.isFinite(change) && Number.isFinite(baseClose) && baseClose !== 0
-    ? (change / baseClose) * 100
-    : null;
+  const navPoint = pickOnOrBefore(bars, navDate, (bar) => bar.date);
+  const tradePoint = pickOnOrBefore(bars, tradeDate, (bar) => bar.date);
 
-  if (!Number.isFinite(changePct)) {
-    throw new Error(`${SP500_TECH_INDEX_SYMBOL} 1D change percent unavailable`);
+  if (!navPoint || !tradePoint || !Number.isFinite(navPoint.row.close) || !Number.isFinite(tradePoint.row.close)) {
+    throw new Error(`${SP500_TECH_INDEX_SYMBOL} daily close unavailable for ${navDate} to ${tradeDate}`);
   }
 
   return {
     symbol: SP500_TECH_INDEX_SYMBOL,
-    changePct,
-    latestT: Number.isFinite(last1DBar?.t) ? last1DBar.t : null,
+    navDate: navPoint.date,
+    navClose: navPoint.row.close,
+    tradeDate: tradePoint.date,
+    tradeClose: tradePoint.row.close,
+    changePct: (tradePoint.row.close / navPoint.row.close - 1) * 100,
+  };
+}
+
+async function fetchUsdCnyContext(navDate, tradeDate) {
+  const startDate = addDays(navDate, -14) || navDate;
+  const url = new URL(CHINA_MONEY_USD_CNY_URL);
+  url.searchParams.set("startDate", startDate);
+  url.searchParams.set("endDate", tradeDate);
+  url.searchParams.set("currency", "USD/CNY");
+  url.searchParams.set("pageNum", "1");
+  url.searchParams.set("pageSize", "30");
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Accept: "application/json, text/plain, */*",
+      Referer: "https://www.chinamoney.com.cn/",
+      "User-Agent": "Mozilla/5.0 NasdaqDashboard/1.0",
+    },
+    cf: {
+      cacheTtl: 0,
+      cacheEverything: false,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`ChinaMoney USD/CNY request failed: HTTP ${response.status}`);
+  }
+
+  const json = await response.json();
+  const rows = Array.isArray(json?.records)
+    ? json.records
+        .map((record) => ({
+          date: normalizeDateKey(record?.date),
+          rate: toFiniteNumber(record?.values?.[0]),
+        }))
+        .filter((record) => record.date && Number.isFinite(record.rate))
+    : [];
+  const navRate = pickOnOrBefore(rows, navDate, (row) => row.date);
+  const tradeRate = pickOnOrBefore(rows, tradeDate, (row) => row.date);
+
+  if (!navRate || !tradeRate) {
+    throw new Error(`USD/CNY central parity unavailable for ${navDate} to ${tradeDate}`);
+  }
+
+  return {
+    navDate: navRate.date,
+    navRate: navRate.row.rate,
+    tradeDate: tradeRate.date,
+    tradeRate: tradeRate.row.rate,
+    changePct: (tradeRate.row.rate / navRate.row.rate - 1) * 100,
+  };
+}
+
+async function fetchLofBaseInfo(marketSymbol) {
+  const url = new URL(TENCENT_FUND_PRICE_ZONE_URL);
+  url.searchParams.set("symbol", marketSymbol);
+  url.searchParams.set("_", `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Accept: "application/json, text/plain, */*",
+      Referer: `https://gu.qq.com/${marketSymbol}`,
+      "User-Agent": "Mozilla/5.0 NasdaqDashboard/1.0",
+    },
+    cf: {
+      cacheTtl: 0,
+      cacheEverything: false,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Tencent LOF base request failed: HTTP ${response.status}`);
+  }
+
+  const json = await response.json();
+  if (json?.code !== 0 || !json?.data?.info) {
+    throw new Error(`Tencent LOF base request invalid for ${marketSymbol}`);
+  }
+
+  return json.data;
+}
+
+async function buildLofPremiumContext(fund, fields) {
+  // 161128 is a QDII-LOF. Tencent's own premium field is based on the last
+  // published NAV, so estimate the NAV for the quote date with SP500-45 and
+  // USD/CNY central parity changes before calculating the displayed premium.
+  const tradePrice = toFiniteNumber(fields[3]);
+  const tradeDate = parseTencentBeijingDateKey(fields[30]);
+  const baseInfo = await fetchLofBaseInfo(fund.marketSymbol);
+  const publishedNav = toFiniteNumber(baseInfo?.info?.dwjz) ?? toFiniteNumber(baseInfo?.data?.jjdwjz) ?? toFiniteNumber(fields[81]);
+  const publishedNavDate = normalizeDateKey(baseInfo?.info?.jzrq);
+
+  if (!Number.isFinite(tradePrice) || !tradeDate || !Number.isFinite(publishedNav) || !publishedNavDate) {
+    throw new Error(`LOF premium input incomplete for ${fund.marketSymbol}`);
+  }
+
+  const [index, fx] = await Promise.all([
+    fetchSp500TechDailyContext(publishedNavDate, tradeDate),
+    fetchUsdCnyContext(publishedNavDate, tradeDate),
+  ]);
+
+  const estimatedNav = publishedNav * (index.tradeClose / index.navClose) * (fx.tradeRate / fx.navRate);
+  const premiumPct = Number.isFinite(estimatedNav) && estimatedNav !== 0
+    ? (tradePrice / estimatedNav - 1) * 100
+    : null;
+
+  if (!Number.isFinite(premiumPct)) {
+    throw new Error(`LOF premium calculation failed for ${fund.marketSymbol}`);
+  }
+
+  return {
+    tradeDate,
+    tradePrice,
+    publishedNav,
+    publishedNavDate,
+    estimatedNav,
+    premiumPct,
+    index,
+    fx,
   };
 }
 
@@ -119,22 +270,8 @@ function buildFundItem(fund, fields, context) {
   const changePct = toFiniteNumber(fields[32]);
   const premiumPctFromTencent = toFiniteNumber(fields[77]);
   const premiumReferenceNav = toFiniteNumber(fields[78]);
-  let premiumPct = premiumPctFromTencent;
-  let premiumFormula = null;
-
-  if (fund.code === LOF_SP500_TECH_CODE && Number.isFinite(premiumPctFromTencent)) {
-    const indexChangePct = context?.sp500TechOneDay?.changePct;
-    if (Number.isFinite(indexChangePct)) {
-      premiumPct = premiumPctFromTencent - indexChangePct;
-      premiumFormula = {
-        rawPct: premiumPctFromTencent,
-        indexSymbol: SP500_TECH_INDEX_SYMBOL,
-        indexChangePct,
-        indexLatestT: context?.sp500TechOneDay?.latestT ?? null,
-        resultPct: premiumPct,
-      };
-    }
-  }
+  const lofPremium = fund.code === LOF_SP500_TECH_CODE ? context?.lofPremium : null;
+  const premiumPct = Number.isFinite(lofPremium?.premiumPct) ? lofPremium.premiumPct : premiumPctFromTencent;
 
   return {
     symbol: fund.marketSymbol,
@@ -150,8 +287,8 @@ function buildFundItem(fund, fields, context) {
     changePct,
     premiumPct,
     premiumRawPct: premiumPctFromTencent,
-    premiumReferenceNav,
-    premiumFormula,
+    premiumReferenceNav: Number.isFinite(lofPremium?.estimatedNav) ? lofPremium.estimatedNav : premiumReferenceNav,
+    lofPremium,
   };
 }
 
@@ -197,14 +334,27 @@ export async function buildFundPremiumPayload() {
   }
   const variableMap = parseQtVariables(text);
 
-  const sp500TechOneDay = await fetchSp500TechOneDayChangePct();
+  const lofFund = funds.find((fund) => fund.code === LOF_SP500_TECH_CODE);
+  const lofFields = lofFund ? variableMap.get(lofFund.marketSymbol) : null;
+  const lofPremium = lofFund && lofFields ? await buildLofPremiumContext(lofFund, lofFields) : null;
+
   const items = funds.map((fund) => {
     const fields = variableMap.get(fund.marketSymbol);
     if (!fields || fields.length <= 77) {
       throw new Error(`Tencent fund quote missing or incomplete for ${fund.marketSymbol}`);
     }
 
-    return buildFundItem(fund, fields, { sp500TechOneDay });
+    return buildFundItem(fund, fields, {
+      lofPremium: fund.code === LOF_SP500_TECH_CODE ? lofPremium : null,
+    });
+  });
+
+  items.sort((a, b) => {
+    const premiumDelta =
+      (Number.isFinite(b?.premiumPct) ? b.premiumPct : -Infinity) -
+      (Number.isFinite(a?.premiumPct) ? a.premiumPct : -Infinity);
+    if (Math.abs(premiumDelta) > 1e-9) return premiumDelta;
+    return String(a?.code || "").localeCompare(String(b?.code || ""));
   });
 
   return {

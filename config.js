@@ -1,6 +1,7 @@
 /**
  * Global configuration shared by the Worker and the frontend.
  */
+import { FUND_LOGOS } from "./assets/fundLogos.js";
 
 export const UPSTREAM = "https://static.seekingalpha.com/cdn/finance-api/lua_charts";
 export const CNN_FG_UPSTREAM = "https://production.dataviz.cnn.io/index/fearandgreed/graphdata";
@@ -64,37 +65,21 @@ export const SP500_SECTOR_ETFS = [
 
 // Keep the fund premium list in this root config file so Cloudflare Git
 // watch-path rules can detect and publish fund-panel behavior or logo changes reliably.
-function fundLogoSvg(label, bg, fg) {
-  return "data:image/svg+xml;utf8," + encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
-      <defs>
-        <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0" stop-color="${bg}"/>
-          <stop offset="1" stop-color="#07111f"/>
-        </linearGradient>
-      </defs>
-      <rect width="160" height="160" rx="34" fill="url(#g)"/>
-      <circle cx="124" cy="34" r="30" fill="#ffffff" opacity=".14"/>
-      <text x="80" y="92" text-anchor="middle" font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" font-size="48" font-weight="800" fill="${fg}">${label}</text>
-    </svg>`
-  );
-}
-
 export const FUND_PREMIUM_FUNDS = [
-  { code: "513100", fallbackName: "\u56fd\u6cf0\u7eb3\u6307ETF", icon: "https://www.gtfund.com/Public/static/etrade/1/dist/i/common/fav.png" },
-  { code: "513300", fallbackName: "\u534e\u590f\u7eb3\u65af\u8fbe100ETF", icon: "https://www.chinaamc.com/images/jgindex/logo.png" },
-  { code: "159941", fallbackName: "\u5e7f\u53d1\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.gffunds.com.cn/images/2016wx_logo_300.png" },
-  { code: "159696", fallbackName: "\u6613\u65b9\u8fbe\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.efunds.com.cn/assets/images/icons/logo_en.png" },
-  { code: "513390", fallbackName: "\u535a\u65f6\u7eb3\u65af\u8fbe\u514b100ETF", icon: fundLogoSvg("\u535a\u65f6", "#7a5f3b", "#ffffff") },
-  { code: "159660", fallbackName: "\u6c47\u6dfb\u5bcc\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.99fund.com/upload/20160104/201601041451875032384.jpg" },
-  { code: "159501", fallbackName: "\u5609\u5b9e\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.jsfund.cn/ws/addimages/logo.svg" },
-  { code: "159513", fallbackName: "\u5927\u6210\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.dcfund.com.cn/ws/images/logo_img01.png" },
-  { code: "159632", fallbackName: "\u534e\u5b89\u7eb3\u65af\u8fbe\u514bETF", icon: "https://www.huaan.com.cn/img/home_nav_logo.png" },
-  { code: "513110", fallbackName: "\u534e\u6cf0\u67cf\u745e\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.huatai-pb.com/assets/logo.png" },
-  { code: "513870", fallbackName: "\u5bcc\u56fd\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://www.fullgoal.com.cn/ws6/asset/logo.png" },
-  { code: "159659", fallbackName: "\u62db\u5546\u7eb3\u65af\u8fbe\u514b100ETF", icon: "https://static.cmfchina.com/ws/addimages/logo.png" },
-  { code: "161128", fallbackName: "\u6613\u65b9\u8fbe\u6807\u666e\u4fe1\u606f\u79d1\u6280LOF", icon: "https://www.efunds.com.cn/assets/images/icons/logo_en.png" },
-  { code: "159509", fallbackName: "\u666f\u987a\u957f\u57ce\u7eb3\u6307\u79d1\u6280", icon: fundLogoSvg("\u666f\u987a", "#09685f", "#ffffff") },
+  { code: "513100", fallbackName: "\u56fd\u6cf0\u7eb3\u6307ETF", icon: FUND_LOGOS["513100"] },
+  { code: "513300", fallbackName: "\u534e\u590f\u7eb3\u65af\u8fbe100ETF", icon: FUND_LOGOS["513300"] },
+  { code: "159941", fallbackName: "\u5e7f\u53d1\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["159941"] },
+  { code: "159696", fallbackName: "\u6613\u65b9\u8fbe\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["159696"] },
+  { code: "513390", fallbackName: "\u535a\u65f6\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["513390"] },
+  { code: "159660", fallbackName: "\u6c47\u6dfb\u5bcc\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["159660"] },
+  { code: "159501", fallbackName: "\u5609\u5b9e\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["159501"] },
+  { code: "159513", fallbackName: "\u5927\u6210\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["159513"] },
+  { code: "159632", fallbackName: "\u534e\u5b89\u7eb3\u65af\u8fbe\u514bETF", icon: FUND_LOGOS["159632"] },
+  { code: "513110", fallbackName: "\u534e\u6cf0\u67cf\u745e\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["513110"] },
+  { code: "513870", fallbackName: "\u5bcc\u56fd\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["513870"] },
+  { code: "159659", fallbackName: "\u62db\u5546\u7eb3\u65af\u8fbe\u514b100ETF", icon: FUND_LOGOS["159659"] },
+  { code: "161128", fallbackName: "\u6613\u65b9\u8fbe\u6807\u666e\u4fe1\u606f\u79d1\u6280LOF", icon: FUND_LOGOS["161128"] },
+  { code: "159509", fallbackName: "\u666f\u987a\u957f\u57ce\u7eb3\u6307\u79d1\u6280", icon: FUND_LOGOS["159509"] },
 ];
 
 export const LINE_COLORS = [
