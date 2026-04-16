@@ -2232,6 +2232,31 @@ export function getClientScript() {
       fundPremiumState.detailSymbol = null;
     }
 
+    function clearRenderedPanelData() {
+      state.items = [];
+      state.times = [];
+      state.timeIndex = new Map();
+      state.hoverTime = null;
+
+      var idxCards = $("idxCards");
+      if (idxCards) {
+        idxCards.innerHTML = '<div class="starPanelEmpty">\u5df2\u6e05\u7a7a\u65e7\u6570\u636e\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f...</div>';
+      }
+
+      var idxLatestTime = $("idxLatestTime");
+      if (idxLatestTime) {
+        idxLatestTime.textContent = latestDataText(null);
+      }
+
+      setOverviewCurrentPeriod(state.period);
+      draw();
+      renderFearGreedLoading();
+      renderStarPanel();
+      renderSectorPanel();
+      renderWeightsPanel();
+      renderFundPremiumPanel();
+    }
+
     async function forceRefreshAllPanels() {
       var currentPage = state.page;
       setGlobalRefreshBusy(true);
@@ -2246,10 +2271,7 @@ export function getClientScript() {
       weightsState.statusType = "ok";
       fundPremiumState.statusText = "\u5df2\u6e05\u7a7a\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u6700\u65b0\u57fa\u91d1\u884c\u60c5...";
       fundPremiumState.statusType = "ok";
-      renderStarPanel();
-      renderSectorPanel();
-      renderWeightsPanel();
-      renderFundPremiumPanel();
+      clearRenderedPanelData();
 
       try {
         await Promise.allSettled([
