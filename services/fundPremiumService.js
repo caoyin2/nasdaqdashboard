@@ -359,7 +359,7 @@ export async function buildFundPremiumPayload() {
 
   return {
     ok: true,
-    title: "\u57fa\u91d1\u6298\u6ea2\u4ef7\uff08\u5f00\u53d1\u4e2d\uff09",
+    title: "\u57fa\u91d1\u6298\u6ea2\u4ef7",
     asOfMs: maxLatestTime(items),
     items,
   };

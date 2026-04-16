@@ -309,7 +309,7 @@ export function getClientScript() {
       if (page === "stars") return "\u9762\u677f\uff1a\u660e\u661f\u79d1\u6280\u516c\u53f8";
       if (page === "weights") return "\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd";
       if (page === "sectors") return "\u9762\u677f\uff1a\u6807\u666e500\u677f\u5757ETF";
-      if (page === "fundPremiums") return "\u9762\u677f\uff1a\u57fa\u91d1\u6298\u6ea2\u4ef7\uff08\u5f00\u53d1\u4e2d\uff09";
+      if (page === "fundPremiums") return "\u9762\u677f\uff1a\u57fa\u91d1\u6298\u6ea2\u4ef7";
       return "\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f";
     }
 
@@ -1420,7 +1420,7 @@ export function getClientScript() {
           '<div class="starPanelHead">',
             '<div class="starPanelTitle">',
               '<span>\u4f7f\u7528\u817e\u8baf\u8d22\u7ecf\u5b9e\u65f6\u884c\u60c5\u663e\u793a\u573a\u5185\u57fa\u91d1\u6298\u6ea2\u4ef7</span>',
-              '<strong>\u57fa\u91d1\u6298\u6ea2\u4ef7\uff08\u5f00\u53d1\u4e2d\uff09</strong>',
+              '<strong>\u57fa\u91d1\u6298\u6ea2\u4ef7</strong>',
             '</div>',
           '</div>',
           '<div class="starPanelMeta">',
