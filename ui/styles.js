@@ -1508,6 +1508,170 @@ export function getStyles() {
       filter: brightness(1.48) saturate(1.18) contrast(1.08);
     }
 
+    .fundPremiumTile[data-fund-lof-detail="1"]{
+      cursor: help;
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    .fundPremiumHoldHint{
+      justify-self: end;
+      margin-top: -6px;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: rgba(200,214,236,.62);
+      white-space: nowrap;
+    }
+
+    .fundCalcOverlay{
+      position: fixed;
+      inset: 0;
+      z-index: 10020;
+      background: rgba(3,7,18,.72);
+      backdrop-filter: blur(10px);
+      display:grid;
+      place-items:center;
+      padding: 18px;
+    }
+
+    .fundCalcModal{
+      width: min(980px, 100%);
+      max-height: min(88vh, 920px);
+      overflow: auto;
+      border-radius: 20px;
+      border: 1px solid rgba(31,43,61,.92);
+      background:
+        radial-gradient(900px 320px at 0% 0%, rgba(255,77,109,.12), transparent 60%),
+        radial-gradient(760px 260px at 100% 8%, rgba(0,224,255,.09), transparent 58%),
+        linear-gradient(180deg, rgba(10,15,26,.98), rgba(12,18,30,.96));
+      box-shadow: 0 28px 90px rgba(0,0,0,.50);
+      padding: 18px;
+      display:grid;
+      gap: 14px;
+    }
+
+    .fundCalcHead{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 14px;
+    }
+
+    .fundCalcHead div{
+      display:grid;
+      gap: 5px;
+    }
+
+    .fundCalcHead span{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .fundCalcHead strong{
+      color: rgba(244,247,252,.98);
+      font-size: 22px;
+      line-height: 1.12;
+    }
+
+    .fundCalcClose{
+      appearance:none;
+      border: 1px solid rgba(31,43,61,.88);
+      cursor:pointer;
+      border-radius: 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(226,232,240,.94);
+      background: rgba(255,255,255,.06);
+      padding: 8px 12px;
+    }
+
+    .fundCalcSummary{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .fundCalcSummary div,
+    .fundCalcSection{
+      border-radius: 16px;
+      border: 1px solid rgba(31,43,61,.82);
+      background: rgba(255,255,255,.045);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
+    .fundCalcSummary div{
+      padding: 12px;
+      display:grid;
+      gap: 5px;
+    }
+
+    .fundCalcSummary span,
+    .fundCalcKv span{
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(169,185,211,.82);
+    }
+
+    .fundCalcSummary strong{
+      color: rgba(244,247,252,.98);
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
+    .fundCalcSection{
+      padding: 14px;
+      display:grid;
+      gap: 12px;
+    }
+
+    .fundCalcSection h4{
+      margin: 0;
+      color: rgba(244,247,252,.96);
+      font-size: 15px;
+      line-height: 1.25;
+    }
+
+    .fundCalcGrid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .fundCalcKv{
+      min-width: 0;
+      display:grid;
+      gap: 4px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(3,7,18,.30);
+      border: 1px solid rgba(31,43,61,.60);
+    }
+
+    .fundCalcKv strong{
+      color: rgba(230,237,247,.96);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.35;
+      word-break: break-word;
+      white-space: normal;
+    }
+
+    .fundCalcSourceBlock p{
+      margin: 0;
+      color: rgba(200,214,236,.86);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.45;
+      word-break: break-all;
+    }
+
+    .fundCalcSourceBlock strong{
+      color: rgba(244,247,252,.94);
+    }
+
     .cardTimeAnomaly{
       color: rgba(255,77,109,.98) !important;
       font-weight: 800;
@@ -2128,6 +2292,36 @@ export function getStyles() {
         padding: 14px;
         gap: 12px;
         border-radius: 16px;
+      }
+
+      .fundCalcOverlay{
+        padding: max(12px, env(safe-area-inset-top)) 12px 12px 12px;
+        place-items: start center;
+      }
+
+      .fundCalcModal{
+        width: 100%;
+        max-height: calc(100vh - 24px);
+        padding: 14px;
+        gap: 12px;
+        border-radius: 16px;
+      }
+
+      .fundCalcHead{
+        gap: 10px;
+      }
+
+      .fundCalcHead strong{
+        font-size: 18px;
+      }
+
+      .fundCalcSummary,
+      .fundCalcGrid{
+        grid-template-columns: 1fr;
+      }
+
+      .fundCalcClose{
+        flex: 0 0 auto;
       }
 
       .starManageHead{

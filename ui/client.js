@@ -180,6 +180,22 @@ export function getClientScript() {
       return dateText ? ("\u6700\u65b0\u65e5\u671f " + String(dateText)) : "\u6700\u65b0\u65e5\u671f --";
     }
 
+    function calcNumberText(value, digits) {
+      var n = Number(value);
+      if (!Number.isFinite(n)) return "--";
+      return n.toFixed(Number.isFinite(digits) ? digits : 4);
+    }
+
+    function calcPctText(value) {
+      var n = Number(value);
+      if (!Number.isFinite(n)) return "--";
+      return (n > 0 ? "+" : "") + n.toFixed(4) + "%";
+    }
+
+    function calcTimeText(ms) {
+      return Number.isFinite(ms) ? fmtBJSeconds(ms) : "--";
+    }
+
     function cardLatestTimeClass(ms, referenceMs) {
       return isCardLatestTimeAnomaly(ms, referenceMs) ? " cardTimeAnomaly" : "";
     }
@@ -299,7 +315,8 @@ export function getClientScript() {
       fetchCtrl: null,
       statusText: "\u8fdb\u5165\u9762\u677f\u540e\u52a0\u8f7d\u6700\u65b0\u57fa\u91d1\u884c\u60c5",
       statusType: "ok",
-      touched: false
+      touched: false,
+      detailSymbol: null
     };
     var weightsState = {
       activeIndex: "NDXTMC",
@@ -312,6 +329,7 @@ export function getClientScript() {
     var activeFetchCtrl = null;
     var switchTimer = null;
     var refreshTimer = null;
+    var fundPremiumLongPressTimer = null;
 
     function getPanelTitle(page) {
       if (page === "stars") return "\u9762\u677f\uff1a\u660e\u661f\u79d1\u6280\u516c\u53f8";
@@ -1402,6 +1420,130 @@ export function getClientScript() {
       });
     }
 
+    function getFundPremiumDetailItem(symbol) {
+      var cache = fundPremiumState.cache;
+      var items = cache && Array.isArray(cache.items) ? cache.items : [];
+      var key = String(symbol || "");
+      return items.find(function (item) {
+        if (!key) return String(item && item.code || "") === "161128";
+        return String(item && item.symbol || "") === key || (key === "161128" && String(item && item.code || "") === "161128");
+      }) || null;
+    }
+
+    function openFundPremiumDetail(symbol) {
+      var item = getFundPremiumDetailItem(symbol);
+      if (!item || String(item.code || "") !== "161128") return;
+      fundPremiumState.detailSymbol = item.symbol || "sz161128";
+      renderFundPremiumPanel();
+    }
+
+    function closeFundPremiumDetail() {
+      if (!fundPremiumState.detailSymbol) return;
+      fundPremiumState.detailSymbol = null;
+      renderFundPremiumPanel();
+    }
+
+    function fundCalcKvHTML(label, value) {
+      return '<div class="fundCalcKv"><span>' + esc(label) + '</span><strong>' + esc(value) + '</strong></div>';
+    }
+
+    function fundCalcSectionHTML(title, rows) {
+      return [
+        '<section class="fundCalcSection">',
+          '<h4>' + esc(title) + '</h4>',
+          '<div class="fundCalcGrid">',
+            rows.map(function (row) { return fundCalcKvHTML(row[0], row[1]); }).join(""),
+          '</div>',
+        '</section>'
+      ].join("");
+    }
+
+    function renderFundPremiumDetailModal(item) {
+      if (!item) return "";
+
+      var calc = item.lofPremium || {};
+      var index = calc.index || {};
+      var fx = calc.fx || {};
+      var quote = calc.quoteSource || {};
+      var nav = calc.navSource || {};
+      var estimatedFormula = "\u4f30\u7b97\u51c0\u503c = " +
+        calcNumberText(calc.publishedNav, 6) + " \u00d7 " +
+        calcNumberText(calc.indexMultiplier, 8) + " \u00d7 " +
+        calcNumberText(calc.fxMultiplier, 8) + " = " +
+        calcNumberText(calc.estimatedNav, 6);
+      var premiumFormula = "\u6298\u6ea2\u4ef7 = (" +
+        calcNumberText(calc.tradePrice, 6) + " / " +
+        calcNumberText(calc.estimatedNav, 6) + " - 1) \u00d7 100 = " +
+        calcPctText(calc.premiumPct);
+      var fieldText = "\u4ef7\u683c\u5b57\u6bb5 3\uff0c\u65f6\u95f4\u5b57\u6bb5 30\uff0c\u817e\u8baf\u6298\u6ea2\u4ef7\u5b57\u6bb5 77\uff0c\u53c2\u8003\u51c0\u503c\u5b57\u6bb5 78";
+
+      return [
+        '<div class="fundCalcOverlay" data-fund-calc-close="overlay">',
+          '<div class="fundCalcModal" role="dialog" aria-modal="true" aria-label="161128 \u6298\u6ea2\u4ef7\u8ba1\u7b97\u8be6\u60c5">',
+            '<div class="fundCalcHead">',
+              '<div>',
+                '<span>\u957f\u6309 3 \u79d2\u6253\u5f00\uff0c\u7528\u4e8e\u6838\u5bf9 LOF \u771f\u5b9e\u6298\u6ea2\u4ef7\u4f30\u7b97\u8fc7\u7a0b</span>',
+                '<strong>161128 \u6298\u6ea2\u4ef7\u8ba1\u7b97\u8be6\u60c5</strong>',
+              '</div>',
+              '<button class="fundCalcClose" type="button" data-fund-calc-close="button">\u5173\u95ed</button>',
+            '</div>',
+            '<div class="fundCalcSummary">',
+              '<div><span>\u6700\u7ec8\u7ed3\u679c</span><strong>' + esc(fundPremiumRateText(calc.premiumPct)) + '</strong></div>',
+              '<div><span>\u4ea4\u6613\u4ef7\u65e5\u671f</span><strong>' + esc(calc.tradeDate || item.tradeDate || "--") + '</strong></div>',
+              '<div><span>\u8ba1\u7b97\u751f\u6210\u65f6\u95f4</span><strong>' + esc(calcTimeText(Date.parse(calc.generatedAt || ""))) + '</strong></div>',
+            '</div>',
+            fundCalcSectionHTML("1. \u573a\u5185\u4ea4\u6613\u4ef7\u683c", [
+              ["\u57fa\u91d1\u4ee3\u7801", item.symbol || "--"],
+              ["\u4ea4\u6613\u4ef7\u683c", calcNumberText(calc.tradePrice, 4)],
+              ["\u4ea4\u6613\u4ef7\u65e5\u671f", calc.tradeDate || item.tradeDate || "--"],
+              ["\u884c\u60c5\u65f6\u95f4", calcTimeText(calc.quoteTime || item.latestT)],
+              ["\u817e\u8baf\u539f\u59cb\u65f6\u95f4", quote.rawTimestamp || "--"],
+              ["\u6628\u65e5\u6536\u76d8", calcNumberText(item.baseClose, 4)],
+              ["\u65e5\u6da8\u8dcc\u5e45", calcPctText(item.changePct)],
+              ["\u5b57\u6bb5\u4f4d\u7f6e", fieldText],
+            ]),
+            fundCalcSectionHTML("2. \u6700\u65b0\u516c\u5e03\u5355\u4f4d\u51c0\u503c", [
+              ["\u516c\u5e03\u51c0\u503c", calcNumberText(calc.publishedNav, 6)],
+              ["\u516c\u5e03\u51c0\u503c\u65e5\u671f", calc.publishedNavDate || "--"],
+              ["\u817e\u8baf\u539f\u59cb\u6298\u6ea2\u4ef7", calcPctText(calc.tencentPremiumPct)],
+              ["\u817e\u8baf\u53c2\u8003\u51c0\u503c", calcNumberText(calc.tencentReferenceNav, 6)],
+              ["\u51c0\u503c\u5b57\u6bb5", nav.navPath || "--"],
+              ["\u65e5\u671f\u5b57\u6bb5", nav.navDatePath || "--"],
+            ]),
+            fundCalcSectionHTML("3. \u6807\u666e\u4fe1\u606f\u79d1\u6280\u6307\u6570\u4fee\u6b63", [
+              ["\u6307\u6570\u4ee3\u7801", index.symbol || "SP500-45"],
+              ["\u8bf7\u6c42\u5468\u671f", index.period || "1Y"],
+              ["\u51c0\u503c\u65e5\u6536\u76d8", (index.navDate || "--") + " / " + calcNumberText(index.navClose, 4)],
+              ["\u51c0\u503c\u65e5\u6570\u636e\u65f6\u95f4", calcTimeText(index.navTime)],
+              ["\u4ea4\u6613\u65e5\u6536\u76d8", (index.tradeDate || "--") + " / " + calcNumberText(index.tradeClose, 4)],
+              ["\u4ea4\u6613\u65e5\u6570\u636e\u65f6\u95f4", calcTimeText(index.tradeTime)],
+              ["\u6307\u6570\u4fee\u6b63\u500d\u6570", calcNumberText(calc.indexMultiplier, 8)],
+              ["\u533a\u95f4\u6da8\u8dcc", calcPctText(index.changePct)],
+            ]),
+            fundCalcSectionHTML("4. \u4eba\u6c11\u5e01\u7f8e\u5143\u4e2d\u95f4\u4ef7\u4fee\u6b63", [
+              ["\u51c0\u503c\u65e5\u6c47\u7387", (fx.navDate || "--") + " / " + calcNumberText(fx.navRate, 4)],
+              ["\u4ea4\u6613\u65e5\u6c47\u7387", (fx.tradeDate || "--") + " / " + calcNumberText(fx.tradeRate, 4)],
+              ["\u6c47\u7387\u4fee\u6b63\u500d\u6570", calcNumberText(calc.fxMultiplier, 8)],
+              ["\u533a\u95f4\u53d8\u5316", calcPctText(fx.changePct)],
+            ]),
+            fundCalcSectionHTML("5. \u4f30\u7b97\u51c0\u503c\u4e0e\u6700\u7ec8\u6298\u6ea2\u4ef7", [
+              ["\u4f30\u7b97\u51c0\u503c", calcNumberText(calc.estimatedNav, 6)],
+              ["\u6700\u7ec8\u6298\u6ea2\u4ef7", calcPctText(calc.premiumPct)],
+              ["\u4f30\u7b97\u51c0\u503c\u516c\u5f0f", estimatedFormula],
+              ["\u6298\u6ea2\u4ef7\u516c\u5f0f", premiumFormula],
+            ]),
+            '<section class="fundCalcSection fundCalcSourceBlock">',
+              '<h4>\u6e90\u6570\u636e\u63a5\u53e3</h4>',
+              '<p><strong>\u4ea4\u6613\u4ef7\uff1a</strong>' + esc(quote.url || "--") + '</p>',
+              '<p><strong>\u5355\u4f4d\u51c0\u503c\uff1a</strong>' + esc(nav.url || "--") + '</p>',
+              '<p><strong>\u6307\u6570\u6570\u636e\uff1a</strong>' + esc((index.source || "SeekingAlpha lua_charts") + " / ticker_id=" + (index.tickerId || "--")) + '</p>',
+              '<p><strong>\u6c47\u7387\u6570\u636e\uff1a</strong>' + esc(fx.requestUrl || "--") + '</p>',
+            '</section>',
+          '</div>',
+        '</div>'
+      ].join("");
+    }
+
     function renderFundPremiumPanel() {
       var root = $("fundPremiumPanel");
       if (!root) return;
@@ -1419,6 +1561,8 @@ export function getClientScript() {
       var latestText = latestTradeDateText(cached && cached.tradeDate);
       var statusClass = fundPremiumState.statusType === "err" ? "err" : "ok";
       var maxAbs = items && items.length ? fundPremiumMaxAbs(items) : 1;
+      var detailItem = fundPremiumState.detailSymbol ? getFundPremiumDetailItem(fundPremiumState.detailSymbol) : null;
+      var modalHtml = detailItem ? renderFundPremiumDetailModal(detailItem) : "";
       var gridHtml = items && items.length
         ? '<div class="sectorHeatGrid fundPremiumGrid">' + items.map(function (item) { return fundPremiumTileHTML(item, maxAbs); }).join("") + '</div>'
         : '<div class="starPanelEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u8bfb\u53d6\u573a\u5185\u57fa\u91d1\u6700\u65b0\u4ef7\u683c\u548c\u6298\u6ea2\u4ef7\u7387\u3002<br />\u8be5\u9762\u677f\u6682\u65f6\u4e0d\u63a5 KV\uff0c\u57fa\u91d1\u5217\u8868\u5728\u4ee3\u7801\u4e2d\u56fa\u5b9a\u3002</div>';
@@ -1436,6 +1580,7 @@ export function getClientScript() {
             '<div class="starPanelMetaText">' + esc(latestText) + '</div>',
           '</div>',
           gridHtml,
+          modalHtml,
         '</div>'
       ].join("");
     }
@@ -1550,9 +1695,12 @@ export function getClientScript() {
       var glow = fundPremiumTint(premiumValue, 0.16 + intensity * 0.24);
       var tone = fundPremiumToneClass(premiumValue);
       var premiumClass = fundPremiumRateClass(item.premiumPct);
+      var isLofDetail = String(item && item.code || "") === "161128";
+      var detailAttr = isLofDetail ? ' data-fund-lof-detail="1" aria-label="161128 \u957f\u6309 3 \u79d2\u67e5\u770b\u6298\u6ea2\u4ef7\u8ba1\u7b97\u8be6\u60c5"' : "";
+      var detailHint = isLofDetail ? '<div class="fundPremiumHoldHint">\u957f\u6309 3 \u79d2\u67e5\u770b\u8ba1\u7b97\u8be6\u60c5</div>' : "";
 
       return [
-        '<article class="sectorHeatTile fundPremiumTile ' + tone + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
+        '<article class="sectorHeatTile fundPremiumTile ' + tone + '" data-symbol="' + esc(item.symbol) + '"' + detailAttr + ' style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
           '<div class="sectorHeatHeader">',
             '<div class="starIdentity">',
               '<div class="starIconWrap fundIconWrap">',
@@ -1576,6 +1724,7 @@ export function getClientScript() {
             '</div>',
           '</div>',
           '<div class="sectorHeatLatest">' + esc(fundTradeDateText(item.tradeDate)) + '</div>',
+          detailHint,
         '</article>'
       ].join("");
     }
@@ -2395,6 +2544,50 @@ export function getClientScript() {
           });
       });
     }
+
+    function clearFundPremiumLongPress() {
+      if (fundPremiumLongPressTimer) {
+        clearTimeout(fundPremiumLongPressTimer);
+        fundPremiumLongPressTimer = null;
+      }
+    }
+
+    var fundPremiumPanel = $("fundPremiumPanel");
+    if (fundPremiumPanel) {
+      fundPremiumPanel.addEventListener("pointerdown", function (e) {
+        var tile = e.target && e.target.closest ? e.target.closest('[data-fund-lof-detail="1"]') : null;
+        if (!tile) return;
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+
+        clearFundPremiumLongPress();
+        var symbol = tile.getAttribute("data-symbol");
+        fundPremiumLongPressTimer = setTimeout(function () {
+          fundPremiumLongPressTimer = null;
+          openFundPremiumDetail(symbol);
+        }, 3000);
+      });
+
+      ["pointerup", "pointercancel", "pointerleave"].forEach(function (type) {
+        fundPremiumPanel.addEventListener(type, clearFundPremiumLongPress);
+      });
+
+      fundPremiumPanel.addEventListener("contextmenu", function (e) {
+        var tile = e.target && e.target.closest ? e.target.closest('[data-fund-lof-detail="1"]') : null;
+        if (tile) e.preventDefault();
+      });
+
+      fundPremiumPanel.addEventListener("click", function (e) {
+        var closeBtn = e.target && e.target.closest ? e.target.closest('button[data-fund-calc-close="button"]') : null;
+        var closeOverlay = e.target && e.target.matches ? e.target.matches('[data-fund-calc-close="overlay"]') : false;
+        if (closeBtn || closeOverlay) {
+          closeFundPremiumDetail();
+        }
+      });
+    }
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeFundPremiumDetail();
+    });
 
     var sp500SectorPanel = $("sp500SectorPanel");
     if (sp500SectorPanel) {

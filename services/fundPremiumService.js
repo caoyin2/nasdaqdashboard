@@ -15,7 +15,7 @@
  * - 31: price change
  * - 32: price change percent
  * - 77: premium/discount percent shown by Tencent's fund page
- * - 78: reference NAV, kept for diagnostics only; premium display uses field 77
+ * - 78: reference NAV, kept for diagnostics only
  */
 
 import { FUND_PREMIUM_FUNDS, INDEXES } from "../config.js";
@@ -144,10 +144,17 @@ async function fetchSp500TechDailyContext(navDate, tradeDate) {
 
   return {
     symbol: SP500_TECH_INDEX_SYMBOL,
+    tickerId: index.tickerId,
+    period: "1Y",
+    source: "SeekingAlpha lua_charts",
+    requestedNavDate: navDate,
+    requestedTradeDate: tradeDate,
     navDate: navPoint.date,
     navClose: navPoint.row.close,
+    navTime: navPoint.row.t,
     tradeDate: tradePoint.date,
     tradeClose: tradePoint.row.close,
+    tradeTime: tradePoint.row.t,
     changePct: (tradePoint.row.close / navPoint.row.close - 1) * 100,
   };
 }
@@ -194,6 +201,11 @@ async function fetchUsdCnyContext(navDate, tradeDate) {
   }
 
   return {
+    source: "ChinaMoney USD/CNY central parity",
+    requestUrl: url.toString(),
+    requestedStartDate: startDate,
+    requestedNavDate: navDate,
+    requestedTradeDate: tradeDate,
     navDate: navRate.date,
     navRate: navRate.row.rate,
     tradeDate: tradeRate.date,
@@ -237,9 +249,12 @@ async function buildLofPremiumContext(fund, fields) {
   // USD/CNY central parity changes before calculating the displayed premium.
   const tradePrice = toFiniteNumber(fields[3]);
   const tradeDate = parseTencentBeijingDateKey(fields[30]);
+  const quoteTime = parseTencentBeijingTime(fields[30]);
   const baseInfo = await fetchLofBaseInfo(fund.marketSymbol);
   const publishedNav = toFiniteNumber(baseInfo?.info?.dwjz) ?? toFiniteNumber(baseInfo?.data?.jjdwjz) ?? toFiniteNumber(fields[81]);
   const publishedNavDate = normalizeDateKey(baseInfo?.info?.jzrq);
+  const tencentPremiumPct = toFiniteNumber(fields[77]);
+  const tencentReferenceNav = toFiniteNumber(fields[78]);
 
   if (!Number.isFinite(tradePrice) || !tradeDate || !Number.isFinite(publishedNav) || !publishedNavDate) {
     throw new Error(`LOF premium input incomplete for ${fund.marketSymbol}`);
@@ -250,7 +265,9 @@ async function buildLofPremiumContext(fund, fields) {
     fetchUsdCnyContext(publishedNavDate, tradeDate),
   ]);
 
-  const estimatedNav = publishedNav * (index.tradeClose / index.navClose) * (fx.tradeRate / fx.navRate);
+  const indexMultiplier = index.tradeClose / index.navClose;
+  const fxMultiplier = fx.tradeRate / fx.navRate;
+  const estimatedNav = publishedNav * indexMultiplier * fxMultiplier;
   const premiumPct = Number.isFinite(estimatedNav) && estimatedNav !== 0
     ? (tradePrice / estimatedNav - 1) * 100
     : null;
@@ -260,12 +277,43 @@ async function buildLofPremiumContext(fund, fields) {
   }
 
   return {
+    generatedAt: new Date().toISOString(),
     tradeDate,
+    quoteTime,
     tradePrice,
     publishedNav,
     publishedNavDate,
+    tencentPremiumPct,
+    tencentReferenceNav,
+    indexMultiplier,
+    fxMultiplier,
     estimatedNav,
     premiumPct,
+    formula: {
+      estimatedNav: "publishedNav * (indexTradeClose / indexNavClose) * (fxTradeRate / fxNavRate)",
+      premiumPct: "(tradePrice / estimatedNav - 1) * 100",
+    },
+    quoteSource: {
+      provider: "Tencent Finance qt.gtimg.cn",
+      url: `${TENCENT_QT_URL}?q=${fund.marketSymbol}`,
+      marketSymbol: fund.marketSymbol,
+      rawTimestamp: fields[30] || null,
+      fieldIndexes: {
+        tradePrice: 3,
+        previousClose: 4,
+        quoteTimestamp: 30,
+        change: 31,
+        changePct: 32,
+        tencentPremiumPct: 77,
+        tencentReferenceNav: 78,
+      },
+    },
+    navSource: {
+      provider: "Tencent Finance getPriceZone",
+      url: `${TENCENT_FUND_PRICE_ZONE_URL}?symbol=${fund.marketSymbol}`,
+      navPath: "info.dwjz",
+      navDatePath: "info.jzrq",
+    },
     index,
     fx,
   };
