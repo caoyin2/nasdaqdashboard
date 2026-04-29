@@ -2139,7 +2139,12 @@ export function getClientScript() {
     async function refreshStarListAndPanel() {
       starListState.items = await fetchStarTechList();
       starsState.cache.clear();
+      if (starForwardPeState.fetchCtrl) {
+        starForwardPeState.fetchCtrl.abort();
+      }
       starForwardPeState.map.clear();
+      starForwardPeState.fetchCtrl = null;
+      starForwardPeState.loading = false;
       starForwardPeState.loaded = false;
       await loadStarPeriod(starsState.period, { force: true });
     }
