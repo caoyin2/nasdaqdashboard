@@ -1619,6 +1619,7 @@ export function getClientScript() {
       var border = sectorTint(item, 0.26 + intensity * 0.30);
       var glow = sectorTint(item, 0.16 + intensity * 0.24);
       var tone = starToneClass(item);
+      var hasForwardPe = Number.isFinite(item && item.peRatioFwd);
       var hasSparkline = !!(item && item.showSparkline && item.period !== "1D" && getSparklineValues(item).length > 1);
       var mainHtml = hasSparkline
         ? [
@@ -1639,6 +1640,9 @@ export function getClientScript() {
       var footerHtml = hasSparkline
         ? ""
         : '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>';
+      var extraHtml = hasForwardPe
+        ? '<div class="sectorHeatExtra"><span>\u524d\u77bbPE</span><strong>' + fmtPeRatio(item.peRatioFwd) + '</strong></div>'
+        : "";
 
       return [
         '<article class="sectorHeatTile ' + tone + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
@@ -1659,6 +1663,7 @@ export function getClientScript() {
             '<span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>',
             metaRightHtml,
           '</div>',
+          extraHtml,
           footerHtml,
         '</article>'
       ].join("");

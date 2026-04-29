@@ -1473,6 +1473,23 @@ export function getStyles() {
       white-space: nowrap;
     }
 
+    .sectorHeatExtra{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(200,214,236,.88);
+    }
+
+    .sectorHeatExtra strong{
+      color: rgba(244,247,252,.96);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+
     .fundPremiumMeta{
       align-items:flex-start;
     }
