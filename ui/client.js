@@ -308,7 +308,8 @@ export function getClientScript() {
       map: new Map(),
       fetchCtrl: null,
       loading: false,
-      loaded: false
+      loaded: false,
+      attempted: false
     };
     var starListState = {
       open: false,
@@ -2076,9 +2077,11 @@ export function getClientScript() {
 
     function ensureStarForwardPe(options) {
       var opts = options || {};
-      if (!opts.force && (starForwardPeState.loaded || starForwardPeState.loading)) {
+      if (!opts.force && (starForwardPeState.attempted || starForwardPeState.loading)) {
         return;
       }
+
+      starForwardPeState.attempted = true;
 
       fetchStarForwardPe()
         .then(function (payload) {
@@ -2139,13 +2142,6 @@ export function getClientScript() {
     async function refreshStarListAndPanel() {
       starListState.items = await fetchStarTechList();
       starsState.cache.clear();
-      if (starForwardPeState.fetchCtrl) {
-        starForwardPeState.fetchCtrl.abort();
-      }
-      starForwardPeState.map.clear();
-      starForwardPeState.fetchCtrl = null;
-      starForwardPeState.loading = false;
-      starForwardPeState.loaded = false;
       await loadStarPeriod(starsState.period, { force: true });
     }
 
@@ -2336,6 +2332,7 @@ export function getClientScript() {
       starForwardPeState.fetchCtrl = null;
       starForwardPeState.loading = false;
       starForwardPeState.loaded = false;
+      starForwardPeState.attempted = false;
       sectorsState.cache.clear();
       weightsState.cache.clear();
       fundPremiumState.cache = null;
