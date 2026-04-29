@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "99b2066",
-  fullSha: "99b20666a771e5e86a03f37b1b0e5321ec8f1a29",
-  message: "feat: show forward pe on star cards",
-  committedAt: "2026-04-29 14:20:44",
+  shortSha: "1e38c00",
+  fullSha: "1e38c005a19a258b05ddf7c5c4fcc3793987df89",
+  message: "fix: render star forward pe",
+  committedAt: "2026-04-29 14:31:51",
 };
