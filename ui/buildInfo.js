@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "cbce0aa",
-  fullSha: "cbce0aa535600c3f56d643625b6c811e5953c9ab",
-  message: "fix: decouple star tech forward pe loading",
-  committedAt: "2026-04-29 15:01:38",
+  shortSha: "2074295",
+  fullSha: "207429599c0ee973809d42e8d88f40839145d023",
+  message: "fix: reset star pe fetch on list refresh",
+  committedAt: "2026-04-29 15:05:25",
 };
