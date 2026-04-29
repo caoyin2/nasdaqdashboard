@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "ea1995b",
-  fullSha: "ea1995b1758ddb6b0989afac74815242a52f7f76",
-  message: "fix: restore star forward pe data",
-  committedAt: "2026-04-29 15:42:44",
+  shortSha: "7240d1b",
+  fullSha: "7240d1b46ef63a61f6bd43d2e2b8b789123e59e8",
+  message: "fix: align star pe and latest time",
+  committedAt: "2026-04-29 16:25:11",
 };
