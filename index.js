@@ -18,7 +18,7 @@ import { probeSeekingAlphaSlugs } from "./services/seekingAlpha.js";
 import { getSearchMeta, refreshSearchMeta } from "./services/searchMetaStore.js";
 import { buildSp500SectorPayload } from "./services/sp500SectorService.js";
 import { addStarTechCompany, getStarTechCompanyList, removeStarTechCompany } from "./services/starTechListStore.js";
-import { buildStarTechPayload } from "./services/starTechService.js";
+import { buildStarForwardPePayload, buildStarTechPayload } from "./services/starTechService.js";
 import { getClientScript } from "./ui/client.js";
 import { getHtml } from "./ui/html.js";
 
@@ -293,6 +293,20 @@ export default {
       try {
         const period = normalizePeriod(url.searchParams.get("p"));
         const payload = await buildStarTechPayload(period, env);
+        return jsonResponse(payload, origin, 200, { cacheSeconds: 0 });
+      } catch (error) {
+        return jsonResponse(
+          { ok: false, error: error?.message || String(error) },
+          origin,
+          502,
+          { cacheSeconds: 0 }
+        );
+      }
+    }
+
+    if (url.pathname === "/api/star-tech-forward-pe") {
+      try {
+        const payload = await buildStarForwardPePayload(env);
         return jsonResponse(payload, origin, 200, { cacheSeconds: 0 });
       } catch (error) {
         return jsonResponse(

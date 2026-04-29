@@ -27,6 +27,7 @@ import { getSearchMetaBatch, refreshSearchMeta } from "./searchMetaStore.js";
 import { getStarTechCompanyList } from "./starTechListStore.js";
 
 const FORWARD_PE_BATCH_SIZE = 6;
+const FORWARD_PE_TIMEOUT_MS = 4500;
 
 function maxLatestTime(items) {
   const values = (items || [])
@@ -44,7 +45,19 @@ function buildSparklineSeries(bars) {
   return values.length > 1 ? values : null;
 }
 
-function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars, fundamentals) {
+function withTimeout(promise, timeoutMs, fallbackValue) {
+  let timer = null;
+  return Promise.race([
+    promise.finally(() => {
+      if (timer) clearTimeout(timer);
+    }),
+    new Promise((resolve) => {
+      timer = setTimeout(() => resolve(fallbackValue), timeoutMs);
+    }),
+  ]);
+}
+
+function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars) {
   const last1DBar = getLastBar(bars1D);
   const latestClose = last1DBar?.close;
   const latestT = last1DBar?.t;
@@ -90,12 +103,12 @@ function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars, fu
     baseClose,
     change: Number.isFinite(change) ? change : null,
     changePct: Number.isFinite(changePct) ? changePct : null,
-    peRatioFwd: Number.isFinite(fundamentals?.peRatioFwd) ? fundamentals.peRatioFwd : null,
+    peRatioFwd: null,
     sparkline: buildSparklineSeries(sparklineBars),
   };
 }
 
-function buildStarCardFromRealTimeQuote(company, meta, quote, fundamentals) {
+function buildStarCardFromRealTimeQuote(company, meta, quote) {
   const lastClose = Number.isFinite(+quote?.last) ? +quote.last : Number.isFinite(+quote?.close) ? +quote.close : null;
   const baseClose = Number.isFinite(+quote?.prev_close) ? +quote.prev_close : null;
   const latestT = parseTimeKeyToUTCms(quote?.last_time);
@@ -118,7 +131,7 @@ function buildStarCardFromRealTimeQuote(company, meta, quote, fundamentals) {
     baseClose,
     change: Number.isFinite(change) ? change : null,
     changePct: Number.isFinite(changePct) ? changePct : null,
-    peRatioFwd: Number.isFinite(fundamentals?.peRatioFwd) ? fundamentals.peRatioFwd : null,
+    peRatioFwd: null,
     sparkline: null,
   };
 }
@@ -154,6 +167,37 @@ async function buildForwardPeMap(companies, metaMap) {
   return results;
 }
 
+async function buildForwardPeMapBestEffort(companies, metaMap) {
+  try {
+    return await withTimeout(buildForwardPeMap(companies, metaMap), FORWARD_PE_TIMEOUT_MS, new Map());
+  } catch (error) {
+    console.error("Star-tech forward PE map build failed:", error);
+    return new Map();
+  }
+}
+
+export async function buildStarForwardPePayload(env) {
+  const companies = await getStarTechCompanyList(env);
+  const metaMap = await getSearchMetaBatch(
+    companies.map((company) => company.symbol),
+    env,
+    { allowFetch: true }
+  );
+  const forwardPeMap = await buildForwardPeMapBestEffort(companies, metaMap);
+
+  return {
+    ok: true,
+    updatedAt: new Date().toISOString(),
+    items: companies.map((company) => {
+      const fundamentals = forwardPeMap.get(company.symbol);
+      return {
+        symbol: company.symbol,
+        peRatioFwd: Number.isFinite(fundamentals?.peRatioFwd) ? fundamentals.peRatioFwd : null,
+      };
+    }),
+  };
+}
+
 export async function buildStarTechPayload(period, env) {
   const companies = await getStarTechCompanyList(env);
 
@@ -162,7 +206,6 @@ export async function buildStarTechPayload(period, env) {
     env,
     { allowFetch: true }
   );
-  const forwardPeMap = await buildForwardPeMap(companies, metaMap);
 
   if (period === "1D") {
     const missingMetaSymbols = companies
@@ -190,7 +233,7 @@ export async function buildStarTechPayload(period, env) {
         throw new Error(`Missing real-time quote for ${company.symbol}`);
       }
 
-      return buildStarCardFromRealTimeQuote(company, meta, quote, forwardPeMap.get(company.symbol));
+      return buildStarCardFromRealTimeQuote(company, meta, quote);
     });
 
     if (items.length !== companies.length) {
@@ -205,12 +248,11 @@ export async function buildStarTechPayload(period, env) {
     };
   }
 
-    async function buildCardWithMeta(company, meta) {
-      if (!meta?.tickerId) {
-        throw new Error(`Missing tickerId for ${company.symbol}`);
-      }
+  async function buildCardWithMeta(company, meta) {
+    if (!meta?.tickerId) {
+      throw new Error(`Missing tickerId for ${company.symbol}`);
+    }
 
-    const needYTDFor1D = period === "1D";
     const oneDayPromise = fetchSeekingAlphaPeriod("1D", meta.tickerId);
     const periodPromise = period === "1D"
       ? oneDayPromise
@@ -219,7 +261,7 @@ export async function buildStarTechPayload(period, env) {
     const [oneDayRaw, periodRaw, ytdRaw] = await Promise.all([
       oneDayPromise,
       periodPromise,
-      needYTDFor1D ? fetchSeekingAlphaPeriod("YTD", meta.tickerId) : Promise.resolve(null),
+      Promise.resolve(null),
     ]);
 
     const bars1D = parseBarsFromAttributes(oneDayRaw?.attributes);
@@ -230,7 +272,7 @@ export async function buildStarTechPayload(period, env) {
       throw new Error(`No bars for ${company.symbol} ${period}`);
     }
 
-    return buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars, forwardPeMap.get(company.symbol));
+    return buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars);
   }
 
   const jobFactories = companies.map((company) => async () => {

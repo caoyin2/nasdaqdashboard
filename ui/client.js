@@ -304,6 +304,12 @@ export function getClientScript() {
       touched: false,
       mobileVisible: false
     };
+    var starForwardPeState = {
+      map: new Map(),
+      fetchCtrl: null,
+      loading: false,
+      loaded: false
+    };
     var starListState = {
       open: false,
       items: [],
@@ -1284,7 +1290,10 @@ export function getClientScript() {
       var periodScrollLeft = captureScrollLeft(root, "#starPeriodSeg");
       var periodLabel = PERIOD_LABELS[starsState.period] || starsState.period;
       var cached = starsState.cache.get(starsState.period);
-      var items = cached && cached.items ? sortStarItems(cached.items).map(function (item) {
+      var items = cached && cached.items ? sortStarItems(cached.items.map(function (item) {
+        var peRatioFwd = starForwardPeState.map.get(String(item.symbol || "").toUpperCase());
+        return Number.isFinite(peRatioFwd) ? Object.assign({}, item, { peRatioFwd: peRatioFwd }) : item;
+      })).map(function (item) {
         return Object.assign({}, item, { showSparkline: true, referenceLatestT: cached.asOfMs });
       }) : null;
       var latestText = latestDataText(cached && cached.asOfMs);
@@ -1641,7 +1650,7 @@ export function getClientScript() {
         ? ""
         : '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>';
       var extraHtml = hasForwardPe
-        ? '<div class="sectorHeatExtra"><span>\u524d\u77bbPE</span><strong>' + fmtPeRatio(item.peRatioFwd) + '</strong></div>'
+        ? '<div class="sectorHeatExtra">\u524d\u77bbPE: ' + fmtPeRatio(item.peRatioFwd) + '</div>'
         : "";
 
       return [
@@ -1997,6 +2006,7 @@ export function getClientScript() {
         starsState.statusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u6570\u636e";
         starsState.statusType = "ok";
         renderStarPanel();
+        ensureStarForwardPe();
         startStarAutoRefresh();
         return;
       }
@@ -2012,6 +2022,7 @@ export function getClientScript() {
         starsState.statusText = "\u5df2\u7f13\u5b58\u5f53\u524d\u5468\u671f\u6570\u636e";
         starsState.statusType = "ok";
         renderStarPanel();
+        ensureStarForwardPe();
       } catch (error) {
         console.error("star tech load failed:", error);
         starsState.statusText = error && error.message ? error.message : "\u660e\u661f\u79d1\u6280\u516c\u53f8\u9762\u677f\u52a0\u8f7d\u5931\u8d25";
@@ -2020,6 +2031,73 @@ export function getClientScript() {
       }
 
       startStarAutoRefresh();
+    }
+
+    async function fetchStarForwardPe() {
+      if (starForwardPeState.fetchCtrl) {
+        starForwardPeState.fetchCtrl.abort();
+      }
+
+      var controller = new AbortController();
+      var timedOut = false;
+      starForwardPeState.fetchCtrl = controller;
+      starForwardPeState.loading = true;
+
+      var timer = setTimeout(function () {
+        timedOut = true;
+        controller.abort();
+      }, API_TIMEOUT_MS);
+
+      try {
+        var res = await fetch("/api/star-tech-forward-pe", {
+          cache: "no-store",
+          signal: controller.signal
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        var payload = await res.json();
+        if (!payload.ok) throw new Error(payload.error || "Star tech PE API error");
+        return payload;
+      } catch (error) {
+        if (controller.signal.aborted && !timedOut) {
+          return null;
+        }
+        if (timedOut) {
+          throw new Error("\u660e\u661f\u79d1\u6280\u516c\u53f8\u524d\u77bbPE\u8bf7\u6c42\u8d85\u65f6\uff0815\u79d2\uff09");
+        }
+        throw error;
+      } finally {
+        clearTimeout(timer);
+        starForwardPeState.loading = false;
+        if (starForwardPeState.fetchCtrl === controller) {
+          starForwardPeState.fetchCtrl = null;
+        }
+      }
+    }
+
+    function ensureStarForwardPe(options) {
+      var opts = options || {};
+      if (!opts.force && (starForwardPeState.loaded || starForwardPeState.loading)) {
+        return;
+      }
+
+      fetchStarForwardPe()
+        .then(function (payload) {
+          if (!payload) return;
+          var nextMap = new Map();
+          (payload.items || []).forEach(function (item) {
+            var symbol = String(item && item.symbol || "").trim().toUpperCase();
+            if (!symbol) return;
+            if (Number.isFinite(item.peRatioFwd)) {
+              nextMap.set(symbol, item.peRatioFwd);
+            }
+          });
+          starForwardPeState.map = nextMap;
+          starForwardPeState.loaded = true;
+          renderStarPanel();
+        })
+        .catch(function (error) {
+          console.error("star tech forward PE load failed:", error);
+        });
     }
 
     async function fetchStarTechList() {
@@ -2061,6 +2139,8 @@ export function getClientScript() {
     async function refreshStarListAndPanel() {
       starListState.items = await fetchStarTechList();
       starsState.cache.clear();
+      starForwardPeState.map.clear();
+      starForwardPeState.loaded = false;
       await loadStarPeriod(starsState.period, { force: true });
     }
 
@@ -2244,6 +2324,13 @@ export function getClientScript() {
       periodCache.clear();
       fearGreedCache = null;
       starsState.cache.clear();
+      if (starForwardPeState.fetchCtrl) {
+        starForwardPeState.fetchCtrl.abort();
+      }
+      starForwardPeState.map.clear();
+      starForwardPeState.fetchCtrl = null;
+      starForwardPeState.loading = false;
+      starForwardPeState.loaded = false;
       sectorsState.cache.clear();
       weightsState.cache.clear();
       fundPremiumState.cache = null;
