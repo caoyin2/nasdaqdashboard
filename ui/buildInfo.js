@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "2074295",
-  fullSha: "207429599c0ee973809d42e8d88f40839145d023",
-  message: "fix: reset star pe fetch on list refresh",
-  committedAt: "2026-04-29 15:05:25",
+  shortSha: "1f4eab8",
+  fullSha: "1f4eab866a0d04b44cfbc108b2a45f8b926441af",
+  message: "fix: fetch star forward pe only once per session",
+  committedAt: "2026-04-29 15:18:55",
 };
