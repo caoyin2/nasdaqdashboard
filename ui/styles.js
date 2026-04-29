@@ -1474,9 +1474,9 @@ export function getStyles() {
     }
 
     .sectorHeatExtra{
-      display:flex;
+      display:grid;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items:center;
-      justify-content:space-between;
       gap: 12px;
       min-width: 0;
       font-family: var(--mono);
@@ -1485,12 +1485,11 @@ export function getStyles() {
     }
 
     .sectorHeatExtraLabel{
-      flex: 0 0 auto;
+      line-height: 1.2;
       white-space: nowrap;
     }
 
     .sectorHeatExtraLatest{
-      margin-left: auto;
       min-width: 0;
       font-size: 11px;
       line-height: 1.2;
