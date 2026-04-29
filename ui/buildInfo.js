@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "68f87af",
-  fullSha: "68f87af9c4b73ac6c00f310710f3ec7f1e7f0410",
-  message: "fix: show fund prices with three decimals",
-  committedAt: "2026-04-16 14:35:52",
+  shortSha: "99b2066",
+  fullSha: "99b20666a771e5e86a03f37b1b0e5321ec8f1a29",
+  message: "feat: show forward pe on star cards",
+  committedAt: "2026-04-29 14:20:44",
 };
