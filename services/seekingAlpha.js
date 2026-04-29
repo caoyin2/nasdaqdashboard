@@ -55,6 +55,30 @@ function normalizeSlugs(saSlugs) {
   );
 }
 
+const SYMBOL_DATA_FIELDS = ["peRatioFwd", "lastClosePriceEarningsRatio"];
+const SYMBOL_DATA_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const SYMBOL_DATA_MEM_CACHE =
+  globalThis.__SA_SYMBOL_DATA_MEM_CACHE__ ?? (globalThis.__SA_SYMBOL_DATA_MEM_CACHE__ = new Map());
+
+function normalizeSlug(slug) {
+  return String(slug || "").trim().toLowerCase();
+}
+
+function getFreshSymbolDataCache(slug) {
+  const key = normalizeSlug(slug);
+  const cached = SYMBOL_DATA_MEM_CACHE.get(key) || null;
+  if (!cached) return null;
+  if (Date.now() - cached.savedAt > SYMBOL_DATA_CACHE_TTL_MS) return null;
+  return cached.value || null;
+}
+
+function setSymbolDataCache(slug, value) {
+  SYMBOL_DATA_MEM_CACHE.set(normalizeSlug(slug), {
+    savedAt: Date.now(),
+    value,
+  });
+}
+
 async function runSlugAttempt(query, label) {
   const slugs = normalizeSlugs(query);
   const url = `https://finance-api.seekingalpha.com/real_time_quotes?sa_slugs=${encodeURIComponent(slugs.join(","))}`;
@@ -168,6 +192,51 @@ export async function fetchSeekingAlphaRealTimeQuotesBySlugs(saSlugs) {
 
   const json = await res.json();
   return Array.isArray(json?.real_time_quotes) ? json.real_time_quotes : [];
+}
+
+export async function fetchSeekingAlphaSymbolDataBySlug(saSlug) {
+  const slug = normalizeSlug(saSlug);
+  if (!slug) return null;
+
+  const fresh = getFreshSymbolDataCache(slug);
+  if (fresh) return fresh;
+
+  const url = new URL("https://seekingalpha.com/api/v3/symbol_data");
+  for (const field of SYMBOL_DATA_FIELDS) {
+    url.searchParams.append("fields[]", field);
+  }
+  url.searchParams.set("slugs", slug);
+
+  try {
+    const res = await fetchWithTimeout(url.toString(), `SeekingAlpha symbol_data ${slug}`, {
+      headers: buildChartHeaders(),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status} ${text.slice(0, 120)}`);
+    }
+
+    const json = await res.json();
+    const item = Array.isArray(json?.data) ? json.data[0] : null;
+    const attrs = item?.attributes || {};
+    const value = {
+      slug,
+      tickerId: Number.isFinite(+item?.tickerId) ? +item.tickerId : null,
+      peRatioFwd: Number.isFinite(+attrs?.peRatioFwd) ? +attrs.peRatioFwd : null,
+      lastClosePriceEarningsRatio: Number.isFinite(+attrs?.lastClosePriceEarningsRatio)
+        ? +attrs.lastClosePriceEarningsRatio
+        : null,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setSymbolDataCache(slug, value);
+    return value;
+  } catch (error) {
+    const stale = SYMBOL_DATA_MEM_CACHE.get(slug)?.value || null;
+    if (stale) return stale;
+    throw error;
+  }
 }
 
 export async function probeSeekingAlphaSlugs(query, options = {}) {

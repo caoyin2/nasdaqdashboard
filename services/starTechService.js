@@ -18,9 +18,15 @@ import {
   pickFirstCloseFromBars,
   pickPrevCloseSmart,
 } from "../lib/time.js";
-import { fetchSeekingAlphaPeriod, fetchSeekingAlphaRealTimeQuotes } from "./seekingAlpha.js";
+import {
+  fetchSeekingAlphaPeriod,
+  fetchSeekingAlphaRealTimeQuotes,
+  fetchSeekingAlphaSymbolDataBySlug,
+} from "./seekingAlpha.js";
 import { getSearchMetaBatch, refreshSearchMeta } from "./searchMetaStore.js";
 import { getStarTechCompanyList } from "./starTechListStore.js";
+
+const FORWARD_PE_BATCH_SIZE = 6;
 
 function maxLatestTime(items) {
   const values = (items || [])
@@ -38,7 +44,7 @@ function buildSparklineSeries(bars) {
   return values.length > 1 ? values : null;
 }
 
-function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars) {
+function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars, fundamentals) {
   const last1DBar = getLastBar(bars1D);
   const latestClose = last1DBar?.close;
   const latestT = last1DBar?.t;
@@ -84,11 +90,12 @@ function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars) {
     baseClose,
     change: Number.isFinite(change) ? change : null,
     changePct: Number.isFinite(changePct) ? changePct : null,
+    peRatioFwd: Number.isFinite(fundamentals?.peRatioFwd) ? fundamentals.peRatioFwd : null,
     sparkline: buildSparklineSeries(sparklineBars),
   };
 }
 
-function buildStarCardFromRealTimeQuote(company, meta, quote) {
+function buildStarCardFromRealTimeQuote(company, meta, quote, fundamentals) {
   const lastClose = Number.isFinite(+quote?.last) ? +quote.last : Number.isFinite(+quote?.close) ? +quote.close : null;
   const baseClose = Number.isFinite(+quote?.prev_close) ? +quote.prev_close : null;
   const latestT = parseTimeKeyToUTCms(quote?.last_time);
@@ -111,8 +118,40 @@ function buildStarCardFromRealTimeQuote(company, meta, quote) {
     baseClose,
     change: Number.isFinite(change) ? change : null,
     changePct: Number.isFinite(changePct) ? changePct : null,
+    peRatioFwd: Number.isFinite(fundamentals?.peRatioFwd) ? fundamentals.peRatioFwd : null,
     sparkline: null,
   };
+}
+
+async function buildForwardPeMap(companies, metaMap) {
+  const results = new Map();
+
+  for (let i = 0; i < companies.length; i += FORWARD_PE_BATCH_SIZE) {
+    const batch = companies.slice(i, i + FORWARD_PE_BATCH_SIZE);
+    const batchResults = await Promise.all(
+      batch.map(async (company) => {
+        const meta = metaMap.get(company.symbol);
+        const slug = String(meta?.slug || company.symbol).trim().toLowerCase();
+        if (!slug) return null;
+
+        try {
+          const data = await fetchSeekingAlphaSymbolDataBySlug(slug);
+          return data ? { symbol: company.symbol, data } : null;
+        } catch (error) {
+          console.error(`Star-tech forward PE fetch failed for ${company.symbol}:`, error);
+          return null;
+        }
+      })
+    );
+
+    for (const entry of batchResults) {
+      if (entry?.data) {
+        results.set(entry.symbol, entry.data);
+      }
+    }
+  }
+
+  return results;
 }
 
 export async function buildStarTechPayload(period, env) {
@@ -123,6 +162,7 @@ export async function buildStarTechPayload(period, env) {
     env,
     { allowFetch: true }
   );
+  const forwardPeMap = await buildForwardPeMap(companies, metaMap);
 
   if (period === "1D") {
     const missingMetaSymbols = companies
@@ -150,7 +190,7 @@ export async function buildStarTechPayload(period, env) {
         throw new Error(`Missing real-time quote for ${company.symbol}`);
       }
 
-      return buildStarCardFromRealTimeQuote(company, meta, quote);
+      return buildStarCardFromRealTimeQuote(company, meta, quote, forwardPeMap.get(company.symbol));
     });
 
     if (items.length !== companies.length) {
@@ -165,10 +205,10 @@ export async function buildStarTechPayload(period, env) {
     };
   }
 
-  async function buildCardWithMeta(company, meta) {
-    if (!meta?.tickerId) {
-      throw new Error(`Missing tickerId for ${company.symbol}`);
-    }
+    async function buildCardWithMeta(company, meta) {
+      if (!meta?.tickerId) {
+        throw new Error(`Missing tickerId for ${company.symbol}`);
+      }
 
     const needYTDFor1D = period === "1D";
     const oneDayPromise = fetchSeekingAlphaPeriod("1D", meta.tickerId);
@@ -190,7 +230,7 @@ export async function buildStarTechPayload(period, env) {
       throw new Error(`No bars for ${company.symbol} ${period}`);
     }
 
-    return buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars);
+    return buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars, forwardPeMap.get(company.symbol));
   }
 
   const jobFactories = companies.map((company) => async () => {

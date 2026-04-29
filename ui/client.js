@@ -59,6 +59,10 @@ export function getClientScript() {
     return Number.isFinite(n) ? ((n >= 0 ? "+" : "") + n.toFixed(3)) : "--";
   }
 
+  function fmtPeRatio(n) {
+    return Number.isFinite(n) ? n.toFixed(2) : "--";
+  }
+
   function clamp(n, min, max) {
     return Math.max(min, Math.min(max, n));
   }
@@ -1264,6 +1268,7 @@ export function getClientScript() {
             '<div class="starMetrics">',
               '<div>\u57fa\u51c6</div><div>' + fmtPrice(item.baseClose) + '</div>',
               '<div>\u6da8\u8dcc</div><div><strong>' + signPrice(item.change) + '</strong></div>',
+              '<div>\u524d\u77bbPE</div><div>' + fmtPeRatio(item.peRatioFwd) + '</div>',
             '</div>',
             '<div class="starCardLatest' + cardLatestTimeClass(item.latestT, item.referenceLatestT) + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>',
           '</div>',
