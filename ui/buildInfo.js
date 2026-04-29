@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "1e38c00",
-  fullSha: "1e38c005a19a258b05ddf7c5c4fcc3793987df89",
-  message: "fix: render star forward pe",
-  committedAt: "2026-04-29 14:31:51",
+  shortSha: "cbce0aa",
+  fullSha: "cbce0aa535600c3f56d643625b6c811e5953c9ab",
+  message: "fix: decouple star tech forward pe loading",
+  committedAt: "2026-04-29 15:01:38",
 };
