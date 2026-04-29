@@ -21,13 +21,13 @@ import {
 import {
   fetchSeekingAlphaPeriod,
   fetchSeekingAlphaRealTimeQuotes,
-  fetchSeekingAlphaSymbolDataBySlug,
+  fetchForwardPeBySymbol,
 } from "./seekingAlpha.js";
 import { getSearchMetaBatch, refreshSearchMeta } from "./searchMetaStore.js";
 import { getStarTechCompanyList } from "./starTechListStore.js";
 
-const FORWARD_PE_BATCH_SIZE = 6;
-const FORWARD_PE_TIMEOUT_MS = 4500;
+const FORWARD_PE_BATCH_SIZE = 18;
+const FORWARD_PE_TIMEOUT_MS = 14000;
 
 function maxLatestTime(items) {
   const values = (items || [])
@@ -136,19 +136,15 @@ function buildStarCardFromRealTimeQuote(company, meta, quote) {
   };
 }
 
-async function buildForwardPeMap(companies, metaMap) {
+async function buildForwardPeMap(companies) {
   const results = new Map();
 
   for (let i = 0; i < companies.length; i += FORWARD_PE_BATCH_SIZE) {
     const batch = companies.slice(i, i + FORWARD_PE_BATCH_SIZE);
     const batchResults = await Promise.all(
       batch.map(async (company) => {
-        const meta = metaMap.get(company.symbol);
-        const slug = String(meta?.slug || company.symbol).trim().toLowerCase();
-        if (!slug) return null;
-
         try {
-          const data = await fetchSeekingAlphaSymbolDataBySlug(slug);
+          const data = await fetchForwardPeBySymbol(company.symbol, company.symbol);
           return data ? { symbol: company.symbol, data } : null;
         } catch (error) {
           console.error(`Star-tech forward PE fetch failed for ${company.symbol}:`, error);
@@ -167,9 +163,9 @@ async function buildForwardPeMap(companies, metaMap) {
   return results;
 }
 
-async function buildForwardPeMapBestEffort(companies, metaMap) {
+async function buildForwardPeMapBestEffort(companies) {
   try {
-    return await withTimeout(buildForwardPeMap(companies, metaMap), FORWARD_PE_TIMEOUT_MS, new Map());
+    return await withTimeout(buildForwardPeMap(companies), FORWARD_PE_TIMEOUT_MS, new Map());
   } catch (error) {
     console.error("Star-tech forward PE map build failed:", error);
     return new Map();
@@ -178,12 +174,7 @@ async function buildForwardPeMapBestEffort(companies, metaMap) {
 
 export async function buildStarForwardPePayload(env) {
   const companies = await getStarTechCompanyList(env);
-  const metaMap = await getSearchMetaBatch(
-    companies.map((company) => company.symbol),
-    env,
-    { allowFetch: true }
-  );
-  const forwardPeMap = await buildForwardPeMapBestEffort(companies, metaMap);
+  const forwardPeMap = await buildForwardPeMapBestEffort(companies);
 
   return {
     ok: true,

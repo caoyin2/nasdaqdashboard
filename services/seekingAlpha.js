@@ -59,6 +59,8 @@ const SYMBOL_DATA_FIELDS = ["peRatioFwd", "lastClosePriceEarningsRatio"];
 const SYMBOL_DATA_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const SYMBOL_DATA_MEM_CACHE =
   globalThis.__SA_SYMBOL_DATA_MEM_CACHE__ ?? (globalThis.__SA_SYMBOL_DATA_MEM_CACHE__ = new Map());
+const FORWARD_PE_FALLBACK_CACHE =
+  globalThis.__FORWARD_PE_FALLBACK_CACHE__ ?? (globalThis.__FORWARD_PE_FALLBACK_CACHE__ = new Map());
 
 function normalizeSlug(slug) {
   return String(slug || "").trim().toLowerCase();
@@ -77,6 +79,85 @@ function setSymbolDataCache(slug, value) {
     savedAt: Date.now(),
     value,
   });
+}
+
+function normalizeSymbol(symbol) {
+  return String(symbol || "").trim().toUpperCase();
+}
+
+function getFreshForwardPeFallback(symbol) {
+  const key = normalizeSymbol(symbol);
+  const cached = FORWARD_PE_FALLBACK_CACHE.get(key) || null;
+  if (!cached) return null;
+  if (Date.now() - cached.savedAt > SYMBOL_DATA_CACHE_TTL_MS) return null;
+  return cached.value || null;
+}
+
+function setForwardPeFallback(symbol, value) {
+  FORWARD_PE_FALLBACK_CACHE.set(normalizeSymbol(symbol), {
+    savedAt: Date.now(),
+    value,
+  });
+}
+
+function extractForwardPeFromStockAnalysis(html) {
+  const text = String(html || "")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const patterns = [
+    /forward pe ratio is ([\d.]+)/i,
+    /forward pe ([\d.]+)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match && Number.isFinite(+match[1])) {
+      return +match[1];
+    }
+  }
+
+  return null;
+}
+
+export async function fetchForwardPeFromStockAnalysis(symbol) {
+  const key = normalizeSymbol(symbol);
+  if (!key) return null;
+
+  const fresh = getFreshForwardPeFallback(key);
+  if (fresh) return fresh;
+
+  const url = `https://stockanalysis.com/stocks/${encodeURIComponent(key.toLowerCase())}/statistics/`;
+  const res = await fetchWithTimeout(url, `StockAnalysis forward PE ${key}`, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Referer": "https://stockanalysis.com/",
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`StockAnalysis forward PE ${key} failed: HTTP ${res.status} ${text.slice(0, 120)}`);
+  }
+
+  const html = await res.text();
+  const peRatioFwd = extractForwardPeFromStockAnalysis(html);
+  const value = {
+    symbol: key,
+    peRatioFwd: Number.isFinite(peRatioFwd) ? peRatioFwd : null,
+    source: "stockanalysis",
+    updatedAt: new Date().toISOString(),
+  };
+
+  setForwardPeFallback(key, value);
+  return value;
 }
 
 async function runSlugAttempt(query, label) {
@@ -237,6 +318,11 @@ export async function fetchSeekingAlphaSymbolDataBySlug(saSlug) {
     if (stale) return stale;
     throw error;
   }
+}
+
+export async function fetchForwardPeBySymbol(symbol, saSlug) {
+  const key = normalizeSymbol(symbol);
+  return fetchForwardPeFromStockAnalysis(key);
 }
 
 export async function probeSeekingAlphaSlugs(query, options = {}) {
