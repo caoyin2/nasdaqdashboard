@@ -1474,11 +1474,28 @@ export function getStyles() {
     }
 
     .sectorHeatExtra{
-      display:block;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      min-width: 0;
       font-family: var(--mono);
       font-size: 12px;
       color: rgba(200,214,236,.88);
-      text-align: left;
+    }
+
+    .sectorHeatExtraLabel{
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+
+    .sectorHeatExtraLatest{
+      margin-left: auto;
+      min-width: 0;
+      font-size: 11px;
+      line-height: 1.2;
+      color: rgba(200,214,236,.84);
+      text-align: right;
       white-space: nowrap;
     }
 

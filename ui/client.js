@@ -1642,16 +1642,17 @@ export function getClientScript() {
             '</div>'
           ].join("")
         : '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>';
-      var metaClass = hasSparkline ? 'sectorHeatMeta sectorHeatMetaWithLatest' : 'sectorHeatMeta';
+      var metaClass = hasSparkline && !hasForwardPe ? 'sectorHeatMeta sectorHeatMetaWithLatest' : 'sectorHeatMeta';
       var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT);
+      var latestTimeInlineHtml = '<span class="sectorHeatExtraLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</span>';
       var metaRightHtml = hasSparkline
-        ? '<span class="sectorHeatMetaLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</span>'
+        ? (hasForwardPe ? "" : '<span class="sectorHeatMetaLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</span>')
         : '<strong>' + signPrice(item.change) + '</strong>';
       var footerHtml = hasSparkline
         ? ""
-        : '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>';
+        : (hasForwardPe ? "" : '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>');
       var extraHtml = hasForwardPe
-        ? '<div class="sectorHeatExtra">\u524d\u77bbPE: ' + fmtPeRatio(item.peRatioFwd) + '</div>'
+        ? '<div class="sectorHeatExtra"><span class="sectorHeatExtraLabel">\u524d\u77bbPE: ' + fmtPeRatio(item.peRatioFwd) + '</span>' + latestTimeInlineHtml + '</div>'
         : "";
 
       return [
