@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "7d8c3f1",
-  fullSha: "7d8c3f19c607e888ef5b28bdece79ed7d6c50a9a",
-  message: "fix: align star pe row vertically",
-  committedAt: "2026-04-29 16:31:24",
+  shortSha: "c347ebc",
+  fullSha: "c347ebc77843d9216ea61a7e50f317beaa62d35a",
+  message: "feat: show star price target",
+  committedAt: "2026-04-30 09:20:47",
 };
