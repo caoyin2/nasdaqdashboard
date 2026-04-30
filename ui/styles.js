@@ -1475,7 +1475,7 @@ export function getStyles() {
 
     .sectorHeatExtra{
       display:grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr) 220px;
       align-items:center;
       gap: 12px;
       min-width: 0;
@@ -1491,21 +1491,24 @@ export function getStyles() {
 
     .sectorHeatExtraLatest{
       min-width: 0;
+      width: 220px;
       font-size: 11px;
       line-height: 1.2;
       color: rgba(200,214,236,.84);
-      text-align: right;
+      text-align: left;
       white-space: nowrap;
     }
 
     .sectorHeatTarget{
       display:inline-flex;
       align-items:center;
-      justify-content:flex-end;
+      justify-content:flex-start;
       gap: 4px;
+      width: 220px;
+      margin-left: auto;
       min-width: 0;
       white-space: nowrap;
-      text-align: right;
+      text-align: left;
       line-height: 1.2;
       font-size: 12px;
       font-weight: 800;
@@ -2378,6 +2381,21 @@ export function getStyles() {
       .starGrid{
         grid-template-columns: 1fr;
         gap: 10px;
+      }
+
+      .sectorHeatExtra{
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      .sectorHeatExtraLatest{
+        width: auto;
+        text-align: right;
+      }
+
+      .sectorHeatTarget{
+        width: auto;
+        justify-content: flex-end;
+        text-align: right;
       }
 
       .starManageOverlay{
