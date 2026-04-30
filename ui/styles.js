@@ -1502,6 +1502,7 @@ export function getStyles() {
       display:inline-flex;
       align-items:center;
       justify-content:flex-end;
+      gap: 4px;
       min-width: 0;
       white-space: nowrap;
       text-align: right;
@@ -1509,6 +1510,16 @@ export function getStyles() {
       font-size: 12px;
       font-weight: 800;
       letter-spacing: .1px;
+    }
+
+    .sectorHeatTargetLabel{
+      color: rgba(244,247,252,.98);
+      text-shadow: none;
+    }
+
+    .sectorHeatTargetPct{
+      display:inline-block;
+      line-height: 1.2;
     }
 
     .fundPremiumMeta{

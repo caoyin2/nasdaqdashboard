@@ -59,8 +59,8 @@ const SYMBOL_DATA_FIELDS = ["peRatioFwd", "lastClosePriceEarningsRatio"];
 const SYMBOL_DATA_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const SYMBOL_DATA_MEM_CACHE =
   globalThis.__SA_SYMBOL_DATA_MEM_CACHE__ ?? (globalThis.__SA_SYMBOL_DATA_MEM_CACHE__ = new Map());
-const FORWARD_PE_FALLBACK_CACHE =
-  globalThis.__FORWARD_PE_FALLBACK_CACHE__ ?? (globalThis.__FORWARD_PE_FALLBACK_CACHE__ = new Map());
+const STOCK_ANALYSIS_METRICS_CACHE =
+  globalThis.__STOCK_ANALYSIS_METRICS_CACHE__ ?? (globalThis.__STOCK_ANALYSIS_METRICS_CACHE__ = new Map());
 
 function normalizeSlug(slug) {
   return String(slug || "").trim().toLowerCase();
@@ -85,32 +85,35 @@ function normalizeSymbol(symbol) {
   return String(symbol || "").trim().toUpperCase();
 }
 
-function getFreshForwardPeFallback(symbol) {
+function getFreshStockAnalysisMetrics(symbol) {
   const key = normalizeSymbol(symbol);
-  const cached = FORWARD_PE_FALLBACK_CACHE.get(key) || null;
+  const cached = STOCK_ANALYSIS_METRICS_CACHE.get(key) || null;
   if (!cached) return null;
   if (Date.now() - cached.savedAt > SYMBOL_DATA_CACHE_TTL_MS) return null;
   return cached.value || null;
 }
 
-function setForwardPeFallback(symbol, value) {
-  FORWARD_PE_FALLBACK_CACHE.set(normalizeSymbol(symbol), {
+function setStockAnalysisMetrics(symbol, value) {
+  STOCK_ANALYSIS_METRICS_CACHE.set(normalizeSymbol(symbol), {
     savedAt: Date.now(),
     value,
   });
 }
 
-function extractStockAnalysisMetrics(html) {
-  const text = String(html || "")
+function normalizeStockAnalysisText(html) {
+  return String(html || "")
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function extractForwardPeFromStatisticsHtml(html) {
+  const text = normalizeStockAnalysisText(html);
 
   let peRatioFwd = null;
-  let priceTargetPct = null;
 
   const patterns = [
     /forward pe ratio is ([\d.]+)/i,
@@ -125,10 +128,40 @@ function extractStockAnalysisMetrics(html) {
     }
   }
 
-  const targetSentence = text.match(/which is ([\d.]+)% (higher|lower) than the current price/i);
-  if (targetSentence && Number.isFinite(+targetSentence[1])) {
-    const magnitude = Math.abs(+targetSentence[1]);
-    priceTargetPct = targetSentence[2].toLowerCase() === "lower" ? -magnitude : magnitude;
+  return Number.isFinite(peRatioFwd) ? peRatioFwd : null;
+}
+
+function extractPriceTargetFromOverviewHtml(html) {
+  const text = normalizeStockAnalysisText(html);
+
+  let priceTargetValue = null;
+  let priceTargetPct = null;
+
+  const rowMatch = text.match(/price target \$?([\d.,]+)\s+\(([+-]?[\d.]+)%\)/i);
+  if (rowMatch) {
+    const targetValue = +String(rowMatch[1]).replace(/,/g, "");
+    const targetPct = +rowMatch[2];
+    if (Number.isFinite(targetValue)) {
+      priceTargetValue = targetValue;
+    }
+    if (Number.isFinite(targetPct)) {
+      priceTargetPct = targetPct;
+    }
+  }
+
+  if (!Number.isFinite(priceTargetValue) || !Number.isFinite(priceTargetPct)) {
+    const targetSentence = text.match(/average price target .*? is \$?([\d.,]+), which is ([\d.]+)% (higher|lower) than the current price/i);
+    if (targetSentence) {
+      const targetValue = +String(targetSentence[1]).replace(/,/g, "");
+      const targetPct = +targetSentence[2];
+      if (!Number.isFinite(priceTargetValue) && Number.isFinite(targetValue)) {
+        priceTargetValue = targetValue;
+      }
+      if (!Number.isFinite(priceTargetPct) && Number.isFinite(targetPct)) {
+        const magnitude = Math.abs(targetPct);
+        priceTargetPct = targetSentence[3].toLowerCase() === "lower" ? -magnitude : magnitude;
+      }
+    }
   }
 
   if (!Number.isFinite(priceTargetPct)) {
@@ -146,7 +179,7 @@ function extractStockAnalysisMetrics(html) {
   }
 
   return {
-    peRatioFwd: Number.isFinite(peRatioFwd) ? peRatioFwd : null,
+    priceTargetValue: Number.isFinite(priceTargetValue) ? priceTargetValue : null,
     priceTargetPct: Number.isFinite(priceTargetPct) ? priceTargetPct : null,
   };
 }
@@ -155,36 +188,62 @@ export async function fetchForwardPeFromStockAnalysis(symbol) {
   const key = normalizeSymbol(symbol);
   if (!key) return null;
 
-  const fresh = getFreshForwardPeFallback(key);
+  const fresh = getFreshStockAnalysisMetrics(key);
   if (fresh) return fresh;
 
-  const url = `https://stockanalysis.com/stocks/${encodeURIComponent(key.toLowerCase())}/statistics/`;
-  const res = await fetchWithTimeout(url, `StockAnalysis forward PE ${key}`, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.9",
-      "Referer": "https://stockanalysis.com/",
-    },
-  });
+  const requestHeaders = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://stockanalysis.com/",
+  };
+  const overviewUrl = `https://stockanalysis.com/stocks/${encodeURIComponent(key.toLowerCase())}/`;
+  const statisticsUrl = `https://stockanalysis.com/stocks/${encodeURIComponent(key.toLowerCase())}/statistics/`;
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`StockAnalysis forward PE ${key} failed: HTTP ${res.status} ${text.slice(0, 120)}`);
-  }
+  const [overviewResult, statisticsResult] = await Promise.allSettled([
+    fetchWithTimeout(overviewUrl, `StockAnalysis overview ${key}`, { headers: requestHeaders }).then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`HTTP ${res.status} ${text.slice(0, 120)}`);
+      }
+      return res.text();
+    }),
+    fetchWithTimeout(statisticsUrl, `StockAnalysis statistics ${key}`, { headers: requestHeaders }).then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`HTTP ${res.status} ${text.slice(0, 120)}`);
+      }
+      return res.text();
+    }),
+  ]);
 
-  const html = await res.text();
-  const metrics = extractStockAnalysisMetrics(html);
+  const peRatioFwd = statisticsResult.status === "fulfilled"
+    ? extractForwardPeFromStatisticsHtml(statisticsResult.value)
+    : null;
+  const priceTarget = overviewResult.status === "fulfilled"
+    ? extractPriceTargetFromOverviewHtml(overviewResult.value)
+    : { priceTargetValue: null, priceTargetPct: null };
   const value = {
     symbol: key,
-    peRatioFwd: Number.isFinite(metrics.peRatioFwd) ? metrics.peRatioFwd : null,
-    priceTargetPct: Number.isFinite(metrics.priceTargetPct) ? metrics.priceTargetPct : null,
+    peRatioFwd: Number.isFinite(peRatioFwd) ? peRatioFwd : null,
+    priceTargetValue: Number.isFinite(priceTarget.priceTargetValue) ? priceTarget.priceTargetValue : null,
+    priceTargetPct: Number.isFinite(priceTarget.priceTargetPct) ? priceTarget.priceTargetPct : null,
     source: "stockanalysis",
     updatedAt: new Date().toISOString(),
   };
 
-  setForwardPeFallback(key, value);
+  if (
+    !Number.isFinite(value.peRatioFwd) &&
+    !Number.isFinite(value.priceTargetValue) &&
+    !Number.isFinite(value.priceTargetPct)
+  ) {
+    const stale = STOCK_ANALYSIS_METRICS_CACHE.get(key)?.value || null;
+    if (stale) return stale;
+    throw new Error(`StockAnalysis metrics ${key} failed`);
+  }
+
+  setStockAnalysisMetrics(key, value);
   return value;
 }
 

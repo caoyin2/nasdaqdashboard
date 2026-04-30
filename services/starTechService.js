@@ -104,6 +104,7 @@ function buildStarCard(period, company, meta, bars1D, periodBarsRaw, ytdBars) {
     change: Number.isFinite(change) ? change : null,
     changePct: Number.isFinite(changePct) ? changePct : null,
     peRatioFwd: null,
+    priceTargetValue: null,
     priceTargetPct: null,
     sparkline: buildSparklineSeries(sparklineBars),
   };
@@ -133,6 +134,7 @@ function buildStarCardFromRealTimeQuote(company, meta, quote) {
     change: Number.isFinite(change) ? change : null,
     changePct: Number.isFinite(changePct) ? changePct : null,
     peRatioFwd: null,
+    priceTargetValue: null,
     priceTargetPct: null,
     sparkline: null,
   };
@@ -186,6 +188,7 @@ export async function buildStarForwardPePayload(env) {
       return {
         symbol: company.symbol,
         peRatioFwd: Number.isFinite(fundamentals?.peRatioFwd) ? fundamentals.peRatioFwd : null,
+        priceTargetValue: Number.isFinite(fundamentals?.priceTargetValue) ? fundamentals.priceTargetValue : null,
         priceTargetPct: Number.isFinite(fundamentals?.priceTargetPct) ? fundamentals.priceTargetPct : null,
       };
     }),

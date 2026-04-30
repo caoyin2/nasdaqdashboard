@@ -63,12 +63,12 @@ export function getClientScript() {
     return Number.isFinite(n) ? n.toFixed(2) : "--";
   }
 
-  function fmtTargetPct(n) {
-    return Number.isFinite(n) ? ((n >= 0 ? "+" : "") + n.toFixed(2) + "%") : "--";
+  function fmtTargetPrice(n) {
+    return Number.isFinite(n) ? n.toFixed(2) : "--";
   }
 
-  function targetText(n) {
-    return "\u76ee\u6807\u4ef7\uff1a" + fmtTargetPct(n);
+  function fmtTargetPct(n) {
+    return Number.isFinite(n) ? ((n >= 0 ? "+" : "") + n.toFixed(2) + "%") : "--";
   }
 
   function targetToneStyle(n) {
@@ -1321,6 +1321,7 @@ export function getClientScript() {
         return metrics
           ? Object.assign({}, item, {
               peRatioFwd: Number.isFinite(metrics.peRatioFwd) ? metrics.peRatioFwd : item.peRatioFwd,
+              priceTargetValue: Number.isFinite(metrics.priceTargetValue) ? metrics.priceTargetValue : item.priceTargetValue,
               priceTargetPct: Number.isFinite(metrics.priceTargetPct) ? metrics.priceTargetPct : item.priceTargetPct
             })
           : item;
@@ -1660,9 +1661,11 @@ export function getClientScript() {
       var glow = sectorTint(item, 0.16 + intensity * 0.24);
       var tone = starToneClass(item);
       var hasForwardPe = Number.isFinite(item && item.peRatioFwd);
-      var hasTargetPrice = Number.isFinite(item && item.priceTargetPct);
+      var hasTargetPrice = Number.isFinite(item && item.priceTargetValue) && Number.isFinite(item && item.priceTargetPct);
       var hasSparkline = !!(item && item.showSparkline && item.period !== "1D" && getSparklineValues(item).length > 1);
-      var targetHtml = '<span class="sectorHeatTarget" style="' + targetToneStyle(item && item.priceTargetPct) + '">' + esc(targetText(item && item.priceTargetPct)) + '</span>';
+      var targetHtml = hasTargetPrice
+        ? '<span class="sectorHeatTarget"><span class="sectorHeatTargetLabel">\u76ee\u6807\u4ef7\uff1a' + fmtTargetPrice(item.priceTargetValue) + '</span><span class="sectorHeatTargetPct" style="' + targetToneStyle(item && item.priceTargetPct) + '">(' + esc(fmtTargetPct(item.priceTargetPct)) + ')</span></span>'
+        : "";
       var mainHtml = hasSparkline
         ? [
             '<div class="sectorHeatMain">',
@@ -2128,6 +2131,7 @@ export function getClientScript() {
             if (Number.isFinite(item.peRatioFwd) || Number.isFinite(item.priceTargetPct)) {
               nextMap.set(symbol, {
                 peRatioFwd: Number.isFinite(item.peRatioFwd) ? item.peRatioFwd : null,
+                priceTargetValue: Number.isFinite(item.priceTargetValue) ? item.priceTargetValue : null,
                 priceTargetPct: Number.isFinite(item.priceTargetPct) ? item.priceTargetPct : null
               });
             }
