@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "c347ebc",
-  fullSha: "c347ebc77843d9216ea61a7e50f317beaa62d35a",
-  message: "feat: show star price target",
-  committedAt: "2026-04-30 09:20:47",
+  shortSha: "8c42549",
+  fullSha: "8c4254908618fea94e6f9fddcbbadc8ea65155be",
+  message: "feat: show stockanalysis target price",
+  committedAt: "2026-04-30 09:34:27",
 };
