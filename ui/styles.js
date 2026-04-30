@@ -1522,6 +1522,33 @@ export function getStyles() {
       line-height: 1.2;
     }
 
+    .sectorHeatTileStar{
+      --star-side-col-w: 220px;
+    }
+
+    .sectorHeatTileStar .sectorHeatTarget{
+      width: var(--star-side-col-w);
+      flex: 0 0 var(--star-side-col-w);
+      margin-left: auto;
+      justify-content: flex-start;
+      text-align: left;
+    }
+
+    .sectorHeatTileStar .sectorHeatLatest{
+      width: var(--star-side-col-w);
+      justify-self: end;
+      text-align: left;
+    }
+
+    .sectorHeatTileStar .sectorHeatExtra{
+      grid-template-columns: minmax(0, 1fr) var(--star-side-col-w);
+    }
+
+    .sectorHeatTileStar .sectorHeatExtraLatest{
+      width: var(--star-side-col-w);
+      text-align: left;
+    }
+
     .fundPremiumMeta{
       align-items:flex-start;
     }
@@ -2378,6 +2405,27 @@ export function getStyles() {
       .starGrid{
         grid-template-columns: 1fr;
         gap: 10px;
+      }
+
+      .sectorHeatTileStar .sectorHeatTarget{
+        width: auto;
+        flex: 0 1 auto;
+        justify-content: flex-end;
+        text-align: right;
+      }
+
+      .sectorHeatTileStar .sectorHeatLatest{
+        width: auto;
+        text-align: right;
+      }
+
+      .sectorHeatTileStar .sectorHeatExtra{
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      .sectorHeatTileStar .sectorHeatExtraLatest{
+        width: auto;
+        text-align: right;
       }
 
       .starManageOverlay{

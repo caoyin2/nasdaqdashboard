@@ -1692,8 +1692,10 @@ export function getClientScript() {
         ? '<div class="sectorHeatExtra"><span class="sectorHeatExtraLabel">\u524d\u77bbPE: ' + fmtPeRatio(item.peRatioFwd) + '</span>' + latestTimeInlineHtml + '</div>'
         : "";
 
+      var tileClass = 'sectorHeatTile ' + tone + ((hasForwardPe || hasTargetPrice) ? ' sectorHeatTileStar' : '');
+
       return [
-        '<article class="sectorHeatTile ' + tone + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
+        '<article class="' + tileClass + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
           '<div class="sectorHeatHeader">',
             '<div class="starIdentity">',
               '<div class="starIconWrap">',
