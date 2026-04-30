@@ -100,7 +100,7 @@ function setForwardPeFallback(symbol, value) {
   });
 }
 
-function extractForwardPeFromStockAnalysis(html) {
+function extractStockAnalysisMetrics(html) {
   const text = String(html || "")
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
@@ -108,6 +108,9 @@ function extractForwardPeFromStockAnalysis(html) {
     .replace(/&nbsp;/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+  let peRatioFwd = null;
+  let priceTargetPct = null;
 
   const patterns = [
     /forward pe ratio is ([\d.]+)/i,
@@ -117,11 +120,35 @@ function extractForwardPeFromStockAnalysis(html) {
   for (const pattern of patterns) {
     const match = text.match(pattern);
     if (match && Number.isFinite(+match[1])) {
-      return +match[1];
+      peRatioFwd = +match[1];
+      break;
     }
   }
 
-  return null;
+  const targetSentence = text.match(/which is ([\d.]+)% (higher|lower) than the current price/i);
+  if (targetSentence && Number.isFinite(+targetSentence[1])) {
+    const magnitude = Math.abs(+targetSentence[1]);
+    priceTargetPct = targetSentence[2].toLowerCase() === "lower" ? -magnitude : magnitude;
+  }
+
+  if (!Number.isFinite(priceTargetPct)) {
+    const targetSigned = text.match(/price target [^()]{0,80}\(([+-][\d.]+)%\)/i);
+    if (targetSigned && Number.isFinite(+targetSigned[1])) {
+      priceTargetPct = +targetSigned[1];
+    }
+  }
+
+  if (!Number.isFinite(priceTargetPct)) {
+    const targetDiff = text.match(/price target difference ([+-]?[\d.]+)%/i);
+    if (targetDiff && Number.isFinite(+targetDiff[1])) {
+      priceTargetPct = +targetDiff[1];
+    }
+  }
+
+  return {
+    peRatioFwd: Number.isFinite(peRatioFwd) ? peRatioFwd : null,
+    priceTargetPct: Number.isFinite(priceTargetPct) ? priceTargetPct : null,
+  };
 }
 
 export async function fetchForwardPeFromStockAnalysis(symbol) {
@@ -148,10 +175,11 @@ export async function fetchForwardPeFromStockAnalysis(symbol) {
   }
 
   const html = await res.text();
-  const peRatioFwd = extractForwardPeFromStockAnalysis(html);
+  const metrics = extractStockAnalysisMetrics(html);
   const value = {
     symbol: key,
-    peRatioFwd: Number.isFinite(peRatioFwd) ? peRatioFwd : null,
+    peRatioFwd: Number.isFinite(metrics.peRatioFwd) ? metrics.peRatioFwd : null,
+    priceTargetPct: Number.isFinite(metrics.priceTargetPct) ? metrics.priceTargetPct : null,
     source: "stockanalysis",
     updatedAt: new Date().toISOString(),
   };

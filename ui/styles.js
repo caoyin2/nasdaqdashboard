@@ -1498,6 +1498,19 @@ export function getStyles() {
       white-space: nowrap;
     }
 
+    .sectorHeatTarget{
+      display:inline-flex;
+      align-items:center;
+      justify-content:flex-end;
+      min-width: 0;
+      white-space: nowrap;
+      text-align: right;
+      line-height: 1.2;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .1px;
+    }
+
     .fundPremiumMeta{
       align-items:flex-start;
     }

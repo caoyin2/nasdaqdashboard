@@ -63,6 +63,31 @@ export function getClientScript() {
     return Number.isFinite(n) ? n.toFixed(2) : "--";
   }
 
+  function fmtTargetPct(n) {
+    return Number.isFinite(n) ? ((n >= 0 ? "+" : "") + n.toFixed(2) + "%") : "--";
+  }
+
+  function targetText(n) {
+    return "\u76ee\u6807\u4ef7\uff1a" + fmtTargetPct(n);
+  }
+
+  function targetToneStyle(n) {
+    if (!Number.isFinite(n)) {
+      return "color: rgba(200,214,236,.84);";
+    }
+
+    var intensity = clamp(Math.abs(n) / 60, 0, 1);
+    if (n >= 0) {
+      var upAlpha = 0.76 + intensity * 0.24;
+      var upGlow = 0.18 + intensity * 0.26;
+      return "color: rgba(255,92,120," + upAlpha.toFixed(3) + "); text-shadow: 0 0 14px rgba(255,77,109," + upGlow.toFixed(3) + ");";
+    }
+
+    var downAlpha = 0.76 + intensity * 0.24;
+    var downGlow = 0.18 + intensity * 0.26;
+    return "color: rgba(72,232,122," + downAlpha.toFixed(3) + "); text-shadow: 0 0 14px rgba(34,197,94," + downGlow.toFixed(3) + ");";
+  }
+
   function clamp(n, min, max) {
     return Math.max(min, Math.min(max, n));
   }
@@ -1292,8 +1317,13 @@ export function getClientScript() {
       var periodLabel = PERIOD_LABELS[starsState.period] || starsState.period;
       var cached = starsState.cache.get(starsState.period);
       var items = cached && cached.items ? sortStarItems(cached.items.map(function (item) {
-        var peRatioFwd = starForwardPeState.map.get(String(item.symbol || "").toUpperCase());
-        return Number.isFinite(peRatioFwd) ? Object.assign({}, item, { peRatioFwd: peRatioFwd }) : item;
+        var metrics = starForwardPeState.map.get(String(item.symbol || "").toUpperCase());
+        return metrics
+          ? Object.assign({}, item, {
+              peRatioFwd: Number.isFinite(metrics.peRatioFwd) ? metrics.peRatioFwd : item.peRatioFwd,
+              priceTargetPct: Number.isFinite(metrics.priceTargetPct) ? metrics.priceTargetPct : item.priceTargetPct
+            })
+          : item;
       })).map(function (item) {
         return Object.assign({}, item, { showSparkline: true, referenceLatestT: cached.asOfMs });
       }) : null;
@@ -1630,7 +1660,9 @@ export function getClientScript() {
       var glow = sectorTint(item, 0.16 + intensity * 0.24);
       var tone = starToneClass(item);
       var hasForwardPe = Number.isFinite(item && item.peRatioFwd);
+      var hasTargetPrice = Number.isFinite(item && item.priceTargetPct);
       var hasSparkline = !!(item && item.showSparkline && item.period !== "1D" && getSparklineValues(item).length > 1);
+      var targetHtml = '<span class="sectorHeatTarget" style="' + targetToneStyle(item && item.priceTargetPct) + '">' + esc(targetText(item && item.priceTargetPct)) + '</span>';
       var mainHtml = hasSparkline
         ? [
             '<div class="sectorHeatMain">',
@@ -1646,11 +1678,13 @@ export function getClientScript() {
       var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT);
       var latestTimeInlineHtml = '<span class="sectorHeatExtraLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</span>';
       var metaRightHtml = hasSparkline
-        ? (hasForwardPe ? "" : '<span class="sectorHeatMetaLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</span>')
-        : '<strong>' + signPrice(item.change) + '</strong>';
+        ? (hasTargetPrice
+          ? targetHtml
+          : (hasForwardPe ? "" : '<span class="sectorHeatMetaLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</span>'))
+        : (hasTargetPrice ? targetHtml : '<strong>' + signPrice(item.change) + '</strong>');
       var footerHtml = hasSparkline
         ? ""
-        : (hasForwardPe ? "" : '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>');
+        : ((hasForwardPe || hasTargetPrice) ? "" : '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>');
       var extraHtml = hasForwardPe
         ? '<div class="sectorHeatExtra"><span class="sectorHeatExtraLabel">\u524d\u77bbPE: ' + fmtPeRatio(item.peRatioFwd) + '</span>' + latestTimeInlineHtml + '</div>'
         : "";
@@ -2091,8 +2125,11 @@ export function getClientScript() {
           (payload.items || []).forEach(function (item) {
             var symbol = String(item && item.symbol || "").trim().toUpperCase();
             if (!symbol) return;
-            if (Number.isFinite(item.peRatioFwd)) {
-              nextMap.set(symbol, item.peRatioFwd);
+            if (Number.isFinite(item.peRatioFwd) || Number.isFinite(item.priceTargetPct)) {
+              nextMap.set(symbol, {
+                peRatioFwd: Number.isFinite(item.peRatioFwd) ? item.peRatioFwd : null,
+                priceTargetPct: Number.isFinite(item.priceTargetPct) ? item.priceTargetPct : null
+              });
             }
           });
           starForwardPeState.map = nextMap;
