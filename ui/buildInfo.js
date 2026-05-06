@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  shortSha: "01b0dff",
-  fullSha: "01b0dff1fb19ff1ba0ba9956c49e4396c462a001",
-  message: "fix: show loss pe state on star cards",
-  committedAt: "2026-05-06 16:37:49",
+  shortSha: "1870f8c",
+  fullSha: "1870f8c1d3b94cd71d0c14d1a04ce25be16cddf1",
+  message: "fix: align star valuation text columns",
+  committedAt: "2026-05-06 16:45:30",
 };
