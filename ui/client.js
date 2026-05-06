@@ -1707,6 +1707,9 @@ export function getClientScript() {
       var extraHtml = hasValuationMetrics
         ? '<div class="sectorHeatExtra sectorHeatExtraStar"><span class="sectorHeatExtraLabel sectorHeatExtraForward">\u524d\u77bbPE: ' + fmtPeRatio(item.peRatioFwd, item && item.peRatioFwdLoss) + '</span><span class="sectorHeatExtraLabel sectorHeatExtraCurrent">\u5f53\u524dPE: ' + fmtPeRatio(item.peRatioCurrent, item && item.peRatioCurrentLoss) + '</span><span class="sectorHeatExtraLabel sectorHeatExtraMarketCap">\u5f53\u524d\u5e02\u503c: ' + esc(marketCapText) + '</span>' + latestTimeInlineHtml + '</div>'
         : "";
+      var infoStackHtml = hasValuationMetrics
+        ? '<div class="sectorHeatInfoStack"><div class="' + metaClass + '"><span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>' + metaRightHtml + '</div>' + extraHtml + '</div>'
+        : '<div class="' + metaClass + '"><span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>' + metaRightHtml + '</div>' + extraHtml + footerHtml;
 
       return [
         '<article class="sectorHeatTile ' + tone + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
@@ -1723,12 +1726,7 @@ export function getClientScript() {
             '<div class="sectorHeatPrice">' + fmtPrice(item.lastClose) + '</div>',
           '</div>',
           mainHtml,
-          '<div class="' + metaClass + '">',
-            '<span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>',
-            metaRightHtml,
-          '</div>',
-          extraHtml,
-          footerHtml,
+          infoStackHtml,
         '</article>'
       ].join("");
     }

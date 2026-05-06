@@ -1463,6 +1463,11 @@ export function getStyles() {
       white-space: nowrap;
     }
 
+    .sectorHeatInfoStack{
+      display:grid;
+      gap: 6px;
+    }
+
     .sectorHeatMetaStar{
       --sector-star-side-w: 220px;
       display: grid;
