@@ -57,6 +57,7 @@ function normalizeSlugs(saSlugs) {
 
 const SYMBOL_DATA_FIELDS = ["peRatioFwd", "lastClosePriceEarningsRatio"];
 const SYMBOL_DATA_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const STOCK_ANALYSIS_METRICS_SCHEMA_VERSION = 2;
 const SYMBOL_DATA_MEM_CACHE =
   globalThis.__SA_SYMBOL_DATA_MEM_CACHE__ ?? (globalThis.__SA_SYMBOL_DATA_MEM_CACHE__ = new Map());
 const STOCK_ANALYSIS_METRICS_CACHE =
@@ -90,6 +91,7 @@ function getFreshStockAnalysisMetrics(symbol) {
   const cached = STOCK_ANALYSIS_METRICS_CACHE.get(key) || null;
   if (!cached) return null;
   if (Date.now() - cached.savedAt > SYMBOL_DATA_CACHE_TTL_MS) return null;
+  if ((cached.value?.schemaVersion || 0) < STOCK_ANALYSIS_METRICS_SCHEMA_VERSION) return null;
   return cached.value || null;
 }
 
@@ -131,11 +133,45 @@ function extractForwardPeFromStatisticsHtml(html) {
   return Number.isFinite(peRatioFwd) ? peRatioFwd : null;
 }
 
-function extractPriceTargetFromOverviewHtml(html) {
+function trimMetricText(value, digits = 2) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  return n
+    .toFixed(digits)
+    .replace(/\.00$/, "")
+    .replace(/(\.\d)0$/, "$1");
+}
+
+function formatUsdScaleToChinese(valueText, unitText) {
+  const value = +String(valueText || "").replace(/,/g, "");
+  const unit = String(unitText || "").trim().toUpperCase();
+  if (!Number.isFinite(value)) return null;
+
+  const scaleMap = {
+    K: 1e3,
+    M: 1e6,
+    B: 1e9,
+    T: 1e12,
+  };
+  const scale = scaleMap[unit];
+  if (!Number.isFinite(scale)) return null;
+
+  const yi = (value * scale) / 1e8;
+  if (!Number.isFinite(yi)) return null;
+  if (Math.abs(yi) >= 10000) {
+    const wanYi = yi / 10000;
+    return `${trimMetricText(wanYi)}万亿`;
+  }
+  return `${trimMetricText(yi)}亿`;
+}
+
+function extractOverviewMetricsFromHtml(html) {
   const text = normalizeStockAnalysisText(html);
 
   let priceTargetValue = null;
   let priceTargetPct = null;
+  let peRatioCurrent = null;
+  let marketCapCN = null;
 
   const rowMatch = text.match(/price target \$?([\d.,]+)\s+\(([+-]?[\d.]+)%\)/i);
   if (rowMatch) {
@@ -178,9 +214,24 @@ function extractPriceTargetFromOverviewHtml(html) {
     }
   }
 
+  const peRatioMatch = text.match(/PE Ratio\s+([\d.,]+)/i);
+  if (peRatioMatch) {
+    const value = +String(peRatioMatch[1]).replace(/,/g, "");
+    if (Number.isFinite(value)) {
+      peRatioCurrent = value;
+    }
+  }
+
+  const marketCapMatch = text.match(/Market Cap\s+([\d.,]+)\s*([KMBT])/i);
+  if (marketCapMatch) {
+    marketCapCN = formatUsdScaleToChinese(marketCapMatch[1], marketCapMatch[2]);
+  }
+
   return {
     priceTargetValue: Number.isFinite(priceTargetValue) ? priceTargetValue : null,
     priceTargetPct: Number.isFinite(priceTargetPct) ? priceTargetPct : null,
+    peRatioCurrent: Number.isFinite(peRatioCurrent) ? peRatioCurrent : null,
+    marketCapCN: marketCapCN || null,
   };
 }
 
@@ -221,20 +272,25 @@ export async function fetchForwardPeFromStockAnalysis(symbol) {
   const peRatioFwd = statisticsResult.status === "fulfilled"
     ? extractForwardPeFromStatisticsHtml(statisticsResult.value)
     : null;
-  const priceTarget = overviewResult.status === "fulfilled"
-    ? extractPriceTargetFromOverviewHtml(overviewResult.value)
-    : { priceTargetValue: null, priceTargetPct: null };
+  const overviewMetrics = overviewResult.status === "fulfilled"
+    ? extractOverviewMetricsFromHtml(overviewResult.value)
+    : { priceTargetValue: null, priceTargetPct: null, peRatioCurrent: null, marketCapCN: null };
   const value = {
+    schemaVersion: STOCK_ANALYSIS_METRICS_SCHEMA_VERSION,
     symbol: key,
     peRatioFwd: Number.isFinite(peRatioFwd) ? peRatioFwd : null,
-    priceTargetValue: Number.isFinite(priceTarget.priceTargetValue) ? priceTarget.priceTargetValue : null,
-    priceTargetPct: Number.isFinite(priceTarget.priceTargetPct) ? priceTarget.priceTargetPct : null,
+    peRatioCurrent: Number.isFinite(overviewMetrics.peRatioCurrent) ? overviewMetrics.peRatioCurrent : null,
+    marketCapCN: overviewMetrics.marketCapCN || null,
+    priceTargetValue: Number.isFinite(overviewMetrics.priceTargetValue) ? overviewMetrics.priceTargetValue : null,
+    priceTargetPct: Number.isFinite(overviewMetrics.priceTargetPct) ? overviewMetrics.priceTargetPct : null,
     source: "stockanalysis",
     updatedAt: new Date().toISOString(),
   };
 
   if (
     !Number.isFinite(value.peRatioFwd) &&
+    !Number.isFinite(value.peRatioCurrent) &&
+    !value.marketCapCN &&
     !Number.isFinite(value.priceTargetValue) &&
     !Number.isFinite(value.priceTargetPct)
   ) {

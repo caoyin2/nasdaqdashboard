@@ -1498,6 +1498,36 @@ export function getStyles() {
       white-space: nowrap;
     }
 
+    .sectorHeatExtraStar{
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        "forward current"
+        "market latest";
+      row-gap: 6px;
+      column-gap: 12px;
+      align-items: end;
+    }
+
+    .sectorHeatExtraForward{
+      grid-area: forward;
+    }
+
+    .sectorHeatExtraCurrent{
+      grid-area: current;
+      justify-self: end;
+      text-align: right;
+    }
+
+    .sectorHeatExtraMarketCap{
+      grid-area: market;
+    }
+
+    .sectorHeatExtraStar .sectorHeatExtraLatest{
+      grid-area: latest;
+      justify-self: end;
+      align-self: end;
+    }
+
     .sectorHeatTarget{
       display:inline-flex;
       align-items:center;

@@ -71,6 +71,11 @@ export function getClientScript() {
     return Number.isFinite(n) ? ((n >= 0 ? "+" : "") + n.toFixed(2) + "%") : "--";
   }
 
+  function fmtMarketCapCN(value) {
+    var text = String(value == null ? "" : value).trim();
+    return text || "--";
+  }
+
   function targetToneStyle(n) {
     if (!Number.isFinite(n)) {
       return "color: rgba(200,214,236,.84);";
@@ -1321,6 +1326,8 @@ export function getClientScript() {
         return metrics
           ? Object.assign({}, item, {
               peRatioFwd: Number.isFinite(metrics.peRatioFwd) ? metrics.peRatioFwd : item.peRatioFwd,
+              peRatioCurrent: Number.isFinite(metrics.peRatioCurrent) ? metrics.peRatioCurrent : item.peRatioCurrent,
+              marketCapCN: metrics.marketCapCN || item.marketCapCN,
               priceTargetValue: Number.isFinite(metrics.priceTargetValue) ? metrics.priceTargetValue : item.priceTargetValue,
               priceTargetPct: Number.isFinite(metrics.priceTargetPct) ? metrics.priceTargetPct : item.priceTargetPct
             })
@@ -1661,6 +1668,10 @@ export function getClientScript() {
       var glow = sectorTint(item, 0.16 + intensity * 0.24);
       var tone = starToneClass(item);
       var hasForwardPe = Number.isFinite(item && item.peRatioFwd);
+      var hasCurrentPe = Number.isFinite(item && item.peRatioCurrent);
+      var marketCapText = fmtMarketCapCN(item && item.marketCapCN);
+      var hasMarketCap = marketCapText !== "--";
+      var hasValuationMetrics = hasForwardPe || hasCurrentPe || hasMarketCap;
       var hasTargetPrice = Number.isFinite(item && item.priceTargetValue) && Number.isFinite(item && item.priceTargetPct);
       var hasSparkline = !!(item && item.showSparkline && item.period !== "1D" && getSparklineValues(item).length > 1);
       var targetHtml = hasTargetPrice
@@ -1677,19 +1688,19 @@ export function getClientScript() {
             '</div>'
           ].join("")
         : '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>';
-      var metaClass = hasSparkline && !hasForwardPe ? 'sectorHeatMeta sectorHeatMetaWithLatest' : 'sectorHeatMeta';
+      var metaClass = hasSparkline && !hasValuationMetrics ? 'sectorHeatMeta sectorHeatMetaWithLatest' : 'sectorHeatMeta';
       var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT);
       var latestTimeInlineHtml = '<span class="sectorHeatExtraLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</span>';
       var metaRightHtml = hasSparkline
         ? (hasTargetPrice
           ? targetHtml
-          : (hasForwardPe ? "" : '<span class="sectorHeatMetaLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</span>'))
+          : (hasValuationMetrics ? "" : '<span class="sectorHeatMetaLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</span>'))
         : (hasTargetPrice ? targetHtml : '<strong>' + signPrice(item.change) + '</strong>');
       var footerHtml = hasSparkline
         ? ""
-        : ((hasForwardPe || hasTargetPrice) ? "" : '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>');
-      var extraHtml = hasForwardPe
-        ? '<div class="sectorHeatExtra"><span class="sectorHeatExtraLabel">\u524d\u77bbPE: ' + fmtPeRatio(item.peRatioFwd) + '</span>' + latestTimeInlineHtml + '</div>'
+        : (hasValuationMetrics ? "" : '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>');
+      var extraHtml = hasValuationMetrics
+        ? '<div class="sectorHeatExtra sectorHeatExtraStar"><span class="sectorHeatExtraLabel sectorHeatExtraForward">\u524d\u77bbPE: ' + fmtPeRatio(item.peRatioFwd) + '</span><span class="sectorHeatExtraLabel sectorHeatExtraCurrent">\u5f53\u524dPE: ' + fmtPeRatio(item.peRatioCurrent) + '</span><span class="sectorHeatExtraLabel sectorHeatExtraMarketCap">\u5f53\u524d\u5e02\u503c: ' + esc(marketCapText) + '</span>' + latestTimeInlineHtml + '</div>'
         : "";
 
       return [
@@ -2101,7 +2112,7 @@ export function getClientScript() {
           return null;
         }
         if (timedOut) {
-          throw new Error("\u660e\u661f\u79d1\u6280\u516c\u53f8\u524d\u77bbPE\u8bf7\u6c42\u8d85\u65f6\uff0815\u79d2\uff09");
+          throw new Error("\u660e\u661f\u79d1\u6280\u516c\u53f8\u4f30\u503c\u6307\u6807\u8bf7\u6c42\u8d85\u65f6\uff0815\u79d2\uff09");
         }
         throw error;
       } finally {
@@ -2128,9 +2139,11 @@ export function getClientScript() {
           (payload.items || []).forEach(function (item) {
             var symbol = String(item && item.symbol || "").trim().toUpperCase();
             if (!symbol) return;
-            if (Number.isFinite(item.peRatioFwd) || Number.isFinite(item.priceTargetPct)) {
+            if (Number.isFinite(item.peRatioFwd) || Number.isFinite(item.peRatioCurrent) || !!item.marketCapCN || Number.isFinite(item.priceTargetPct) || Number.isFinite(item.priceTargetValue)) {
               nextMap.set(symbol, {
                 peRatioFwd: Number.isFinite(item.peRatioFwd) ? item.peRatioFwd : null,
+                peRatioCurrent: Number.isFinite(item.peRatioCurrent) ? item.peRatioCurrent : null,
+                marketCapCN: item.marketCapCN || null,
                 priceTargetValue: Number.isFinite(item.priceTargetValue) ? item.priceTargetValue : null,
                 priceTargetPct: Number.isFinite(item.priceTargetPct) ? item.priceTargetPct : null
               });
