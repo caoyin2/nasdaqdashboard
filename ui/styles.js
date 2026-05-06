@@ -1532,7 +1532,7 @@ export function getStyles() {
       display:inline-flex;
       align-items:center;
       justify-content:flex-end;
-      gap: 4px;
+      gap: 0;
       min-width: 0;
       white-space: nowrap;
       text-align: right;

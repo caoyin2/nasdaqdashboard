@@ -57,7 +57,7 @@ function normalizeSlugs(saSlugs) {
 
 const SYMBOL_DATA_FIELDS = ["peRatioFwd", "lastClosePriceEarningsRatio"];
 const SYMBOL_DATA_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
-const STOCK_ANALYSIS_METRICS_SCHEMA_VERSION = 2;
+const STOCK_ANALYSIS_METRICS_SCHEMA_VERSION = 3;
 const SYMBOL_DATA_MEM_CACHE =
   globalThis.__SA_SYMBOL_DATA_MEM_CACHE__ ?? (globalThis.__SA_SYMBOL_DATA_MEM_CACHE__ = new Map());
 const STOCK_ANALYSIS_METRICS_CACHE =
@@ -116,6 +116,7 @@ function extractForwardPeFromStatisticsHtml(html) {
   const text = normalizeStockAnalysisText(html);
 
   let peRatioFwd = null;
+  let peRatioFwdLoss = false;
 
   const patterns = [
     /forward pe ratio is ([\d.]+)/i,
@@ -130,7 +131,14 @@ function extractForwardPeFromStatisticsHtml(html) {
     }
   }
 
-  return Number.isFinite(peRatioFwd) ? peRatioFwd : null;
+  if (!Number.isFinite(peRatioFwd)) {
+    peRatioFwdLoss = /forward pe(?: ratio)?\s+(?:n\/a|na)\b/i.test(text);
+  }
+
+  return {
+    peRatioFwd: Number.isFinite(peRatioFwd) ? peRatioFwd : null,
+    peRatioFwdLoss,
+  };
 }
 
 function trimMetricText(value, digits = 2) {
@@ -171,6 +179,7 @@ function extractOverviewMetricsFromHtml(html) {
   let priceTargetValue = null;
   let priceTargetPct = null;
   let peRatioCurrent = null;
+  let peRatioCurrentLoss = false;
   let marketCapCN = null;
 
   const rowMatch = text.match(/price target \$?([\d.,]+)\s+\(([+-]?[\d.]+)%\)/i);
@@ -221,6 +230,9 @@ function extractOverviewMetricsFromHtml(html) {
       peRatioCurrent = value;
     }
   }
+  if (!Number.isFinite(peRatioCurrent)) {
+    peRatioCurrentLoss = /PE Ratio\s+(?:n\/a|na)\b/i.test(text);
+  }
 
   const marketCapMatch = text.match(/Market Cap\s+([\d.,]+)\s*([KMBT])/i);
   if (marketCapMatch) {
@@ -231,6 +243,7 @@ function extractOverviewMetricsFromHtml(html) {
     priceTargetValue: Number.isFinite(priceTargetValue) ? priceTargetValue : null,
     priceTargetPct: Number.isFinite(priceTargetPct) ? priceTargetPct : null,
     peRatioCurrent: Number.isFinite(peRatioCurrent) ? peRatioCurrent : null,
+    peRatioCurrentLoss,
     marketCapCN: marketCapCN || null,
   };
 }
@@ -269,17 +282,19 @@ export async function fetchForwardPeFromStockAnalysis(symbol) {
     }),
   ]);
 
-  const peRatioFwd = statisticsResult.status === "fulfilled"
+  const forwardPeMetrics = statisticsResult.status === "fulfilled"
     ? extractForwardPeFromStatisticsHtml(statisticsResult.value)
-    : null;
+    : { peRatioFwd: null, peRatioFwdLoss: false };
   const overviewMetrics = overviewResult.status === "fulfilled"
     ? extractOverviewMetricsFromHtml(overviewResult.value)
-    : { priceTargetValue: null, priceTargetPct: null, peRatioCurrent: null, marketCapCN: null };
+    : { priceTargetValue: null, priceTargetPct: null, peRatioCurrent: null, peRatioCurrentLoss: false, marketCapCN: null };
   const value = {
     schemaVersion: STOCK_ANALYSIS_METRICS_SCHEMA_VERSION,
     symbol: key,
-    peRatioFwd: Number.isFinite(peRatioFwd) ? peRatioFwd : null,
+    peRatioFwd: Number.isFinite(forwardPeMetrics.peRatioFwd) ? forwardPeMetrics.peRatioFwd : null,
+    peRatioFwdLoss: !!forwardPeMetrics.peRatioFwdLoss,
     peRatioCurrent: Number.isFinite(overviewMetrics.peRatioCurrent) ? overviewMetrics.peRatioCurrent : null,
+    peRatioCurrentLoss: !!overviewMetrics.peRatioCurrentLoss,
     marketCapCN: overviewMetrics.marketCapCN || null,
     priceTargetValue: Number.isFinite(overviewMetrics.priceTargetValue) ? overviewMetrics.priceTargetValue : null,
     priceTargetPct: Number.isFinite(overviewMetrics.priceTargetPct) ? overviewMetrics.priceTargetPct : null,
@@ -289,7 +304,9 @@ export async function fetchForwardPeFromStockAnalysis(symbol) {
 
   if (
     !Number.isFinite(value.peRatioFwd) &&
+    !value.peRatioFwdLoss &&
     !Number.isFinite(value.peRatioCurrent) &&
+    !value.peRatioCurrentLoss &&
     !value.marketCapCN &&
     !Number.isFinite(value.priceTargetValue) &&
     !Number.isFinite(value.priceTargetPct)

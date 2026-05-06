@@ -59,7 +59,8 @@ export function getClientScript() {
     return Number.isFinite(n) ? ((n >= 0 ? "+" : "") + n.toFixed(3)) : "--";
   }
 
-  function fmtPeRatio(n) {
+  function fmtPeRatio(n, isLoss) {
+    if (isLoss) return "\u4e8f\u635f";
     return Number.isFinite(n) ? n.toFixed(2) : "--";
   }
 
@@ -1326,7 +1327,9 @@ export function getClientScript() {
         return metrics
           ? Object.assign({}, item, {
               peRatioFwd: Number.isFinite(metrics.peRatioFwd) ? metrics.peRatioFwd : item.peRatioFwd,
+              peRatioFwdLoss: !!metrics.peRatioFwdLoss || !!item.peRatioFwdLoss,
               peRatioCurrent: Number.isFinite(metrics.peRatioCurrent) ? metrics.peRatioCurrent : item.peRatioCurrent,
+              peRatioCurrentLoss: !!metrics.peRatioCurrentLoss || !!item.peRatioCurrentLoss,
               marketCapCN: metrics.marketCapCN || item.marketCapCN,
               priceTargetValue: Number.isFinite(metrics.priceTargetValue) ? metrics.priceTargetValue : item.priceTargetValue,
               priceTargetPct: Number.isFinite(metrics.priceTargetPct) ? metrics.priceTargetPct : item.priceTargetPct
@@ -1667,8 +1670,8 @@ export function getClientScript() {
       var border = sectorTint(item, 0.26 + intensity * 0.30);
       var glow = sectorTint(item, 0.16 + intensity * 0.24);
       var tone = starToneClass(item);
-      var hasForwardPe = Number.isFinite(item && item.peRatioFwd);
-      var hasCurrentPe = Number.isFinite(item && item.peRatioCurrent);
+      var hasForwardPe = Number.isFinite(item && item.peRatioFwd) || !!(item && item.peRatioFwdLoss);
+      var hasCurrentPe = Number.isFinite(item && item.peRatioCurrent) || !!(item && item.peRatioCurrentLoss);
       var marketCapText = fmtMarketCapCN(item && item.marketCapCN);
       var hasMarketCap = marketCapText !== "--";
       var hasValuationMetrics = hasForwardPe || hasCurrentPe || hasMarketCap;
@@ -1700,7 +1703,7 @@ export function getClientScript() {
         ? ""
         : (hasValuationMetrics ? "" : '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>');
       var extraHtml = hasValuationMetrics
-        ? '<div class="sectorHeatExtra sectorHeatExtraStar"><span class="sectorHeatExtraLabel sectorHeatExtraForward">\u524d\u77bbPE: ' + fmtPeRatio(item.peRatioFwd) + '</span><span class="sectorHeatExtraLabel sectorHeatExtraCurrent">\u5f53\u524dPE: ' + fmtPeRatio(item.peRatioCurrent) + '</span><span class="sectorHeatExtraLabel sectorHeatExtraMarketCap">\u5f53\u524d\u5e02\u503c: ' + esc(marketCapText) + '</span>' + latestTimeInlineHtml + '</div>'
+        ? '<div class="sectorHeatExtra sectorHeatExtraStar"><span class="sectorHeatExtraLabel sectorHeatExtraForward">\u524d\u77bbPE: ' + fmtPeRatio(item.peRatioFwd, item && item.peRatioFwdLoss) + '</span><span class="sectorHeatExtraLabel sectorHeatExtraCurrent">\u5f53\u524dPE: ' + fmtPeRatio(item.peRatioCurrent, item && item.peRatioCurrentLoss) + '</span><span class="sectorHeatExtraLabel sectorHeatExtraMarketCap">\u5f53\u524d\u5e02\u503c: ' + esc(marketCapText) + '</span>' + latestTimeInlineHtml + '</div>'
         : "";
 
       return [
@@ -2139,10 +2142,12 @@ export function getClientScript() {
           (payload.items || []).forEach(function (item) {
             var symbol = String(item && item.symbol || "").trim().toUpperCase();
             if (!symbol) return;
-            if (Number.isFinite(item.peRatioFwd) || Number.isFinite(item.peRatioCurrent) || !!item.marketCapCN || Number.isFinite(item.priceTargetPct) || Number.isFinite(item.priceTargetValue)) {
+            if (Number.isFinite(item.peRatioFwd) || !!item.peRatioFwdLoss || Number.isFinite(item.peRatioCurrent) || !!item.peRatioCurrentLoss || !!item.marketCapCN || Number.isFinite(item.priceTargetPct) || Number.isFinite(item.priceTargetValue)) {
               nextMap.set(symbol, {
                 peRatioFwd: Number.isFinite(item.peRatioFwd) ? item.peRatioFwd : null,
+                peRatioFwdLoss: !!item.peRatioFwdLoss,
                 peRatioCurrent: Number.isFinite(item.peRatioCurrent) ? item.peRatioCurrent : null,
+                peRatioCurrentLoss: !!item.peRatioCurrentLoss,
                 marketCapCN: item.marketCapCN || null,
                 priceTargetValue: Number.isFinite(item.priceTargetValue) ? item.priceTargetValue : null,
                 priceTargetPct: Number.isFinite(item.priceTargetPct) ? item.priceTargetPct : null
