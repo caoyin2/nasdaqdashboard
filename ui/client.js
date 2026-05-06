@@ -1678,7 +1678,7 @@ export function getClientScript() {
       var hasTargetPrice = Number.isFinite(item && item.priceTargetValue) && Number.isFinite(item && item.priceTargetPct);
       var hasSparkline = !!(item && item.showSparkline && item.period !== "1D" && getSparklineValues(item).length > 1);
       var targetHtml = hasTargetPrice
-        ? '<span class="sectorHeatTarget"><span class="sectorHeatTargetLabel">\u76ee\u6807\u4ef7\uff1a' + fmtTargetPrice(item.priceTargetValue) + '</span><span class="sectorHeatTargetPct" style="' + targetToneStyle(item && item.priceTargetPct) + '">(' + esc(fmtTargetPct(item.priceTargetPct)) + ')</span></span>'
+        ? '<span class="sectorHeatTarget"><span class="sectorHeatTargetLabel">\u76ee\u6807\u4ef7\uff1a ' + fmtTargetPrice(item.priceTargetValue) + '</span><span class="sectorHeatTargetPct" style="' + targetToneStyle(item && item.priceTargetPct) + '"> (' + esc(fmtTargetPct(item.priceTargetPct)) + ')</span></span>'
         : "";
       var mainHtml = hasSparkline
         ? [
