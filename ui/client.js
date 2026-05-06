@@ -1691,7 +1691,9 @@ export function getClientScript() {
             '</div>'
           ].join("")
         : '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>';
-      var metaClass = hasSparkline && !hasValuationMetrics ? 'sectorHeatMeta sectorHeatMetaWithLatest' : 'sectorHeatMeta';
+      var metaClass = 'sectorHeatMeta'
+        + (hasValuationMetrics ? ' sectorHeatMetaStar' : '')
+        + (hasSparkline && !hasValuationMetrics ? ' sectorHeatMetaWithLatest' : '');
       var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT);
       var latestTimeInlineHtml = '<span class="sectorHeatExtraLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</span>';
       var metaRightHtml = hasSparkline

@@ -1463,6 +1463,21 @@ export function getStyles() {
       white-space: nowrap;
     }
 
+    .sectorHeatMetaStar{
+      --sector-star-side-w: 220px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) var(--sector-star-side-w);
+      align-items: end;
+      gap: 12px;
+    }
+
+    .sectorHeatMetaStar .sectorHeatTarget{
+      width: 100%;
+      justify-self: start;
+      justify-content: flex-start;
+      text-align: left;
+    }
+
     .sectorHeatLatest{
       justify-self: end;
       font-family: var(--mono);
@@ -1499,7 +1514,7 @@ export function getStyles() {
     }
 
     .sectorHeatExtraStar{
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr) var(--sector-star-side-w, 220px);
       grid-template-areas:
         "forward current"
         "market latest";
@@ -1514,8 +1529,8 @@ export function getStyles() {
 
     .sectorHeatExtraCurrent{
       grid-area: current;
-      justify-self: end;
-      text-align: right;
+      justify-self: start;
+      text-align: left;
     }
 
     .sectorHeatExtraMarketCap{
@@ -1524,8 +1539,9 @@ export function getStyles() {
 
     .sectorHeatExtraStar .sectorHeatExtraLatest{
       grid-area: latest;
-      justify-self: end;
+      justify-self: start;
       align-self: end;
+      text-align: left;
     }
 
     .sectorHeatTarget{
@@ -2561,6 +2577,20 @@ export function getStyles() {
         align-items:flex-start;
       }
 
+      .sectorHeatMetaStar{
+        display:flex;
+        flex-direction: column;
+        align-items:flex-start;
+        gap: 10px;
+      }
+
+      .sectorHeatMetaStar .sectorHeatTarget{
+        width: auto;
+        justify-self: auto;
+        justify-content: flex-end;
+        text-align: right;
+      }
+
       .fundPremiumMetaRight{
         justify-items:start;
         text-align:left;
@@ -2586,6 +2616,20 @@ export function getStyles() {
 
       .sectorHeatMetaLatest{
         margin-left: 10px;
+      }
+
+      .sectorHeatExtraStar{
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      .sectorHeatExtraCurrent{
+        justify-self: end;
+        text-align: right;
+      }
+
+      .sectorHeatExtraStar .sectorHeatExtraLatest{
+        justify-self: end;
+        text-align: right;
       }
 
       .sectorBarRow{
