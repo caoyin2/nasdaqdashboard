@@ -2586,7 +2586,7 @@ export function getStyles() {
         display:flex;
         flex-direction: column;
         align-items:flex-start;
-        gap: 10px;
+        gap: 4px;
       }
 
       .sectorHeatMetaStar .sectorHeatTarget{
