@@ -36,6 +36,8 @@ const INDEX_WEIGHT_CONFIG = {
   },
 };
 
+const COMMON_INDEX_CODES = ["NDXTMC", "SP500-45", "NDX"];
+
 function fmtDateYmd(date) {
   const y = date.getUTCFullYear();
   const m = String(date.getUTCMonth() + 1).padStart(2, "0");
@@ -344,7 +346,7 @@ async function enrichItems(items, env, options = {}) {
     .sort((a, b) => b.weightPct - a.weightPct);
 }
 
-export async function getLatestIndexWeightSymbols(indexCode = "NDXTMC") {
+async function fetchRawIndexWeights(indexCode) {
   const config = INDEX_WEIGHT_CONFIG[indexCode];
   if (!config) {
     throw new Error(`Unsupported index code: ${indexCode}`);
@@ -353,60 +355,123 @@ export async function getLatestIndexWeightSymbols(indexCode = "NDXTMC") {
   if (config.source === "szse") {
     const latestBasket = await fetchLatestBasket(config);
     const parsed = parseBasketRows(latestBasket.text);
-    return {
-      basketDate: latestBasket.ymd,
-      showDataDate: true,
-      symbols: parsed.items.map((item) => item.symbol),
-    };
-  }
-
-  const holdings = await fetchIsharesHoldings(config);
-  const items = parseIsharesRows(holdings.payload);
-  return {
-    basketDate: holdings.basketDate,
-    showDataDate: true,
-    symbols: items.map((item) => item.symbol),
-  };
-}
-
-export async function buildIndexWeightsPayload(indexCode = "NDXTMC", env) {
-  const config = INDEX_WEIGHT_CONFIG[indexCode];
-  if (!config) {
-    throw new Error(`Unsupported index code: ${indexCode}`);
-  }
-
-  if (config.source === "szse") {
-    const latestBasket = await fetchLatestBasket(config);
-    const parsed = parseBasketRows(latestBasket.text);
-    const enrichedItems = await enrichItems(parsed.items, env, {
-      allowFetch: config.allowLiveSearch,
-    });
 
     return {
-      ok: true,
+      config,
       indexCode: config.indexCode,
       title: config.title,
       etfCode: config.etfCode,
       basketDate: latestBasket.ymd,
       showDataDate: config.showDataDate,
       cashAmount: parsed.cashAmount,
-      items: enrichedItems,
+      items: parsed.items,
     };
   }
 
   const holdings = await fetchIsharesHoldings(config);
   const items = parseIsharesRows(holdings.payload);
-  const enrichedItems = await enrichItems(items, env, {
-    allowFetch: config.allowLiveSearch,
-  });
 
   return {
-    ok: true,
+    config,
     indexCode: config.indexCode,
     title: config.title,
     basketDate: holdings.basketDate,
     showDataDate: config.showDataDate,
     cashAmount: null,
+    items,
+  };
+}
+
+export async function getLatestIndexWeightSymbols(indexCode = "NDXTMC") {
+  const raw = await fetchRawIndexWeights(indexCode);
+  return {
+    basketDate: raw.basketDate,
+    showDataDate: true,
+    symbols: raw.items.map((item) => item.symbol),
+  };
+}
+
+export async function buildIndexWeightsPayload(indexCode = "NDXTMC", env) {
+  const raw = await fetchRawIndexWeights(indexCode);
+  const enrichedItems = await enrichItems(raw.items, env, {
+    allowFetch: raw.config.allowLiveSearch,
+  });
+
+  return {
+    ok: true,
+    indexCode: raw.indexCode,
+    title: raw.title,
+    etfCode: raw.etfCode,
+    basketDate: raw.basketDate,
+    showDataDate: raw.showDataDate,
+    cashAmount: raw.cashAmount,
     items: enrichedItems,
+  };
+}
+
+export async function buildCommonIndexWeightsPayload(env) {
+  const rawIndexes = await Promise.all(COMMON_INDEX_CODES.map((indexCode) => fetchRawIndexWeights(indexCode)));
+  const itemMaps = new Map(
+    rawIndexes.map((raw) => [
+      raw.indexCode,
+      new Map(raw.items.map((item) => [item.symbol, item])),
+    ])
+  );
+
+  const firstIndex = rawIndexes[0];
+  const commonSymbols = firstIndex.items
+    .map((item) => item.symbol)
+    .filter((symbol) => rawIndexes.every((raw) => itemMaps.get(raw.indexCode)?.has(symbol)));
+
+  const metaMap = await getSearchMetaBatch(commonSymbols, env, { allowFetch: true });
+
+  const items = commonSymbols.map((symbol) => {
+    const fallback = INDEX_WEIGHTS_FALLBACK_META[symbol];
+    const meta = metaMap.get(symbol);
+    const weights = {};
+    let totalWeightPct = 0;
+
+    for (const raw of rawIndexes) {
+      const item = itemMaps.get(raw.indexCode).get(symbol);
+      const weightPct = Number.isFinite(+item?.weightPct) ? +item.weightPct : null;
+      weights[raw.indexCode] = weightPct;
+      totalWeightPct += Number.isFinite(weightPct) ? weightPct : 0;
+    }
+
+    return {
+      symbol,
+      nameEn: meta?.nameEn || fallback?.nameEn || symbol,
+      iconLight: meta?.iconLight || fallback?.iconLight || null,
+      slug: meta?.slug || fallback?.slug || symbol.toLowerCase(),
+      weights,
+      totalWeightPct,
+      averageWeightPct: totalWeightPct / COMMON_INDEX_CODES.length,
+    };
+  });
+
+  items.sort((a, b) => {
+    const totalDelta = b.totalWeightPct - a.totalWeightPct;
+    if (Math.abs(totalDelta) > 1e-9) return totalDelta;
+
+    for (const indexCode of COMMON_INDEX_CODES) {
+      const weightDelta = (b.weights[indexCode] ?? -Infinity) - (a.weights[indexCode] ?? -Infinity);
+      if (Math.abs(weightDelta) > 1e-9) return weightDelta;
+    }
+
+    return String(a.symbol).localeCompare(String(b.symbol));
+  });
+
+  return {
+    ok: true,
+    title: "\u4e09\u5927\u79d1\u6280\u7c7b\u6307\u6570\u5171\u540c\u6210\u5206\u80a1\u6743\u91cd",
+    indexCodes: COMMON_INDEX_CODES,
+    indexes: rawIndexes.map((raw) => ({
+      indexCode: raw.indexCode,
+      title: raw.title,
+      basketDate: raw.basketDate,
+      showDataDate: raw.showDataDate,
+    })),
+    itemCount: items.length,
+    items,
   };
 }

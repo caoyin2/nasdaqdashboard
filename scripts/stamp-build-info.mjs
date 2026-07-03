@@ -31,12 +31,15 @@ const committedAt = committedAtIso
       hour12: false,
     }).format(new Date(committedAtIso))
   : "";
+const version = committedAt ? committedAt.replace(/[-: ]/g, "").slice(0, 12) : shortSha;
 
 const content = `export const BUILD_INFO = {
+  version: ${JSON.stringify(version)},
   shortSha: ${JSON.stringify(shortSha)},
   fullSha: ${JSON.stringify(fullSha)},
   message: ${JSON.stringify(message)},
   committedAt: ${JSON.stringify(committedAt)},
+  updatedAt: ${JSON.stringify(committedAt)},
 };
 `;
 

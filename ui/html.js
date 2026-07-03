@@ -15,6 +15,14 @@ function safeJsonForHtml(data) {
     .replace(/&/g, "\\u0026");
 }
 
+function safeTextForHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 export function getHtml() {
   const meta = INDEXES.map((item, index) => ({
     ...item,
@@ -32,6 +40,9 @@ export function getHtml() {
     "https://companieslogo.com/img/orig/NDAQ-0d58bfbc.svg?t=1740420328&download=true";
   const nasdaqFaviconUrl =
     "https://www.nasdaq.com/sites/acquia.prod/files/favicon.ico";
+  const versionId = BUILD_INFO.version || BUILD_INFO.shortSha || "local";
+  const versionTime = BUILD_INFO.updatedAt || BUILD_INFO.committedAt || "";
+  const versionTitle = [BUILD_INFO.fullSha, versionTime, BUILD_INFO.message].filter(Boolean).join(" | ");
 
   return `<!doctype html>
 <html lang="zh-CN">
@@ -55,8 +66,9 @@ export function getHtml() {
           <div class="sub" id="periodCN">\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f</div>
         </div>
       </div>
-      <div class="buildInfo" title="${BUILD_INFO.fullSha}">
-        <div class="buildInfoLine">\u7248\u672c\uff1a${BUILD_INFO.shortSha} ${BUILD_INFO.message}</div>
+      <div class="buildInfo" title="${safeTextForHtml(versionTitle)}">
+        <div class="buildInfoLine">\u7248\u672c\uff1a${safeTextForHtml(versionId)}${versionTime ? " | " + safeTextForHtml(versionTime) : ""}</div>
+        <div class="buildInfoSubline">${safeTextForHtml(BUILD_INFO.message || "")}</div>
       </div>
     </div>
 

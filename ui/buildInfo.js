@@ -1,6 +1,8 @@
 export const BUILD_INFO = {
-  shortSha: "953b0f1",
-  fullSha: "953b0f14ba1daaa11ccac4b8527c7f521876da2a",
-  message: "fix: tighten mobile star meta gap",
-  committedAt: "2026-05-07 08:42:08",
+  version: "20260703-1657",
+  shortSha: "b28adf1",
+  fullSha: "b28adf183250667d7d725b0007026ba790258197",
+  message: "add common index weights panel",
+  committedAt: "2026-07-03 16:57:23",
+  updatedAt: "2026-07-03 16:57:23",
 };

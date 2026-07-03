@@ -11,7 +11,7 @@ import { normalizePeriod } from "./config.js";
 import { corsHeaders, htmlResponse, jsonResponse } from "./lib/http.js";
 import { fetchCnnFearGreedSummary } from "./services/cnnFearGreed.js";
 import { buildFundPremiumPayload } from "./services/fundPremiumService.js";
-import { buildIndexWeightsPayload } from "./services/indexWeightsService.js";
+import { buildCommonIndexWeightsPayload, buildIndexWeightsPayload } from "./services/indexWeightsService.js";
 import { getKvBinding, resolveKvBinding } from "./services/kvBinding.js";
 import { buildQuotePayload } from "./services/quoteService.js";
 import { probeSeekingAlphaSlugs } from "./services/seekingAlpha.js";
@@ -351,6 +351,20 @@ export default {
       try {
         const indexCode = String(url.searchParams.get("index") || "NDXTMC").toUpperCase();
         const payload = await buildIndexWeightsPayload(indexCode, env);
+        return jsonResponse(payload, origin, 200, { cacheSeconds: 0 });
+      } catch (error) {
+        return jsonResponse(
+          { ok: false, error: error?.message || String(error) },
+          origin,
+          502,
+          { cacheSeconds: 0 }
+        );
+      }
+    }
+
+    if (url.pathname === "/api/index-weights-common") {
+      try {
+        const payload = await buildCommonIndexWeightsPayload(env);
         return jsonResponse(payload, origin, 200, { cacheSeconds: 0 });
       } catch (error) {
         return jsonResponse(

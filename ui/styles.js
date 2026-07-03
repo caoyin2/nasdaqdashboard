@@ -109,6 +109,16 @@ export function getStyles() {
       max-width: 420px;
     }
 
+    .buildInfoSubline{
+      font-size: 10px;
+      line-height: 1.35;
+      color: rgba(147,166,196,.78);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 420px;
+    }
+
     .logo{
       width: 128px;
       height: 32px;
@@ -2121,6 +2131,152 @@ export function getStyles() {
       gap: 12px;
     }
 
+    .commonWeightsPanel{
+      margin-top: 14px;
+      background:
+        radial-gradient(820px 300px at 8% 0%, rgba(45,212,191,.12), transparent 58%),
+        radial-gradient(820px 300px at 100% 10%, rgba(255,180,0,.09), transparent 56%),
+        linear-gradient(180deg, rgba(10,15,26,.90), rgba(12,18,30,.80));
+    }
+
+    .commonWeightLegend{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(31,43,61,.85);
+      background: rgba(255,255,255,.035);
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .commonWeightLegend strong{
+      color: rgba(244,247,252,.94);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .commonWeightDates{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      gap: 4px 10px;
+      max-width: 520px;
+    }
+
+    .commonWeightDates span{
+      white-space: nowrap;
+    }
+
+    .commonWeightList{
+      display:grid;
+      gap: 10px;
+    }
+
+    .commonWeightRow{
+      position: relative;
+      display:grid;
+      grid-template-columns: 42px minmax(220px, 1.2fr) minmax(360px, 2fr) minmax(112px, .55fr);
+      align-items:center;
+      gap: 14px;
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(31,43,61,.85);
+      background:
+        linear-gradient(90deg, var(--common-weight-glow, rgba(0,224,255,.12)), transparent 34%),
+        rgba(255,255,255,.035);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+      overflow: hidden;
+    }
+
+    .commonWeightRank{
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      display:grid;
+      place-items:center;
+      background: rgba(0,224,255,.12);
+      border: 1px solid rgba(0,224,255,.22);
+      color: rgba(156,231,255,.98);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .commonWeightIdentity{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .commonWeightCells{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .commonWeightCell{
+      min-width: 0;
+      padding: 9px 10px;
+      border-radius: 11px;
+      border: 1px solid rgba(255,255,255,.07);
+      background: rgba(5,10,18,.44);
+      display:grid;
+      gap: 6px;
+      font-family: var(--mono);
+    }
+
+    .commonWeightCell span,
+    .commonWeightTotal span{
+      font-size: 11px;
+      color: rgba(183,202,230,.76);
+      white-space: nowrap;
+    }
+
+    .commonWeightCell strong{
+      font-size: 17px;
+      line-height: 1;
+      color: rgba(244,247,252,.96);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .commonWeightBar{
+      height: 5px;
+      border-radius: 999px;
+      overflow:hidden;
+      background: rgba(255,255,255,.06);
+    }
+
+    .commonWeightBar i{
+      display:block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, rgba(0,224,255,.95), rgba(45,212,191,.95));
+      box-shadow: 0 0 14px rgba(0,224,255,.24);
+    }
+
+    .commonWeightTotal{
+      justify-self:end;
+      min-width: 96px;
+      display:grid;
+      gap: 5px;
+      text-align:right;
+      font-family: var(--mono);
+    }
+
+    .commonWeightTotal strong{
+      font-size: 24px;
+      line-height: 1;
+      color: rgba(255,211,112,.98);
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 16px rgba(255,180,0,.24);
+    }
+
     .weightCard{
       position: relative;
       overflow: hidden;
@@ -2303,6 +2459,13 @@ export function getStyles() {
       }
 
       .buildInfoLine{
+        max-width: none;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+      }
+
+      .buildInfoSubline{
         max-width: none;
         white-space: normal;
         overflow: visible;
@@ -2687,6 +2850,45 @@ export function getStyles() {
       .weightsList{
         grid-template-columns: 1fr;
         gap: 10px;
+      }
+
+      .commonWeightLegend{
+        flex-direction: column;
+        align-items:flex-start;
+      }
+
+      .commonWeightDates{
+        justify-content:flex-start;
+        max-width: none;
+      }
+
+      .commonWeightRow{
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .commonWeightIdentity{
+        min-width: 0;
+      }
+
+      .commonWeightCells{
+        grid-column: 1 / -1;
+        grid-template-columns: 1fr;
+      }
+
+      .commonWeightTotal{
+        grid-column: 1 / -1;
+        justify-self: stretch;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        text-align:left;
+        padding-top: 2px;
+      }
+
+      .commonWeightTotal strong{
+        font-size: 22px;
       }
 
       .weightCard{
