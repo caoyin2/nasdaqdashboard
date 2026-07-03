@@ -27,6 +27,12 @@ export const INDEXES = [
     nameCN: "\u7eb3\u65af\u8fbe\u514b100\uff08NDX\uff09",
     iconSymbol: "NDAQ",
   },
+  {
+    tickerId: 15418,
+    symbol: "SOX",
+    nameCN: "\u8d39\u57ce\u534a\u5bfc\u4f53\uff08SOX\uff09",
+    iconSymbol: "NDAQ",
+  },
 ];
 
 export const STAR_TECH_COMPANIES = [
@@ -91,6 +97,7 @@ export const LINE_COLORS = [
   "rgba(0,224,255,.95)",
   "rgba(255,180,0,.95)",
   "rgba(167,139,250,.95)",
+  "rgba(45,212,191,.95)",
 ];
 
 export const UP_COLOR = "rgba(255,77,109,.95)";
