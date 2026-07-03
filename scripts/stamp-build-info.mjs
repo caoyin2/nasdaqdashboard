@@ -18,28 +18,12 @@ function git(cmd) {
 const fullSha = git("git log -1 --format=%H");
 const shortSha = git("git log -1 --format=%h");
 const message = git("git log -1 --format=%s").replace(/\\/g, "\\\\").replace(/`/g, "\\`");
-const committedAtIso = git("git log -1 --format=%cI");
-const committedAt = committedAtIso
-  ? new Intl.DateTimeFormat("sv-SE", {
-      timeZone: "Asia/Shanghai",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    }).format(new Date(committedAtIso))
-  : "";
-const version = committedAt ? committedAt.replace(/[-: ]/g, "").slice(0, 12) : shortSha;
 
 const content = `export const BUILD_INFO = {
-  version: ${JSON.stringify(version)},
+  version: ${JSON.stringify(shortSha)},
   shortSha: ${JSON.stringify(shortSha)},
   fullSha: ${JSON.stringify(fullSha)},
   message: ${JSON.stringify(message)},
-  committedAt: ${JSON.stringify(committedAt)},
-  updatedAt: ${JSON.stringify(committedAt)},
 };
 `;
 

@@ -2132,7 +2132,6 @@ export function getStyles() {
     }
 
     .commonWeightsPanel{
-      margin-top: 14px;
       background:
         radial-gradient(820px 300px at 8% 0%, rgba(45,212,191,.12), transparent 58%),
         radial-gradient(820px 300px at 100% 10%, rgba(255,180,0,.09), transparent 56%),

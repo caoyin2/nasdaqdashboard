@@ -297,14 +297,19 @@ export function getClientScript() {
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
     var OVERVIEW_API_TIMEOUT_MS = 30000;
-    var INDEX_WEIGHTS_API_VERSION = "20260703a";
+    var INDEX_WEIGHTS_API_VERSION = "20260703b";
     var SP500_SECTOR_API_VERSION = "20260406a";
     var FUND_PREMIUM_API_VERSION = "20260415b";
+    var COMMON_WEIGHTS_CODE = "COMMON";
     var WEIGHTS_INDEX_OPTIONS = [
+      { code: COMMON_WEIGHTS_CODE, label: "\\u5171\\u540c\\u6743\\u91cd\\u80a1" },
       { code: "NDXTMC", label: "\\u7eb3\\u65af\\u8fbe\\u514b\\u79d1\\u6280\\u5e02\\u503c\\u52a0\\u6743" },
       { code: "SP500-45", label: "\\u6807\\u666e500\\u4fe1\\u606f\\u79d1\\u6280" },
       { code: "NDX", label: "\\u7eb3\\u65af\\u8fbe\\u514b100" }
     ];
+    var COMMON_WEIGHT_INDEX_OPTIONS = WEIGHTS_INDEX_OPTIONS.filter(function (option) {
+      return option.code !== COMMON_WEIGHTS_CODE;
+    });
     var FEAR_GREED_PALETTE = [
       { key: "extreme fear", label: "\u6781\u5ea6\u6050\u614c", color: "#ff5468", bandIndex: 0, maxExclusive: 25, lines: ["\u6781\u5ea6", "\u6050\u614c"] },
       { key: "fear", label: "\u6050\u614c", color: "#ff9ea4", bandIndex: 1, maxExclusive: 45, lines: ["\u6050\u614c"] },
@@ -369,7 +374,7 @@ export function getClientScript() {
       detailSymbol: null
     };
     var weightsState = {
-      activeIndex: "NDXTMC",
+      activeIndex: COMMON_WEIGHTS_CODE,
       cache: new Map(),
       fetchCtrl: null,
       commonCache: null,
@@ -1930,7 +1935,7 @@ export function getClientScript() {
             '</div>',
           '</div>',
           '<div class="commonWeightCells">',
-            WEIGHTS_INDEX_OPTIONS.map(function (option) {
+            COMMON_WEIGHT_INDEX_OPTIONS.map(function (option) {
               var value = Number.isFinite(weights[option.code]) ? weights[option.code] : null;
               var width = Number.isFinite(value) ? clamp(value / safeMax, 0.035, 1) * 100 : 0;
               return [
@@ -1979,9 +1984,10 @@ export function getClientScript() {
               payload ? '<div class="commonWeightDates">' + commonWeightDatesHTML(payload) + '</div>' : '',
             '</div>',
           '</div>',
+          weightIndexSegHTML(weightsState.activeIndex),
           '<div class="commonWeightLegend">',
             '<span>\u6392\u5e8f\uff1a\u4e09\u4e2a\u6307\u6570\u6743\u91cd\u5408\u8ba1\u4ece\u9ad8\u5230\u4f4e</span>',
-            '<strong>' + WEIGHTS_INDEX_OPTIONS.map(function (item) { return esc(item.code); }).join(" / ") + '</strong>',
+            '<strong>' + COMMON_WEIGHT_INDEX_OPTIONS.map(function (item) { return esc(item.code); }).join(" / ") + '</strong>',
           '</div>',
           listHtml,
         '</div>'
@@ -1991,6 +1997,11 @@ export function getClientScript() {
     function renderWeightsPanel() {
       var root = $("indexWeightsPanel");
       if (!root) return;
+
+      if (weightsState.activeIndex === COMMON_WEIGHTS_CODE) {
+        root.innerHTML = commonWeightsPanelHTML();
+        return;
+      }
 
       var cached = weightsState.cache.get(weightsState.activeIndex);
       var items = cached && cached.items ? cached.items.slice() : null;
@@ -2019,8 +2030,7 @@ export function getClientScript() {
           '</div>',
           weightIndexSegHTML(weightsState.activeIndex),
           listHtml,
-        '</div>',
-        commonWeightsPanelHTML()
+        '</div>'
       ].join("");
     }
 
@@ -2135,6 +2145,7 @@ export function getClientScript() {
 
     async function loadCommonIndexWeights(options) {
       var opts = options || {};
+      weightsState.activeIndex = COMMON_WEIGHTS_CODE;
       weightsState.touched = true;
 
       if (!opts.force && weightsState.commonCache) {
@@ -2161,6 +2172,13 @@ export function getClientScript() {
         weightsState.commonStatusType = "err";
         renderWeightsPanel();
       }
+    }
+
+    function loadWeightsView(indexCode, options) {
+      if (indexCode === COMMON_WEIGHTS_CODE) {
+        return loadCommonIndexWeights(options);
+      }
+      return loadIndexWeights(indexCode, options);
     }
 
     async function fetchStarPeriod(period, options) {
@@ -2611,8 +2629,7 @@ export function getClientScript() {
           renderPeriod(state.period, { force: true }),
           loadStarPeriod(starsState.period, { force: true }),
           loadSectorPeriod(sectorsState.period, { force: true }),
-          loadIndexWeights(weightsState.activeIndex, { force: true }),
-          loadCommonIndexWeights({ force: true }),
+          loadWeightsView(weightsState.activeIndex, { force: true }),
           loadFundPremiums({ force: true }),
         ]);
       } finally {
@@ -2668,8 +2685,7 @@ export function getClientScript() {
       }
 
       if (page === "weights" && !weightsState.touched) {
-        loadIndexWeights(weightsState.activeIndex, { force: true });
-        loadCommonIndexWeights({ force: true });
+        loadWeightsView(weightsState.activeIndex, { force: true });
       }
 
       if (page === "sectors" && !sectorsState.touched) {
@@ -3031,7 +3047,7 @@ export function getClientScript() {
         if (!btn) return;
         var indexCode = btn.getAttribute("data-weight-index");
         if (!indexCode || indexCode === weightsState.activeIndex) return;
-        loadIndexWeights(indexCode, { force: false });
+        loadWeightsView(indexCode, { force: false });
       });
     }
 

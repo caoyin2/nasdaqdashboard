@@ -41,8 +41,7 @@ export function getHtml() {
   const nasdaqFaviconUrl =
     "https://www.nasdaq.com/sites/acquia.prod/files/favicon.ico";
   const versionId = BUILD_INFO.version || BUILD_INFO.shortSha || "local";
-  const versionTime = BUILD_INFO.updatedAt || BUILD_INFO.committedAt || "";
-  const versionTitle = [BUILD_INFO.fullSha, versionTime, BUILD_INFO.message].filter(Boolean).join(" | ");
+  const versionTitle = [BUILD_INFO.fullSha, BUILD_INFO.message].filter(Boolean).join(" | ");
 
   return `<!doctype html>
 <html lang="zh-CN">
@@ -67,7 +66,7 @@ export function getHtml() {
         </div>
       </div>
       <div class="buildInfo" title="${safeTextForHtml(versionTitle)}">
-        <div class="buildInfoLine">\u7248\u672c\uff1a${safeTextForHtml(versionId)}${versionTime ? " | " + safeTextForHtml(versionTime) : ""}</div>
+        <div class="buildInfoLine">\u7248\u672c\uff1a${safeTextForHtml(versionId)}</div>
         <div class="buildInfoSubline">${safeTextForHtml(BUILD_INFO.message || "")}</div>
       </div>
     </div>
