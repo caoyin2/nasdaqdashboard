@@ -2178,7 +2178,7 @@ export function getStyles() {
     .commonWeightRow{
       position: relative;
       display:grid;
-      grid-template-columns: 42px minmax(220px, 1.2fr) minmax(360px, 2fr) minmax(112px, .55fr);
+      grid-template-columns: 42px minmax(220px, 1.05fr) minmax(360px, 2.2fr);
       align-items:center;
       gap: 14px;
       padding: 14px;
@@ -2230,8 +2230,7 @@ export function getStyles() {
       font-family: var(--mono);
     }
 
-    .commonWeightCell span,
-    .commonWeightTotal span{
+    .commonWeightCell span{
       font-size: 11px;
       color: rgba(183,202,230,.76);
       white-space: nowrap;
@@ -2257,23 +2256,6 @@ export function getStyles() {
       border-radius: inherit;
       background: linear-gradient(90deg, rgba(0,224,255,.95), rgba(45,212,191,.95));
       box-shadow: 0 0 14px rgba(0,224,255,.24);
-    }
-
-    .commonWeightTotal{
-      justify-self:end;
-      min-width: 96px;
-      display:grid;
-      gap: 5px;
-      text-align:right;
-      font-family: var(--mono);
-    }
-
-    .commonWeightTotal strong{
-      font-size: 24px;
-      line-height: 1;
-      color: rgba(255,211,112,.98);
-      font-variant-numeric: tabular-nums;
-      text-shadow: 0 0 16px rgba(255,180,0,.24);
     }
 
     .weightCard{
@@ -2874,20 +2856,6 @@ export function getStyles() {
       .commonWeightCells{
         grid-column: 1 / -1;
         grid-template-columns: 1fr;
-      }
-
-      .commonWeightTotal{
-        grid-column: 1 / -1;
-        justify-self: stretch;
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        text-align:left;
-        padding-top: 2px;
-      }
-
-      .commonWeightTotal strong{
-        font-size: 22px;
       }
 
       .weightCard{

@@ -297,7 +297,7 @@ export function getClientScript() {
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
     var OVERVIEW_API_TIMEOUT_MS = 30000;
-    var INDEX_WEIGHTS_API_VERSION = "weights-fix-1";
+    var INDEX_WEIGHTS_API_VERSION = "weights-cache-1";
     var SP500_SECTOR_API_VERSION = "20260406a";
     var FUND_PREMIUM_API_VERSION = "20260415b";
     var COMMON_WEIGHTS_CODE = "COMMON";
@@ -1913,10 +1913,11 @@ export function getClientScript() {
       ].join("");
     }
 
-    function commonWeightRowHTML(item, rank, maxTotal) {
-      var safeMax = Number.isFinite(maxTotal) && maxTotal > 0 ? maxTotal : 1;
+    function commonWeightRowHTML(item, rank, maxTotal, maxCellWeight) {
+      var safeGlowMax = Number.isFinite(maxTotal) && maxTotal > 0 ? maxTotal : 1;
+      var safeCellMax = Number.isFinite(maxCellWeight) && maxCellWeight > 0 ? maxCellWeight : 1;
       var total = Number.isFinite(item.totalWeightPct) ? item.totalWeightPct : 0;
-      var intensity = clamp(total / safeMax, 0, 1);
+      var intensity = clamp(total / safeGlowMax, 0, 1);
       var glow = "rgba(0,224,255," + (0.10 + intensity * 0.20).toFixed(3) + ")";
       var weights = item.weights || {};
 
@@ -1937,7 +1938,7 @@ export function getClientScript() {
           '<div class="commonWeightCells">',
             COMMON_WEIGHT_INDEX_OPTIONS.map(function (option) {
               var value = Number.isFinite(weights[option.code]) ? weights[option.code] : null;
-              var width = Number.isFinite(value) ? clamp(value / safeMax, 0.035, 1) * 100 : 0;
+              var width = Number.isFinite(value) ? clamp(value / safeCellMax, 0.035, 1) * 100 : 0;
               return [
                 '<div class="commonWeightCell">',
                   '<span>' + esc(option.code) + '</span>',
@@ -1946,10 +1947,6 @@ export function getClientScript() {
                 '</div>'
               ].join("");
             }).join(""),
-          '</div>',
-          '<div class="commonWeightTotal">',
-            '<span>\u7efc\u5408</span>',
-            '<strong>' + fmt(total, 2) + '%</strong>',
           '</div>',
         '</article>'
       ].join("");
@@ -1966,9 +1963,19 @@ export function getClientScript() {
       var payload = weightsState.commonCache;
       var items = payload && Array.isArray(payload.items) ? payload.items.slice() : null;
       var maxTotal = items && items.length ? items[0].totalWeightPct : 0;
+      var maxCellWeight = 0;
+      if (items && items.length) {
+        items.forEach(function (item) {
+          var weights = item.weights || {};
+          COMMON_WEIGHT_INDEX_OPTIONS.forEach(function (option) {
+            var value = Number.isFinite(weights[option.code]) ? weights[option.code] : null;
+            if (Number.isFinite(value) && value > maxCellWeight) maxCellWeight = value;
+          });
+        });
+      }
       var statusClass = weightsState.commonStatusType === "err" ? "err" : "ok";
       var listHtml = items && items.length
-        ? '<div class="commonWeightList">' + items.map(function (item, index) { return commonWeightRowHTML(item, index + 1, maxTotal); }).join("") + '</div>'
+        ? '<div class="commonWeightList">' + items.map(function (item, index) { return commonWeightRowHTML(item, index + 1, maxTotal, maxCellWeight); }).join("") + '</div>'
         : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u4e00\u6b21\u6027\u6bd4\u5bf9 NDXTMC\u3001SP500-45 \u548c NDX\uff0c\u53ea\u663e\u793a\u4e09\u4e2a\u6307\u6570\u90fd\u5305\u542b\u7684\u6210\u5206\u80a1\u3002</div>';
 
       return [
@@ -2032,6 +2039,26 @@ export function getClientScript() {
           listHtml,
         '</div>'
       ].join("");
+    }
+
+    function hydrateIndexWeightCacheFromCommon(payload) {
+      if (!payload || !Array.isArray(payload.indexes)) return false;
+      var hydrated = false;
+      payload.indexes.forEach(function (indexPayload) {
+        if (!indexPayload || !indexPayload.indexCode || !Array.isArray(indexPayload.items)) return;
+        weightsState.cache.set(indexPayload.indexCode, {
+          ok: true,
+          indexCode: indexPayload.indexCode,
+          title: indexPayload.title,
+          etfCode: indexPayload.etfCode,
+          basketDate: indexPayload.basketDate,
+          showDataDate: indexPayload.showDataDate,
+          cashAmount: indexPayload.cashAmount,
+          items: indexPayload.items.slice()
+        });
+        hydrated = true;
+      });
+      return hydrated;
     }
 
     async function fetchIndexWeights(indexCode, options) {
@@ -2117,8 +2144,12 @@ export function getClientScript() {
       weightsState.activeIndex = indexCode;
       weightsState.touched = true;
 
+      if (!opts.force) {
+        hydrateIndexWeightCacheFromCommon(weightsState.commonCache);
+      }
+
       if (!opts.force && weightsState.cache.has(indexCode)) {
-        weightsState.statusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u7684\u6700\u65b0\u6743\u91cd\u6587\u4ef6";
+        weightsState.statusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u7684\u6307\u6570\u6743\u91cd\u6570\u636e";
         weightsState.statusType = "ok";
         renderWeightsPanel();
         return;
@@ -2149,6 +2180,7 @@ export function getClientScript() {
       weightsState.touched = true;
 
       if (!opts.force && weightsState.commonCache) {
+        hydrateIndexWeightCacheFromCommon(weightsState.commonCache);
         weightsState.commonStatusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u7684\u5171\u540c\u6210\u5206\u80a1\u6743\u91cd";
         weightsState.commonStatusType = "ok";
         renderWeightsPanel();
@@ -2163,6 +2195,7 @@ export function getClientScript() {
         var payload = await fetchCommonIndexWeights(opts);
         if (!payload) return;
         weightsState.commonCache = payload;
+        hydrateIndexWeightCacheFromCommon(payload);
         weightsState.commonStatusText = "\u5df2\u751f\u6210\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u5206\u80a1\u6743\u91cd";
         weightsState.commonStatusType = "ok";
         renderWeightsPanel();

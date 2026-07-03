@@ -441,8 +441,7 @@ export async function getLatestIndexWeightSymbols(indexCode = "NDXTMC") {
   };
 }
 
-export async function buildIndexWeightsPayload(indexCode = "NDXTMC", env) {
-  const raw = await fetchRawIndexWeights(indexCode);
+async function buildEnrichedIndexWeightsPayload(raw, env) {
   const enrichedItems = await enrichItems(raw.items, env, {
     allowFetch: raw.config.allowLiveSearch,
   });
@@ -459,8 +458,16 @@ export async function buildIndexWeightsPayload(indexCode = "NDXTMC", env) {
   };
 }
 
+export async function buildIndexWeightsPayload(indexCode = "NDXTMC", env) {
+  const raw = await fetchRawIndexWeights(indexCode);
+  return buildEnrichedIndexWeightsPayload(raw, env);
+}
+
 export async function buildCommonIndexWeightsPayload(env) {
   const rawIndexes = await Promise.all(COMMON_INDEX_CODES.map((indexCode) => fetchRawIndexWeights(indexCode)));
+  const indexPayloads = await Promise.all(
+    rawIndexes.map((raw) => buildEnrichedIndexWeightsPayload(raw, env))
+  );
   const itemMaps = new Map(
     rawIndexes.map((raw) => [
       raw.indexCode,
@@ -515,12 +522,7 @@ export async function buildCommonIndexWeightsPayload(env) {
     ok: true,
     title: "\u4e09\u5927\u79d1\u6280\u7c7b\u6307\u6570\u5171\u540c\u6210\u5206\u80a1\u6743\u91cd",
     indexCodes: COMMON_INDEX_CODES,
-    indexes: rawIndexes.map((raw) => ({
-      indexCode: raw.indexCode,
-      title: raw.title,
-      basketDate: raw.basketDate,
-      showDataDate: raw.showDataDate,
-    })),
+    indexes: indexPayloads,
     itemCount: items.length,
     items,
   };

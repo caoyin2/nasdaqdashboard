@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.0",
+  version: "v1.3.1",
   shortSha: "",
   fullSha: "",
-  message: "Fix index weights API",
+  message: "Cache index weights from common view",
 };
