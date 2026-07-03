@@ -297,7 +297,7 @@ export function getClientScript() {
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
     var OVERVIEW_API_TIMEOUT_MS = 30000;
-    var INDEX_WEIGHTS_API_VERSION = "weights-ui-1";
+    var INDEX_WEIGHTS_API_VERSION = "weights-ui-2";
     var SP500_SECTOR_API_VERSION = "20260406a";
     var FUND_PREMIUM_API_VERSION = "20260415b";
     var COMMON_WEIGHTS_CODE = "COMMON";
@@ -1963,13 +1963,6 @@ export function getClientScript() {
       ].join("");
     }
 
-    function commonWeightDatesHTML(payload) {
-      if (!payload || !Array.isArray(payload.indexes)) return "";
-      return payload.indexes.map(function (item) {
-        return '<span>' + esc(weightIndexLabel(item.indexCode)) + '\uff1a' + esc(formatBasketDate(item.basketDate)) + '</span>';
-      }).join("");
-    }
-
     function commonWeightsPanelHTML() {
       var payload = weightsState.commonCache;
       var items = payload && Array.isArray(payload.items) ? payload.items.slice() : null;
@@ -1999,7 +1992,6 @@ export function getClientScript() {
             '<div class="weightsMeta">',
               '<div class="' + statusClass + '">' + esc(weightsState.commonStatusText) + '</div>',
               payload ? '<div>\u5171\u540c\u6210\u4efd\u80a1\uff1a<strong>' + esc(String(payload.itemCount || 0)) + '</strong></div>' : '',
-              payload ? '<div class="commonWeightDates">' + commonWeightDatesHTML(payload) + '</div>' : '',
             '</div>',
           '</div>',
           weightIndexSegHTML(weightsState.activeIndex),

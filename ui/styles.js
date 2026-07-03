@@ -2131,18 +2131,6 @@ export function getStyles() {
       gap: 12px;
     }
 
-    .commonWeightDates{
-      display:flex;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-      gap: 4px 10px;
-      max-width: 520px;
-    }
-
-    .commonWeightDates span{
-      white-space: nowrap;
-    }
-
     .commonWeightList{
       display:grid;
       gap: 10px;
@@ -2804,11 +2792,6 @@ export function getStyles() {
       .weightsList{
         grid-template-columns: 1fr;
         gap: 10px;
-      }
-
-      .commonWeightDates{
-        justify-content:flex-start;
-        max-width: none;
       }
 
       .commonWeightRow{
