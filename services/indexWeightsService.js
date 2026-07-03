@@ -3,11 +3,13 @@ import { getSearchMetaBatch } from "./searchMetaStore.js";
 
 const SHENZHEN_TZ = "Asia/Shanghai";
 const ETF_BASKET_LOOKBACK_DAYS = 45;
+const ISHARES_HOLDINGS_LOOKBACK_DAYS = 14;
 const ISHARES_ORIGIN = "https://www.ishares.com";
 const ISHARES_NDX_PRODUCT_URL =
-  "https://www.ishares.com/uk/individual/en/products/253741/?switchLocale=y&siteEntryPassthrough=true";
+  "https://www.ishares.com/uk/individual/en/products/253741/ishares-nasdaq-100-ucits-etf";
 const ISHARES_SP50045_PRODUCT_URL =
-  "https://www.ishares.com/uk/individual/en/products/280510/?switchLocale=y&siteEntryPassthrough=true";
+  "https://www.ishares.com/uk/individual/en/products/280510/ishares-sp-500-information-technology-sector-ucits-etf";
+const ISHARES_HOLDINGS_AJAX_PATH = "1506575576011.ajax";
 
 const INDEX_WEIGHT_CONFIG = {
   NDXTMC: {
@@ -16,23 +18,25 @@ const INDEX_WEIGHT_CONFIG = {
     indexCode: "NDXTMC",
     title: "\u7eb3\u65af\u8fbe\u514b\u79d1\u6280\u5e02\u503c\u52a0\u6743\uff08NDXTMC\uff09",
     showDataDate: true,
-    allowLiveSearch: true,
+    allowLiveSearch: false,
   },
   "SP500-45": {
     source: "ishares",
     indexCode: "SP500-45",
     title: "\u6807\u666e500\u4fe1\u606f\u79d1\u6280\uff08SP500-45\uff09",
     showDataDate: true,
-    allowLiveSearch: true,
+    allowLiveSearch: false,
     productPageUrl: ISHARES_SP50045_PRODUCT_URL,
+    holdingsUrl: `${ISHARES_SP50045_PRODUCT_URL}/${ISHARES_HOLDINGS_AJAX_PATH}`,
   },
   NDX: {
     source: "ishares",
     indexCode: "NDX",
     title: "\u7eb3\u65af\u8fbe\u514b100\uff08NDX\uff09",
     showDataDate: true,
-    allowLiveSearch: true,
+    allowLiveSearch: false,
     productPageUrl: ISHARES_NDX_PRODUCT_URL,
+    holdingsUrl: `${ISHARES_NDX_PRODUCT_URL}/${ISHARES_HOLDINGS_AJAX_PATH}`,
   },
 };
 
@@ -77,7 +81,11 @@ function decodeBasketText(buffer) {
   try {
     return new TextDecoder("gbk").decode(buffer);
   } catch {
-    return new TextDecoder("gb18030").decode(buffer);
+    try {
+      return new TextDecoder("gb18030").decode(buffer);
+    } catch {
+      return new TextDecoder("utf-8").decode(buffer);
+    }
   }
 }
 
@@ -160,7 +168,18 @@ function extractCompositionLines(text) {
     rows.push(compact);
   }
 
-  return rows;
+  if (rows.length) {
+    return rows;
+  }
+
+  return lines
+    .map((line) => line.trimEnd())
+    .filter((line) => {
+      const columns = line.trim().split(/\s{2,}/).map((part) => part.trim()).filter(Boolean);
+      if (columns.length < 6) return false;
+      if (!/^(?:\d{6}|[A-Z][A-Z0-9. -]{0,15})$/.test(columns[0])) return false;
+      return Number.isFinite(parseShares(columns[2])) && Number.isFinite(parseAmount(columns[columns.length - 3]));
+    });
 }
 
 function parseBasketRows(text) {
@@ -254,22 +273,24 @@ function extractIsharesHoldingsRequest(html) {
   };
 }
 
-async function fetchIsharesHoldings(config) {
-  const html = await fetchIsharesPageHtml(config);
-  const holdingsRequest = extractIsharesHoldingsRequest(html);
-  const url = new URL(holdingsRequest.ajaxUri, ISHARES_ORIGIN);
-
-  if (holdingsRequest.latestAsOfDate) {
-    url.searchParams.set("asOfDate", holdingsRequest.latestAsOfDate);
+function buildIsharesHoldingsUrl(baseUrl, asOfDate = null) {
+  const url = new URL(baseUrl, ISHARES_ORIGIN);
+  url.searchParams.set("tab", "all");
+  url.searchParams.set("fileType", "json");
+  if (asOfDate) {
+    url.searchParams.set("asOfDate", asOfDate);
   }
+  return url;
+}
 
+async function fetchIsharesHoldingsJson(url, config) {
   const res = await fetch(url.toString(), {
     headers: {
       "User-Agent": "Mozilla/5.0",
       "Accept": "application/json,text/plain,*/*",
       "Cache-Control": "no-cache",
       "Pragma": "no-cache",
-      "Referer": "https://www.ishares.com/",
+      "Referer": config.productPageUrl || `${ISHARES_ORIGIN}/`,
     },
   });
 
@@ -278,9 +299,38 @@ async function fetchIsharesHoldings(config) {
     throw new Error(`iShares ${config.indexCode} weights failed: HTTP ${res.status} ${text.slice(0, 120)}`);
   }
 
+  const text = await res.text();
+  return JSON.parse(text.replace(/^\uFEFF/, ""));
+}
+
+async function resolveIsharesHoldingsBaseUrl(config) {
+  if (config.holdingsUrl) {
+    return config.holdingsUrl;
+  }
+
+  const html = await fetchIsharesPageHtml(config);
+  const holdingsRequest = extractIsharesHoldingsRequest(html);
+  return new URL(holdingsRequest.ajaxUri, ISHARES_ORIGIN).toString();
+}
+
+async function fetchIsharesHoldings(config) {
+  const holdingsBaseUrl = await resolveIsharesHoldingsBaseUrl(config);
+
+  for (let offset = 0; offset < ISHARES_HOLDINGS_LOOKBACK_DAYS; offset += 1) {
+    const asOfDate = fmtDateYmd(getShanghaiDate(-offset));
+    const payload = await fetchIsharesHoldingsJson(buildIsharesHoldingsUrl(holdingsBaseUrl, asOfDate), config);
+    if (parseIsharesRows(payload).length) {
+      return {
+        basketDate: asOfDate,
+        payload,
+      };
+    }
+  }
+
+  const payload = await fetchIsharesHoldingsJson(buildIsharesHoldingsUrl(holdingsBaseUrl), config);
   return {
-    basketDate: holdingsRequest.latestAsOfDate,
-    payload: await res.json(),
+    basketDate: null,
+    payload,
   };
 }
 
@@ -423,7 +473,7 @@ export async function buildCommonIndexWeightsPayload(env) {
     .map((item) => item.symbol)
     .filter((symbol) => rawIndexes.every((raw) => itemMaps.get(raw.indexCode)?.has(symbol)));
 
-  const metaMap = await getSearchMetaBatch(commonSymbols, env, { allowFetch: true });
+  const metaMap = await getSearchMetaBatch(commonSymbols, env, { allowFetch: false });
 
   const items = commonSymbols.map((symbol) => {
     const fallback = INDEX_WEIGHTS_FALLBACK_META[symbol];

@@ -297,7 +297,7 @@ export function getClientScript() {
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
     var OVERVIEW_API_TIMEOUT_MS = 30000;
-    var INDEX_WEIGHTS_API_VERSION = "20260703b";
+    var INDEX_WEIGHTS_API_VERSION = "weights-fix-1";
     var SP500_SECTOR_API_VERSION = "20260406a";
     var FUND_PREMIUM_API_VERSION = "20260415b";
     var COMMON_WEIGHTS_CODE = "COMMON";
