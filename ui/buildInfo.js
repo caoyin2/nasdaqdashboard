@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.1",
+  version: "v1.3.2",
   shortSha: "",
   fullSha: "",
-  message: "Cache index weights from common view",
+  message: "Polish common constituents view",
 };

@@ -2131,33 +2131,6 @@ export function getStyles() {
       gap: 12px;
     }
 
-    .commonWeightsPanel{
-      background:
-        radial-gradient(820px 300px at 8% 0%, rgba(45,212,191,.12), transparent 58%),
-        radial-gradient(820px 300px at 100% 10%, rgba(255,180,0,.09), transparent 56%),
-        linear-gradient(180deg, rgba(10,15,26,.90), rgba(12,18,30,.80));
-    }
-
-    .commonWeightLegend{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 12px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(31,43,61,.85);
-      background: rgba(255,255,255,.035);
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .commonWeightLegend strong{
-      color: rgba(244,247,252,.94);
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
     .commonWeightDates{
       display:flex;
       flex-wrap:wrap;
@@ -2185,7 +2158,7 @@ export function getStyles() {
       border-radius: 14px;
       border: 1px solid rgba(31,43,61,.85);
       background:
-        linear-gradient(90deg, var(--common-weight-glow, rgba(0,224,255,.12)), transparent 34%),
+        linear-gradient(90deg, var(--common-weight-glow, rgba(38,106,255,.12)), transparent 34%),
         rgba(255,255,255,.035);
       box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
       overflow: hidden;
@@ -2197,8 +2170,8 @@ export function getStyles() {
       border-radius: 999px;
       display:grid;
       place-items:center;
-      background: rgba(0,224,255,.12);
-      border: 1px solid rgba(0,224,255,.22);
+      background: rgba(32,118,255,.12);
+      border: 1px solid rgba(105,214,255,.22);
       color: rgba(156,231,255,.98);
       font-family: var(--mono);
       font-size: 12px;
@@ -2254,8 +2227,8 @@ export function getStyles() {
       display:block;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, rgba(0,224,255,.95), rgba(45,212,191,.95));
-      box-shadow: 0 0 14px rgba(0,224,255,.24);
+      background: linear-gradient(90deg, rgba(32,118,255,.95), rgba(0,224,255,.95));
+      box-shadow: 0 0 14px rgba(32,118,255,.24);
     }
 
     .weightCard{
@@ -2831,11 +2804,6 @@ export function getStyles() {
       .weightsList{
         grid-template-columns: 1fr;
         gap: 10px;
-      }
-
-      .commonWeightLegend{
-        flex-direction: column;
-        align-items:flex-start;
       }
 
       .commonWeightDates{

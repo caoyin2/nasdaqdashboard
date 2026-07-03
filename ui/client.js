@@ -297,19 +297,30 @@ export function getClientScript() {
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
     var OVERVIEW_API_TIMEOUT_MS = 30000;
-    var INDEX_WEIGHTS_API_VERSION = "weights-cache-1";
+    var INDEX_WEIGHTS_API_VERSION = "weights-ui-1";
     var SP500_SECTOR_API_VERSION = "20260406a";
     var FUND_PREMIUM_API_VERSION = "20260415b";
     var COMMON_WEIGHTS_CODE = "COMMON";
     var WEIGHTS_INDEX_OPTIONS = [
-      { code: COMMON_WEIGHTS_CODE, label: "\\u5171\\u540c\\u6743\\u91cd\\u80a1" },
-      { code: "NDXTMC", label: "\\u7eb3\\u65af\\u8fbe\\u514b\\u79d1\\u6280\\u5e02\\u503c\\u52a0\\u6743" },
-      { code: "SP500-45", label: "\\u6807\\u666e500\\u4fe1\\u606f\\u79d1\\u6280" },
+      { code: COMMON_WEIGHTS_CODE, label: "\\u5171\\u540c\\u6210\\u4efd\\u80a1" },
+      { code: "NDXTMC", label: "\\u7eb3\\u6307\\u79d1\\u6280\\u52a0\\u6743" },
+      { code: "SP500-45", label: "\\u6807\\u666e\\u4fe1\\u606f\\u79d1\\u6280" },
       { code: "NDX", label: "\\u7eb3\\u65af\\u8fbe\\u514b100" }
     ];
     var COMMON_WEIGHT_INDEX_OPTIONS = WEIGHTS_INDEX_OPTIONS.filter(function (option) {
       return option.code !== COMMON_WEIGHTS_CODE;
     });
+    function weightIndexLabel(indexCode) {
+      var option = WEIGHTS_INDEX_OPTIONS.find(function (item) {
+        return item.code === indexCode;
+      });
+      return option ? option.label : indexCode;
+    }
+    function commonIndexLabelsText() {
+      return COMMON_WEIGHT_INDEX_OPTIONS.map(function (item) {
+        return item.label;
+      }).join("\\u3001");
+    }
     var FEAR_GREED_PALETTE = [
       { key: "extreme fear", label: "\u6781\u5ea6\u6050\u614c", color: "#ff5468", bandIndex: 0, maxExclusive: 25, lines: ["\u6781\u5ea6", "\u6050\u614c"] },
       { key: "fear", label: "\u6050\u614c", color: "#ff9ea4", bandIndex: 1, maxExclusive: 45, lines: ["\u6050\u614c"] },
@@ -381,7 +392,7 @@ export function getClientScript() {
       commonFetchCtrl: null,
       statusText: "\u8fdb\u5165\u9762\u677f\u540e\u52a0\u8f7d\u6700\u65b0\u6743\u91cd\u6587\u4ef6",
       statusType: "ok",
-      commonStatusText: "\u8fdb\u5165\u9762\u677f\u540e\u52a0\u8f7d\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u5206\u80a1",
+      commonStatusText: "\u8fdb\u5165\u9762\u677f\u540e\u52a0\u8f7d\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u4efd\u80a1",
       commonStatusType: "ok",
       touched: false
     };
@@ -1918,7 +1929,7 @@ export function getClientScript() {
       var safeCellMax = Number.isFinite(maxCellWeight) && maxCellWeight > 0 ? maxCellWeight : 1;
       var total = Number.isFinite(item.totalWeightPct) ? item.totalWeightPct : 0;
       var intensity = clamp(total / safeGlowMax, 0, 1);
-      var glow = "rgba(0,224,255," + (0.10 + intensity * 0.20).toFixed(3) + ")";
+      var glow = "rgba(38,106,255," + (0.10 + intensity * 0.20).toFixed(3) + ")";
       var weights = item.weights || {};
 
       return [
@@ -1941,7 +1952,7 @@ export function getClientScript() {
               var width = Number.isFinite(value) ? clamp(value / safeCellMax, 0.035, 1) * 100 : 0;
               return [
                 '<div class="commonWeightCell">',
-                  '<span>' + esc(option.code) + '</span>',
+                  '<span>' + esc(option.label) + '</span>',
                   '<strong>' + (Number.isFinite(value) ? fmt(value, 2) + '%' : '--') + '</strong>',
                   '<div class="commonWeightBar"><i style="width:' + width.toFixed(2) + '%"></i></div>',
                 '</div>'
@@ -1955,7 +1966,7 @@ export function getClientScript() {
     function commonWeightDatesHTML(payload) {
       if (!payload || !Array.isArray(payload.indexes)) return "";
       return payload.indexes.map(function (item) {
-        return '<span>' + esc(item.indexCode) + '\uff1a' + esc(formatBasketDate(item.basketDate)) + '</span>';
+        return '<span>' + esc(weightIndexLabel(item.indexCode)) + '\uff1a' + esc(formatBasketDate(item.basketDate)) + '</span>';
       }).join("");
     }
 
@@ -1976,26 +1987,22 @@ export function getClientScript() {
       var statusClass = weightsState.commonStatusType === "err" ? "err" : "ok";
       var listHtml = items && items.length
         ? '<div class="commonWeightList">' + items.map(function (item, index) { return commonWeightRowHTML(item, index + 1, maxTotal, maxCellWeight); }).join("") + '</div>'
-        : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u4e00\u6b21\u6027\u6bd4\u5bf9 NDXTMC\u3001SP500-45 \u548c NDX\uff0c\u53ea\u663e\u793a\u4e09\u4e2a\u6307\u6570\u90fd\u5305\u542b\u7684\u6210\u5206\u80a1\u3002</div>';
+        : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u4e00\u6b21\u6027\u6bd4\u5bf9 ' + esc(commonIndexLabelsText()) + '\uff0c\u53ea\u663e\u793a\u4e09\u4e2a\u6307\u6570\u90fd\u5305\u542b\u7684\u6210\u4efd\u80a1\u3002</div>';
 
       return [
         '<div class="card weightsPanel commonWeightsPanel">',
           '<div class="weightsHead">',
             '<div class="weightsTitle">',
-              '<span>\u53ea\u4fdd\u7559\u4e09\u4e2a\u6307\u6570\u5171\u540c\u5305\u542b\u7684\u6210\u5206\u80a1</span>',
-              '<strong>\u5171\u540c\u6210\u5206\u80a1\u6743\u91cd\u5bf9\u7167</strong>',
+              '<span>\u53ea\u4fdd\u7559\u4e09\u4e2a\u6307\u6570\u5171\u540c\u5305\u542b\u7684\u6210\u4efd\u80a1</span>',
+              '<strong>\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd\u5bf9\u7167</strong>',
             '</div>',
             '<div class="weightsMeta">',
               '<div class="' + statusClass + '">' + esc(weightsState.commonStatusText) + '</div>',
-              payload ? '<div>\u5171\u540c\u6210\u5206\u80a1\uff1a<strong>' + esc(String(payload.itemCount || 0)) + '</strong></div>' : '',
+              payload ? '<div>\u5171\u540c\u6210\u4efd\u80a1\uff1a<strong>' + esc(String(payload.itemCount || 0)) + '</strong></div>' : '',
               payload ? '<div class="commonWeightDates">' + commonWeightDatesHTML(payload) + '</div>' : '',
             '</div>',
           '</div>',
           weightIndexSegHTML(weightsState.activeIndex),
-          '<div class="commonWeightLegend">',
-            '<span>\u6392\u5e8f\uff1a\u4e09\u4e2a\u6307\u6570\u6743\u91cd\u5408\u8ba1\u4ece\u9ad8\u5230\u4f4e</span>',
-            '<strong>' + COMMON_WEIGHT_INDEX_OPTIONS.map(function (item) { return esc(item.code); }).join(" / ") + '</strong>',
-          '</div>',
           listHtml,
         '</div>'
       ].join("");
@@ -2014,11 +2021,11 @@ export function getClientScript() {
       var items = cached && cached.items ? cached.items.slice() : null;
       var maxWeight = items && items.length ? items[0].weightPct : 0;
       var statusClass = weightsState.statusType === "err" ? "err" : "ok";
-      var indexTitle = cached && cached.title ? cached.title : weightsState.activeIndex;
+      var indexTitle = cached && cached.title ? cached.title : weightIndexLabel(weightsState.activeIndex);
       var showDataDate = !!(cached && cached.showDataDate !== false && cached.basketDate);
       var listHtml = items && items.length
         ? '<div class="weightsList">' + items.map(function (item, index) { return weightCardHTML(item, maxWeight, index + 1); }).join("") + '</div>'
-        : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u53ea\u4f1a\u52a0\u8f7d\u4e00\u6b21\u6700\u65b0\u6743\u91cd\uff0c\u5e76\u5c06\u7ed3\u679c\u7f13\u5b58\u5728 Worker \u548c\u6d4f\u89c8\u5668\u4e2d\u3002<br />\u70b9\u51fb\u4e0a\u65b9\u6307\u6570\u6309\u94ae\u53ef\u5207\u6362 NDXTMC\u3001SP500-45 \u548c NDX\u3002</div>';
+        : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u53ea\u4f1a\u52a0\u8f7d\u4e00\u6b21\u6700\u65b0\u6743\u91cd\uff0c\u5e76\u5c06\u7ed3\u679c\u7f13\u5b58\u5728 Worker \u548c\u6d4f\u89c8\u5668\u4e2d\u3002<br />\u70b9\u51fb\u4e0a\u65b9\u6307\u6570\u6309\u94ae\u53ef\u5207\u6362 ' + esc(commonIndexLabelsText()) + '\u3002</div>';
 
       root.innerHTML = [
         '<div class="card weightsPanel">',
@@ -2181,13 +2188,13 @@ export function getClientScript() {
 
       if (!opts.force && weightsState.commonCache) {
         hydrateIndexWeightCacheFromCommon(weightsState.commonCache);
-        weightsState.commonStatusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u7684\u5171\u540c\u6210\u5206\u80a1\u6743\u91cd";
+        weightsState.commonStatusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u7684\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd";
         weightsState.commonStatusType = "ok";
         renderWeightsPanel();
         return;
       }
 
-      weightsState.commonStatusText = "\u6b63\u5728\u6bd4\u5bf9 NDXTMC\u3001SP500-45 \u548c NDX \u7684\u6700\u65b0\u6743\u91cd...";
+      weightsState.commonStatusText = "\u6b63\u5728\u6bd4\u5bf9 " + commonIndexLabelsText() + " \u7684\u6700\u65b0\u6743\u91cd...";
       weightsState.commonStatusType = "ok";
       renderWeightsPanel();
 
@@ -2196,12 +2203,12 @@ export function getClientScript() {
         if (!payload) return;
         weightsState.commonCache = payload;
         hydrateIndexWeightCacheFromCommon(payload);
-        weightsState.commonStatusText = "\u5df2\u751f\u6210\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u5206\u80a1\u6743\u91cd";
+        weightsState.commonStatusText = "\u5df2\u751f\u6210\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd";
         weightsState.commonStatusType = "ok";
         renderWeightsPanel();
       } catch (error) {
         console.error("common index weights load failed:", error);
-        weightsState.commonStatusText = error && error.message ? error.message : "\u5171\u540c\u6210\u5206\u80a1\u6743\u91cd\u52a0\u8f7d\u5931\u8d25";
+        weightsState.commonStatusText = error && error.message ? error.message : "\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd\u52a0\u8f7d\u5931\u8d25";
         weightsState.commonStatusType = "err";
         renderWeightsPanel();
       }
@@ -2650,7 +2657,7 @@ export function getClientScript() {
       sectorsState.statusType = "ok";
       weightsState.statusText = "\u5df2\u6e05\u7a7a\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u5f53\u524d\u6307\u6570\u6743\u91cd...";
       weightsState.statusType = "ok";
-      weightsState.commonStatusText = "\u5df2\u6e05\u7a7a\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u6bd4\u5bf9\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u5206\u80a1...";
+      weightsState.commonStatusText = "\u5df2\u6e05\u7a7a\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u6bd4\u5bf9\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u4efd\u80a1...";
       weightsState.commonStatusType = "ok";
       fundPremiumState.statusText = "\u5df2\u6e05\u7a7a\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u6700\u65b0\u57fa\u91d1\u884c\u60c5...";
       fundPremiumState.statusType = "ok";

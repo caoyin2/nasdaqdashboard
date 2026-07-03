@@ -16,14 +16,14 @@ const INDEX_WEIGHT_CONFIG = {
     source: "szse",
     etfCode: "159509",
     indexCode: "NDXTMC",
-    title: "\u7eb3\u65af\u8fbe\u514b\u79d1\u6280\u5e02\u503c\u52a0\u6743\uff08NDXTMC\uff09",
+    title: "\u7eb3\u65af\u8fbe\u514b\u79d1\u6280\u5e02\u503c\u52a0\u6743",
     showDataDate: true,
     allowLiveSearch: false,
   },
   "SP500-45": {
     source: "ishares",
     indexCode: "SP500-45",
-    title: "\u6807\u666e500\u4fe1\u606f\u79d1\u6280\uff08SP500-45\uff09",
+    title: "\u6807\u666e\u4fe1\u606f\u79d1\u6280",
     showDataDate: true,
     allowLiveSearch: false,
     productPageUrl: ISHARES_SP50045_PRODUCT_URL,
@@ -32,7 +32,7 @@ const INDEX_WEIGHT_CONFIG = {
   NDX: {
     source: "ishares",
     indexCode: "NDX",
-    title: "\u7eb3\u65af\u8fbe\u514b100\uff08NDX\uff09",
+    title: "\u7eb3\u65af\u8fbe\u514b100",
     showDataDate: true,
     allowLiveSearch: false,
     productPageUrl: ISHARES_NDX_PRODUCT_URL,
@@ -520,7 +520,7 @@ export async function buildCommonIndexWeightsPayload(env) {
 
   return {
     ok: true,
-    title: "\u4e09\u5927\u79d1\u6280\u7c7b\u6307\u6570\u5171\u540c\u6210\u5206\u80a1\u6743\u91cd",
+    title: "\u4e09\u5927\u79d1\u6280\u7c7b\u6307\u6570\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd",
     indexCodes: COMMON_INDEX_CODES,
     indexes: indexPayloads,
     itemCount: items.length,
