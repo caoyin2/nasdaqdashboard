@@ -1,8 +1,8 @@
 export const BUILD_INFO = {
-  version: "20260703-1657",
-  shortSha: "b28adf1",
-  fullSha: "b28adf183250667d7d725b0007026ba790258197",
-  message: "add common index weights panel",
-  committedAt: "2026-07-03 16:57:23",
-  updatedAt: "2026-07-03 16:57:23",
+  version: "202607031658",
+  shortSha: "a21ab31",
+  fullSha: "a21ab3180f18864882d7a6d990a86d1d29eef5d5",
+  message: "Add common index holdings panel",
+  committedAt: "2026-07-03 16:58:01",
+  updatedAt: "2026-07-03 16:58:01",
 };
