@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.3",
+  version: "v1.3.4",
   shortSha: "",
   fullSha: "",
-  message: "Hide common view dates",
+  message: "Tighten common loading copy",
 };

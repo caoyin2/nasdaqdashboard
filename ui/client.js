@@ -2186,7 +2186,7 @@ export function getClientScript() {
         return;
       }
 
-      weightsState.commonStatusText = "\u6b63\u5728\u6bd4\u5bf9 " + commonIndexLabelsText() + " \u7684\u6700\u65b0\u6743\u91cd...";
+      weightsState.commonStatusText = "\u6b63\u5728\u6bd4\u5bf9" + commonIndexLabelsText() + "\u7684\u6700\u65b0\u6743\u91cd...";
       weightsState.commonStatusType = "ok";
       renderWeightsPanel();
 
