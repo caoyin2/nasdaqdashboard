@@ -298,6 +298,9 @@ export function getClientScript() {
     var API_TIMEOUT_MS = 15000;
     var OVERVIEW_API_TIMEOUT_MS = 30000;
     var INDEX_WEIGHTS_API_VERSION = "weights-ui-2";
+    var INDEX_WEIGHTS_LOCAL_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+    var INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA = 1;
+    var INDEX_WEIGHTS_LOCAL_CACHE_PREFIX = "nasdaqDashboard.indexWeights." + INDEX_WEIGHTS_API_VERSION + ".";
     var SP500_SECTOR_API_VERSION = "20260406a";
     var FUND_PREMIUM_API_VERSION = "20260415b";
     var COMMON_WEIGHTS_CODE = "COMMON";
@@ -399,6 +402,7 @@ export function getClientScript() {
     var activeFetchCtrl = null;
     var switchTimer = null;
     var refreshTimer = null;
+    var weightsCacheCountdownTimer = null;
     var fundPremiumLongPressTimer = null;
 
     function getPanelTitle(page) {
@@ -1890,6 +1894,126 @@ export function getClientScript() {
       return text.slice(0, 4) + "-" + text.slice(4, 6) + "-" + text.slice(6, 8);
     }
 
+    function formatWeightCacheDuration(ms) {
+      if (!Number.isFinite(ms) || ms <= 0) return "\u5373\u5c06\u5237\u65b0";
+
+      var totalMinutes = Math.max(1, Math.ceil(ms / 60000));
+      var hours = Math.floor(totalMinutes / 60);
+      var minutes = totalMinutes % 60;
+
+      if (hours >= 24) return "24\u5c0f\u65f6";
+      if (hours > 0 && minutes > 0) return hours + "\u5c0f\u65f6" + minutes + "\u5206\u949f";
+      if (hours > 0) return hours + "\u5c0f\u65f6";
+      return minutes + "\u5206\u949f";
+    }
+
+    function weightLocalCacheKey(indexCode) {
+      return INDEX_WEIGHTS_LOCAL_CACHE_PREFIX + String(indexCode || "").toUpperCase();
+    }
+
+    function decorateWeightCachePayload(payload, meta) {
+      if (!payload) return payload;
+      var savedAt = Number.isFinite(meta && meta.savedAt) ? meta.savedAt : null;
+      var expiresAt = Number.isFinite(meta && meta.expiresAt) ? meta.expiresAt : null;
+      return Object.assign({}, payload, {
+        localCacheSavedAt: savedAt,
+        localCacheExpiresAt: expiresAt,
+        localCacheSource: meta && meta.source ? meta.source : null
+      });
+    }
+
+    function isWeightCacheFresh(payload) {
+      var expiresAt = Number(payload && payload.localCacheExpiresAt);
+      return Number.isFinite(expiresAt) && expiresAt > Date.now();
+    }
+
+    function readWeightLocalCache(indexCode) {
+      try {
+        var raw = window.localStorage && window.localStorage.getItem(weightLocalCacheKey(indexCode));
+        if (!raw) return null;
+        var record = JSON.parse(raw);
+        if (!record || record.schema !== INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA || !record.payload) {
+          window.localStorage.removeItem(weightLocalCacheKey(indexCode));
+          return null;
+        }
+
+        var savedAt = Number(record.savedAt);
+        var expiresAt = Number(record.expiresAt);
+        if (!Number.isFinite(savedAt) || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+          window.localStorage.removeItem(weightLocalCacheKey(indexCode));
+          return null;
+        }
+
+        return decorateWeightCachePayload(record.payload, {
+          savedAt: savedAt,
+          expiresAt: expiresAt,
+          source: "local"
+        });
+      } catch (error) {
+        console.warn("index weights local cache read failed:", error);
+        return null;
+      }
+    }
+
+    function writeWeightLocalCache(indexCode, payload, meta) {
+      if (!payload || !payload.ok) return payload;
+
+      var savedAt = Number.isFinite(meta && meta.savedAt) ? meta.savedAt : Date.now();
+      var expiresAt = Number.isFinite(meta && meta.expiresAt)
+        ? meta.expiresAt
+        : savedAt + INDEX_WEIGHTS_LOCAL_CACHE_TTL_MS;
+      var decorated = decorateWeightCachePayload(payload, {
+        savedAt: savedAt,
+        expiresAt: expiresAt,
+        source: "server"
+      });
+
+      try {
+        if (window.localStorage) {
+          window.localStorage.setItem(weightLocalCacheKey(indexCode), JSON.stringify({
+            schema: INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA,
+            savedAt: savedAt,
+            expiresAt: expiresAt,
+            payload: payload
+          }));
+        }
+      } catch (error) {
+        console.warn("index weights local cache write failed:", error);
+      }
+
+      return decorated;
+    }
+
+    function writeCommonWeightLocalCache(payload) {
+      var savedAt = Date.now();
+      var expiresAt = savedAt + INDEX_WEIGHTS_LOCAL_CACHE_TTL_MS;
+      var decorated = writeWeightLocalCache(COMMON_WEIGHTS_CODE, payload, {
+        savedAt: savedAt,
+        expiresAt: expiresAt
+      });
+
+      if (payload && Array.isArray(payload.indexes)) {
+        payload.indexes.forEach(function (indexPayload) {
+          if (indexPayload && indexPayload.indexCode) {
+            writeWeightLocalCache(indexPayload.indexCode, indexPayload, {
+              savedAt: savedAt,
+              expiresAt: expiresAt
+            });
+          }
+        });
+      }
+
+      return decorated;
+    }
+
+    function weightCacheRefreshText(payload) {
+      var expiresAt = Number(payload && payload.localCacheExpiresAt);
+      if (!Number.isFinite(expiresAt)) return "\u672c\u5730\u7f13\u5b58\uff1a--";
+      var remaining = expiresAt - Date.now();
+      if (remaining <= 0) return "\u672c\u5730\u7f13\u5b58\u5df2\u8fc7\u671f\uff0c\u4e0b\u6b21\u8fdb\u5165\u5c06\u91cd\u65b0\u83b7\u53d6";
+      return "\u8ddd\u79bb\u4e0b\u6b21\u5237\u65b0\uff1a" + formatWeightCacheDuration(remaining);
+    }
+
     function weightIndexSegHTML(activeIndex) {
       return [
         '<div class="weightsIndexSeg" role="tablist" aria-label="\\u6743\\u91cd\\u6307\\u6570\\u5207\\u6362">',
@@ -1998,6 +2122,7 @@ export function getClientScript() {
             '<div class="weightsMeta">',
               '<div class="' + statusClass + '">' + esc(weightsState.commonStatusText) + '</div>',
               payload ? '<div>\u5171\u540c\u6210\u4efd\u80a1\uff1a<strong>' + esc(String(payload.itemCount || 0)) + '</strong></div>' : '',
+              payload ? '<div>' + esc(weightCacheRefreshText(payload)) + '</div>' : '',
             '</div>',
           '</div>',
           weightIndexSegHTML(weightsState.activeIndex),
@@ -2023,7 +2148,7 @@ export function getClientScript() {
       var showDataDate = !!(cached && cached.showDataDate !== false && cached.basketDate);
       var listHtml = items && items.length
         ? '<div class="weightsList">' + items.map(function (item, index) { return weightCardHTML(item, maxWeight, index + 1); }).join("") + '</div>'
-        : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u53ea\u4f1a\u52a0\u8f7d\u4e00\u6b21\u6700\u65b0\u6743\u91cd\uff0c\u5e76\u5c06\u7ed3\u679c\u7f13\u5b58\u5728 Worker \u548c\u6d4f\u89c8\u5668\u4e2d\u3002<br />\u70b9\u51fb\u4e0a\u65b9\u6307\u6570\u6309\u94ae\u53ef\u5207\u6362 ' + esc(commonIndexLabelsText()) + '\u3002</div>';
+        : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u83b7\u53d6\u6700\u65b0\u6743\u91cd\uff0c\u5e76\u5728\u672c\u5730\u7f13\u5b58 24 \u5c0f\u65f6\u3002<br />\u70b9\u51fb\u4e0a\u65b9\u6307\u6570\u6309\u94ae\u53ef\u5207\u6362 ' + esc(commonIndexLabelsText()) + '\u3002</div>';
 
       root.innerHTML = [
         '<div class="card weightsPanel">',
@@ -2038,6 +2163,7 @@ export function getClientScript() {
               showDataDate
                 ? '<div>\u6e05\u5355\u65e5\u671f\uff1a<strong>' + esc(formatBasketDate(cached.basketDate)) + '</strong></div>'
                 : '',
+              cached ? '<div>' + esc(weightCacheRefreshText(cached)) + '</div>' : '',
             '</div>',
           '</div>',
           weightIndexSegHTML(weightsState.activeIndex),
@@ -2049,9 +2175,12 @@ export function getClientScript() {
     function hydrateIndexWeightCacheFromCommon(payload) {
       if (!payload || !Array.isArray(payload.indexes)) return false;
       var hydrated = false;
+      var savedAt = Number(payload.localCacheSavedAt);
+      var expiresAt = Number(payload.localCacheExpiresAt);
+      var source = payload.localCacheSource || "memory";
       payload.indexes.forEach(function (indexPayload) {
         if (!indexPayload || !indexPayload.indexCode || !Array.isArray(indexPayload.items)) return;
-        weightsState.cache.set(indexPayload.indexCode, {
+        weightsState.cache.set(indexPayload.indexCode, decorateWeightCachePayload({
           ok: true,
           indexCode: indexPayload.indexCode,
           title: indexPayload.title,
@@ -2060,7 +2189,11 @@ export function getClientScript() {
           showDataDate: indexPayload.showDataDate,
           cashAmount: indexPayload.cashAmount,
           items: indexPayload.items.slice()
-        });
+        }, {
+          savedAt: savedAt,
+          expiresAt: expiresAt,
+          source: source
+        }));
         hydrated = true;
       });
       return hydrated;
@@ -2149,12 +2282,23 @@ export function getClientScript() {
       weightsState.activeIndex = indexCode;
       weightsState.touched = true;
 
-      if (!opts.force) {
-        hydrateIndexWeightCacheFromCommon(weightsState.commonCache);
+      var localCached = readWeightLocalCache(indexCode);
+      if (localCached) {
+        weightsState.cache.set(indexCode, localCached);
+        weightsState.statusText = "\u5df2\u4f7f\u7528 24 \u5c0f\u65f6\u672c\u5730\u7f13\u5b58\u7684\u6307\u6570\u6743\u91cd\u6570\u636e";
+        weightsState.statusType = "ok";
+        renderWeightsPanel();
+        return;
       }
 
-      if (!opts.force && weightsState.cache.has(indexCode)) {
-        weightsState.statusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u7684\u6307\u6570\u6743\u91cd\u6570\u636e";
+      hydrateIndexWeightCacheFromCommon(weightsState.commonCache);
+
+      if (weightsState.cache.has(indexCode) && !isWeightCacheFresh(weightsState.cache.get(indexCode))) {
+        weightsState.cache.delete(indexCode);
+      }
+
+      if (weightsState.cache.has(indexCode)) {
+        weightsState.statusText = "\u5df2\u4f7f\u7528 24 \u5c0f\u65f6\u672c\u5730\u7f13\u5b58\u7684\u6307\u6570\u6743\u91cd\u6570\u636e";
         weightsState.statusType = "ok";
         renderWeightsPanel();
         return;
@@ -2167,8 +2311,9 @@ export function getClientScript() {
       try {
         var payload = await fetchIndexWeights(indexCode, opts);
         if (!payload) return;
+        payload = writeWeightLocalCache(indexCode, payload);
         weightsState.cache.set(indexCode, payload);
-        weightsState.statusText = "\u5df2\u7f13\u5b58\u6700\u65b0\u6743\u91cd\u6587\u4ef6";
+        weightsState.statusText = "\u5df2\u83b7\u53d6\u6700\u65b0\u6743\u91cd\u6587\u4ef6\uff0c\u5e76\u5728\u672c\u5730\u7f13\u5b58 24 \u5c0f\u65f6";
         weightsState.statusType = "ok";
         renderWeightsPanel();
       } catch (error) {
@@ -2184,9 +2329,23 @@ export function getClientScript() {
       weightsState.activeIndex = COMMON_WEIGHTS_CODE;
       weightsState.touched = true;
 
-      if (!opts.force && weightsState.commonCache) {
+      var localCached = readWeightLocalCache(COMMON_WEIGHTS_CODE);
+      if (localCached) {
+        weightsState.commonCache = localCached;
+        hydrateIndexWeightCacheFromCommon(localCached);
+        weightsState.commonStatusText = "\u5df2\u4f7f\u7528 24 \u5c0f\u65f6\u672c\u5730\u7f13\u5b58\u7684\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd";
+        weightsState.commonStatusType = "ok";
+        renderWeightsPanel();
+        return;
+      }
+
+      if (weightsState.commonCache && !isWeightCacheFresh(weightsState.commonCache)) {
+        weightsState.commonCache = null;
+      }
+
+      if (weightsState.commonCache) {
         hydrateIndexWeightCacheFromCommon(weightsState.commonCache);
-        weightsState.commonStatusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u7684\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd";
+        weightsState.commonStatusText = "\u5df2\u4f7f\u7528 24 \u5c0f\u65f6\u672c\u5730\u7f13\u5b58\u7684\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd";
         weightsState.commonStatusType = "ok";
         renderWeightsPanel();
         return;
@@ -2199,9 +2358,10 @@ export function getClientScript() {
       try {
         var payload = await fetchCommonIndexWeights(opts);
         if (!payload) return;
+        payload = writeCommonWeightLocalCache(payload);
         weightsState.commonCache = payload;
         hydrateIndexWeightCacheFromCommon(payload);
-        weightsState.commonStatusText = "\u5df2\u751f\u6210\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd";
+        weightsState.commonStatusText = "\u5df2\u751f\u6210\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd\uff0c\u5e76\u5728\u672c\u5730\u7f13\u5b58 24 \u5c0f\u65f6";
         weightsState.commonStatusType = "ok";
         renderWeightsPanel();
       } catch (error) {
@@ -2652,16 +2812,13 @@ export function getClientScript() {
 
         if (currentPage === "weights") {
           if (weightsState.activeIndex === COMMON_WEIGHTS_CODE) {
-            weightsState.commonCache = null;
-            weightsState.commonStatusText = "\u5df2\u6e05\u7a7a\u5f53\u524d\u9762\u677f\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u6bd4\u5bf9\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u4efd\u80a1...";
+            weightsState.commonStatusText = "\u6743\u91cd\u9762\u677f\u4f7f\u7528 24 \u5c0f\u65f6\u672c\u5730\u7f13\u5b58\uff0c\u9876\u90e8\u5237\u65b0\u6309\u94ae\u4e0d\u4f1a\u91cd\u65b0\u8bf7\u6c42\u670d\u52a1\u5668";
             weightsState.commonStatusType = "ok";
           } else {
-            weightsState.cache.delete(weightsState.activeIndex);
-            weightsState.statusText = "\u5df2\u6e05\u7a7a\u5f53\u524d\u9762\u677f\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u5f53\u524d\u6307\u6570\u6743\u91cd...";
+            weightsState.statusText = "\u6743\u91cd\u9762\u677f\u4f7f\u7528 24 \u5c0f\u65f6\u672c\u5730\u7f13\u5b58\uff0c\u9876\u90e8\u5237\u65b0\u6309\u94ae\u4e0d\u4f1a\u91cd\u65b0\u8bf7\u6c42\u670d\u52a1\u5668";
             weightsState.statusType = "ok";
           }
           renderWeightsPanel();
-          await loadWeightsView(weightsState.activeIndex, { force: true });
           return;
         }
 
@@ -2698,6 +2855,19 @@ export function getClientScript() {
       starsState.refreshTimer = null;
     }
 
+    function updateWeightsCacheCountdownTimer() {
+      clearInterval(weightsCacheCountdownTimer);
+      weightsCacheCountdownTimer = null;
+
+      if (state.page !== "weights") return;
+
+      weightsCacheCountdownTimer = setInterval(function () {
+        if (state.page === "weights") {
+          renderWeightsPanel();
+        }
+      }, 60000);
+    }
+
     function setActivePage(page) {
       state.page = page;
       var pagesRoot = $("pages");
@@ -2729,6 +2899,7 @@ export function getClientScript() {
       }
 
       starsState.mobileVisible = page === "stars";
+      updateWeightsCacheCountdownTimer();
 
       if (page === "stars" && !starsState.touched) {
         loadStarPeriod(starsState.period, { force: true });

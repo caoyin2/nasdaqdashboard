@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.6",
+  version: "v1.3.7",
   shortSha: "",
   fullSha: "",
-  message: "Use mixed index quote sources",
+  message: "Cache index weights locally",
 };
