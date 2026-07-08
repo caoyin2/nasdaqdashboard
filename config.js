@@ -34,12 +34,12 @@ export const INDEXES = [
     iconSymbol: "NDAQ",
   },
   {
-    tickerId: 15418,
-    symbol: "SOX",
-    googleSymbol: "SOX",
-    googleExchange: "INDEXNASDAQ",
-    nameCN: "\u8d39\u57ce\u534a\u5bfc\u4f53\uff08SOX\uff09",
-    iconSymbol: "NDAQ",
+    tickerId: 587766,
+    symbol: "SP500",
+    googleSymbol: "SPX",
+    googleExchange: "INDEXSP",
+    nameCN: "\u6807\u666e500\uff08SP500\uff09",
+    iconSymbol: "SPGI",
   },
 ];
 

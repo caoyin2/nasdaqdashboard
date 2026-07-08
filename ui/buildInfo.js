@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.8",
+  version: "v1.3.9",
   shortSha: "",
   fullSha: "",
-  message: "Embed Nasdaq logo",
+  message: "Replace SOX with SP500",
 };
