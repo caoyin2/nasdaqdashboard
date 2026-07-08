@@ -1550,6 +1550,12 @@ export function getClientScript() {
       var fx = calc.fx || {};
       var quote = calc.quoteSource || {};
       var nav = calc.navSource || {};
+      var indexQuoteText = index.googleQuote ||
+        ((index.googleSymbol || index.symbol) && index.googleExchange
+          ? (index.googleSymbol || index.symbol) + ":" + index.googleExchange
+          : "");
+      var indexSourceText = (index.source || "Google Finance") +
+        (indexQuoteText ? " / " + indexQuoteText : (index.tickerId ? " / ticker_id=" + index.tickerId : ""));
       var estimatedFormula = "\u4f30\u7b97\u51c0\u503c = " +
         calcNumberText(calc.publishedNav, 6) + " \u00d7 " +
         calcNumberText(calc.indexMultiplier, 8) + " \u00d7 " +
@@ -1620,7 +1626,7 @@ export function getClientScript() {
               '<h4>\u6e90\u6570\u636e\u63a5\u53e3</h4>',
               '<p><strong>\u4ea4\u6613\u4ef7\uff1a</strong>' + esc(quote.url || "--") + '</p>',
               '<p><strong>\u5355\u4f4d\u51c0\u503c\uff1a</strong>' + esc(nav.url || "--") + '</p>',
-              '<p><strong>\u6307\u6570\u6570\u636e\uff1a</strong>' + esc((index.source || "SeekingAlpha lua_charts") + " / ticker_id=" + (index.tickerId || "--")) + '</p>',
+              '<p><strong>\u6307\u6570\u6570\u636e\uff1a</strong>' + esc(indexSourceText || "--") + '</p>',
               '<p><strong>\u6c47\u7387\u6570\u636e\uff1a</strong>' + esc(fx.requestUrl || "--") + '</p>',
             '</section>',
           '</div>',

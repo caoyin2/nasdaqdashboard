@@ -19,8 +19,8 @@
  */
 
 import { FUND_PREMIUM_FUNDS, INDEXES } from "../config.js";
-import { marketDateKey, parseBarsFromAttributes } from "../lib/time.js";
-import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
+import { marketDateKey } from "../lib/time.js";
+import { fetchGoogleFinanceIndexPeriod } from "./googleFinance.js";
 
 const TENCENT_QT_URL = "https://qt.gtimg.cn/";
 const TENCENT_FUND_PRICE_ZONE_URL = "https://web.ifzq.gtimg.cn/fund/newfund/fundBase/getPriceZone";
@@ -124,12 +124,13 @@ function pickOnOrBefore(rows, targetDate, dateSelector) {
 
 async function fetchSp500TechDailyContext(navDate, tradeDate) {
   const index = INDEXES.find((item) => item.symbol === SP500_TECH_INDEX_SYMBOL);
-  if (!index?.tickerId) {
-    throw new Error(`${SP500_TECH_INDEX_SYMBOL} ticker_id missing`);
+  if (!index?.googleExchange) {
+    throw new Error(`${SP500_TECH_INDEX_SYMBOL} Google Finance exchange missing`);
   }
 
-  const raw = await fetchSeekingAlphaPeriod("1Y", index.tickerId);
-  const bars = parseBarsFromAttributes(raw?.attributes).map((bar) => ({
+  const period = "YTD";
+  const raw = await fetchGoogleFinanceIndexPeriod(period, index);
+  const bars = (raw?.bars || []).map((bar) => ({
     date: marketDateKey(bar.t),
     close: bar.close,
     t: bar.t,
@@ -145,8 +146,12 @@ async function fetchSp500TechDailyContext(navDate, tradeDate) {
   return {
     symbol: SP500_TECH_INDEX_SYMBOL,
     tickerId: index.tickerId,
-    period: "1Y",
-    source: "SeekingAlpha lua_charts",
+    googleSymbol: index.googleSymbol || index.symbol,
+    googleExchange: index.googleExchange,
+    googleQuote: raw.googleQuote || `${index.googleSymbol || index.symbol}:${index.googleExchange}`,
+    period,
+    source: "Google Finance c2u4wc",
+    requestUrl: raw.pageUrl || null,
     requestedNavDate: navDate,
     requestedTradeDate: tradeDate,
     navDate: navPoint.date,

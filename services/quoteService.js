@@ -10,12 +10,10 @@ import { INDEXES, LINE_COLORS } from "../config.js";
 import {
   fmtUTC,
   getLastBar,
-  parseBarsFromAttributes,
   patchBarsWithLatest1D,
   pickFirstCloseFromBars,
-  pickPrevCloseSmart,
 } from "../lib/time.js";
-import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
+import { fetchGoogleFinanceIndexPeriod } from "./googleFinance.js";
 import { getSearchMetaBatch } from "./searchMetaStore.js";
 
 function maxLatestTime(items) {
@@ -24,6 +22,25 @@ function maxLatestTime(items) {
     .filter((value) => Number.isFinite(value));
 
   return values.length ? Math.max(...values) : null;
+}
+
+function buildQuoteLastBar(quote, fallbackBar) {
+  const close = quote?.lastClose;
+  const t = Number.isFinite(quote?.latestT) ? quote.latestT : fallbackBar?.t;
+
+  if (!Number.isFinite(close) || !Number.isFinite(t)) {
+    return fallbackBar || null;
+  }
+
+  const base = Number.isFinite(fallbackBar?.close) ? fallbackBar.close : close;
+  return {
+    t,
+    open: Number.isFinite(fallbackBar?.open) ? fallbackBar.open : base,
+    high: Math.max(Number.isFinite(fallbackBar?.high) ? fallbackBar.high : base, close),
+    low: Math.min(Number.isFinite(fallbackBar?.low) ? fallbackBar.low : base, close),
+    close,
+    label: "GOOGLE_QUOTE_LAST",
+  };
 }
 
 export async function buildQuotePayload(period, env) {
@@ -40,26 +57,25 @@ export async function buildQuotePayload(period, env) {
   });
 
   const indexJobs = INDEXES.map(async (idx, i) => {
-    const needYTDFor1D = period === "1D";
-
-    const oneDayPromise = fetchSeekingAlphaPeriod("1D", idx.tickerId);
+    const oneDayPromise = fetchGoogleFinanceIndexPeriod("1D", idx);
     const periodPromise = period === "1D"
       ? oneDayPromise
-      : fetchSeekingAlphaPeriod(period, idx.tickerId);
+      : fetchGoogleFinanceIndexPeriod(period, idx);
 
-    const [oneDayRaw, periodRaw, ytdRaw] = await Promise.all([
+    const [oneDayRaw, periodRaw] = await Promise.all([
       oneDayPromise,
       periodPromise,
-      needYTDFor1D ? fetchSeekingAlphaPeriod("YTD", idx.tickerId) : Promise.resolve(null),
     ]);
 
-    const bars1D = parseBarsFromAttributes(oneDayRaw.attributes);
+    const bars1D = oneDayRaw.bars || [];
     const last1DBar = getLastBar(bars1D);
+    const quote = oneDayRaw.quote || periodRaw.quote || {};
+    const quoteLastBar = buildQuoteLastBar(quote, last1DBar);
 
-    const latestClose = last1DBar?.close;
-    const latestT = last1DBar?.t;
+    const latestClose = Number.isFinite(quote?.lastClose) ? quote.lastClose : quoteLastBar?.close;
+    const latestT = Number.isFinite(quote?.latestT) ? quote.latestT : quoteLastBar?.t;
 
-    const periodBarsRaw = parseBarsFromAttributes(periodRaw.attributes);
+    const periodBarsRaw = periodRaw.bars || [];
 
     const lastClose = Number.isFinite(latestClose)
       ? latestClose
@@ -68,8 +84,7 @@ export async function buildQuotePayload(period, env) {
     let baseClose = null;
 
     if (period === "1D") {
-      const dailyBars = parseBarsFromAttributes(ytdRaw?.attributes);
-      baseClose = pickPrevCloseSmart(dailyBars, bars1D);
+      baseClose = Number.isFinite(quote?.prevClose) ? quote.prevClose : oneDayRaw.prevClose;
       if (!Number.isFinite(baseClose)) baseClose = null;
     } else {
       baseClose = pickFirstCloseFromBars(periodBarsRaw);
@@ -77,8 +92,8 @@ export async function buildQuotePayload(period, env) {
     }
 
     const barsForSeries = period === "1D"
-      ? (bars1D || [])
-      : patchBarsWithLatest1D(periodBarsRaw || [], last1DBar);
+      ? patchBarsWithLatest1D(bars1D || [], quoteLastBar)
+      : patchBarsWithLatest1D(periodBarsRaw || [], quoteLastBar);
 
     const line = Number.isFinite(baseClose) && baseClose !== 0
       ? barsForSeries.map((bar) => ({
@@ -103,6 +118,8 @@ export async function buildQuotePayload(period, env) {
     return {
       tickerId: idx.tickerId,
       symbol: idx.symbol,
+      googleSymbol: idx.googleSymbol || idx.symbol,
+      googleExchange: idx.googleExchange || null,
       nameCN: idx.nameCN,
       color: LINE_COLORS[i % LINE_COLORS.length],
       iconSymbol: idx.iconSymbol || null,
