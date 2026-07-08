@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.7",
+  version: "v1.3.8",
   shortSha: "",
   fullSha: "",
-  message: "Cache index weights locally",
+  message: "Embed Nasdaq logo",
 };
