@@ -114,13 +114,11 @@ export function getHtml() {
 
               <div class="seg" id="seg">
                 <button data-p="1D" class="active">${PERIOD_LABELS["1D"]}</button>
-                <button data-p="5D">${PERIOD_LABELS["5D"]}</button>
                 <button data-p="1M">${PERIOD_LABELS["1M"]}</button>
                 <button data-p="6M">${PERIOD_LABELS["6M"]}</button>
                 <button data-p="YTD">${PERIOD_LABELS["YTD"]}</button>
                 <button data-p="1Y">${PERIOD_LABELS["1Y"]}</button>
                 <button data-p="5Y">${PERIOD_LABELS["5Y"]}</button>
-                <button data-p="10Y">${PERIOD_LABELS["10Y"]}</button>
                 <button data-p="MAX">${PERIOD_LABELS["MAX"]}</button>
               </div>
 

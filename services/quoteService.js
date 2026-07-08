@@ -11,15 +11,10 @@ import {
   fmtUTC,
   getLastBar,
   patchBarsWithLatest1D,
-  parseBarsFromAttributes,
   pickFirstCloseFromBars,
-  pickPrevCloseSmart,
 } from "../lib/time.js";
 import { fetchGoogleFinanceIndexPeriod } from "./googleFinance.js";
-import { fetchSeekingAlphaPeriod } from "./seekingAlpha.js";
 import { getSearchMetaBatch } from "./searchMetaStore.js";
-
-const GOOGLE_FINANCE_INDEX_SYMBOL = "SP500-45";
 
 function maxLatestTime(items) {
   const values = (items || [])
@@ -95,55 +90,6 @@ async function buildGoogleFinanceIndexItem(idx, i, period, searchMetaMap) {
   });
 }
 
-async function buildSeekingAlphaIndexItem(idx, i, period, searchMetaMap) {
-  const needYTDFor1D = period === "1D";
-
-  const oneDayPromise = fetchSeekingAlphaPeriod("1D", idx.tickerId);
-  const periodPromise = period === "1D"
-    ? oneDayPromise
-    : fetchSeekingAlphaPeriod(period, idx.tickerId);
-
-  const [oneDayRaw, periodRaw, ytdRaw] = await Promise.all([
-    oneDayPromise,
-    periodPromise,
-    needYTDFor1D ? fetchSeekingAlphaPeriod("YTD", idx.tickerId) : Promise.resolve(null),
-  ]);
-
-  const bars1D = parseBarsFromAttributes(oneDayRaw.attributes);
-  const last1DBar = getLastBar(bars1D);
-
-  const latestClose = last1DBar?.close;
-  const latestT = last1DBar?.t;
-
-  const periodBarsRaw = parseBarsFromAttributes(periodRaw.attributes);
-
-  const lastClose = Number.isFinite(latestClose)
-    ? latestClose
-    : getLastBar(periodBarsRaw)?.close ?? null;
-
-  let baseClose = null;
-
-  if (period === "1D") {
-    const dailyBars = parseBarsFromAttributes(ytdRaw?.attributes);
-    baseClose = pickPrevCloseSmart(dailyBars, bars1D);
-    if (!Number.isFinite(baseClose)) baseClose = null;
-  } else {
-    baseClose = pickFirstCloseFromBars(periodBarsRaw);
-    if (!Number.isFinite(baseClose)) baseClose = null;
-  }
-
-  const barsForSeries = period === "1D"
-    ? (bars1D || [])
-    : patchBarsWithLatest1D(periodBarsRaw || [], last1DBar);
-
-  return buildIndexItem(idx, i, searchMetaMap, {
-    latestT,
-    lastClose,
-    baseClose,
-    barsForSeries,
-  });
-}
-
 function buildIndexItem(idx, i, searchMetaMap, data) {
   const baseClose = data.baseClose;
   const lastClose = data.lastClose;
@@ -202,11 +148,7 @@ export async function buildQuotePayload(period, env) {
     allowFetch: true,
   });
 
-  const indexJobs = INDEXES.map(async (idx, i) => {
-    return idx.symbol === GOOGLE_FINANCE_INDEX_SYMBOL
-      ? buildGoogleFinanceIndexItem(idx, i, period, searchMetaMap)
-      : buildSeekingAlphaIndexItem(idx, i, period, searchMetaMap);
-  });
+  const indexJobs = INDEXES.map((idx, i) => buildGoogleFinanceIndexItem(idx, i, period, searchMetaMap));
 
   let items;
   try {

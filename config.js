@@ -36,7 +36,7 @@ export const INDEXES = [
   {
     tickerId: 587766,
     symbol: "SP500",
-    googleSymbol: "SPX",
+    googleSymbol: ".INX",
     googleExchange: "INDEXSP",
     nameCN: "\u6807\u666e500\uff08SP500\uff09",
     iconSymbol: "SPGI",
