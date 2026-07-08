@@ -2591,10 +2591,7 @@ export function getClientScript() {
       btn.setAttribute("aria-busy", isBusy ? "true" : "false");
     }
 
-    function clearAllPanelCaches() {
-      periodCache.clear();
-      fearGreedCache = null;
-      starsState.cache.clear();
+    function resetStarForwardPeState() {
       if (starForwardPeState.fetchCtrl) {
         starForwardPeState.fetchCtrl.abort();
       }
@@ -2603,22 +2600,11 @@ export function getClientScript() {
       starForwardPeState.loading = false;
       starForwardPeState.loaded = false;
       starForwardPeState.attempted = false;
-      sectorsState.cache.clear();
-      weightsState.cache.clear();
-      if (weightsState.fetchCtrl) {
-        weightsState.fetchCtrl.abort();
-      }
-      if (weightsState.commonFetchCtrl) {
-        weightsState.commonFetchCtrl.abort();
-      }
-      weightsState.fetchCtrl = null;
-      weightsState.commonFetchCtrl = null;
-      weightsState.commonCache = null;
-      fundPremiumState.cache = null;
-      fundPremiumState.detailSymbol = null;
     }
 
-    function clearRenderedPanelData() {
+    function clearOverviewPanelData() {
+      periodCache.delete(state.period);
+      fearGreedCache = null;
       state.items = [];
       state.times = [];
       state.timeIndex = new Map();
@@ -2637,39 +2623,65 @@ export function getClientScript() {
       setOverviewCurrentPeriod(state.period);
       draw();
       renderFearGreedLoading();
-      renderStarPanel();
-      renderSectorPanel();
-      renderWeightsPanel();
-      renderFundPremiumPanel();
     }
 
-    async function forceRefreshAllPanels() {
+    async function forceRefreshCurrentPanel() {
       var currentPage = state.page;
       setGlobalRefreshBusy(true);
-      clearAllPanelCaches();
-
-      setStatus("\u5df2\u6e05\u7a7a\u6240\u6709\u9762\u677f\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u6700\u65b0\u6570\u636e...", "ok");
-      starsState.statusText = "\u5df2\u6e05\u7a7a\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u5f53\u524d\u5468\u671f\u6570\u636e...";
-      starsState.statusType = "ok";
-      sectorsState.statusText = "\u5df2\u6e05\u7a7a\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u5f53\u524d\u5468\u671f\u6570\u636e...";
-      sectorsState.statusType = "ok";
-      weightsState.statusText = "\u5df2\u6e05\u7a7a\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u5f53\u524d\u6307\u6570\u6743\u91cd...";
-      weightsState.statusType = "ok";
-      weightsState.commonStatusText = "\u5df2\u6e05\u7a7a\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u6bd4\u5bf9\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u4efd\u80a1...";
-      weightsState.commonStatusType = "ok";
-      fundPremiumState.statusText = "\u5df2\u6e05\u7a7a\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u6700\u65b0\u57fa\u91d1\u884c\u60c5...";
-      fundPremiumState.statusType = "ok";
-      clearRenderedPanelData();
 
       try {
-        await Promise.allSettled([
-          loadFearGreed({ force: true }),
-          renderPeriod(state.period, { force: true }),
-          loadStarPeriod(starsState.period, { force: true }),
-          loadSectorPeriod(sectorsState.period, { force: true }),
-          loadWeightsView(weightsState.activeIndex, { force: true }),
-          loadFundPremiums({ force: true }),
-        ]);
+        if (currentPage === "overview") {
+          setStatus("\u5df2\u6e05\u7a7a\u5f53\u524d\u9762\u677f\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u6307\u6570\u6570\u636e...", "ok");
+          clearOverviewPanelData();
+          await Promise.allSettled([
+            loadFearGreed({ force: true }),
+            renderPeriod(state.period, { force: true }),
+          ]);
+          return;
+        }
+
+        if (currentPage === "stars") {
+          starsState.cache.clear();
+          resetStarForwardPeState();
+          starsState.statusText = "\u5df2\u6e05\u7a7a\u5f53\u524d\u9762\u677f\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u660e\u661f\u79d1\u6280\u80a1\u6570\u636e...";
+          starsState.statusType = "ok";
+          renderStarPanel();
+          await loadStarPeriod(starsState.period, { force: true });
+          return;
+        }
+
+        if (currentPage === "weights") {
+          if (weightsState.activeIndex === COMMON_WEIGHTS_CODE) {
+            weightsState.commonCache = null;
+            weightsState.commonStatusText = "\u5df2\u6e05\u7a7a\u5f53\u524d\u9762\u677f\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u6bd4\u5bf9\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u4efd\u80a1...";
+            weightsState.commonStatusType = "ok";
+          } else {
+            weightsState.cache.delete(weightsState.activeIndex);
+            weightsState.statusText = "\u5df2\u6e05\u7a7a\u5f53\u524d\u9762\u677f\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u5f53\u524d\u6307\u6570\u6743\u91cd...";
+            weightsState.statusType = "ok";
+          }
+          renderWeightsPanel();
+          await loadWeightsView(weightsState.activeIndex, { force: true });
+          return;
+        }
+
+        if (currentPage === "sectors") {
+          sectorsState.cache.clear();
+          sectorsState.statusText = "\u5df2\u6e05\u7a7a\u5f53\u524d\u9762\u677f\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u677f\u5757 ETF \u6570\u636e...";
+          sectorsState.statusType = "ok";
+          renderSectorPanel();
+          await loadSectorPeriod(sectorsState.period, { force: true });
+          return;
+        }
+
+        if (currentPage === "fundPremiums") {
+          fundPremiumState.cache = null;
+          fundPremiumState.detailSymbol = null;
+          fundPremiumState.statusText = "\u5df2\u6e05\u7a7a\u5f53\u524d\u9762\u677f\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u6700\u65b0\u57fa\u91d1\u884c\u60c5...";
+          fundPremiumState.statusType = "ok";
+          renderFundPremiumPanel();
+          await loadFundPremiums({ force: true });
+        }
       } finally {
         setGlobalRefreshBusy(false);
         if (state.page !== currentPage) {
@@ -2933,7 +2945,7 @@ export function getClientScript() {
     var globalRefreshBtn = $("globalRefreshBtn");
     if (globalRefreshBtn) {
       globalRefreshBtn.addEventListener("click", function () {
-        forceRefreshAllPanels();
+        forceRefreshCurrentPanel();
       });
     }
 

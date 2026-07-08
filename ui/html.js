@@ -60,7 +60,7 @@ export function getHtml() {
         <div class="title">
           <div class="titleHead">
             <div class="h">\u7eb3\u65af\u8fbe\u514b\u6307\u6570\u770b\u677f</div>
-            <button class="globalRefreshBtn" id="globalRefreshBtn" type="button" aria-label="\u5f3a\u5236\u5237\u65b0\u6240\u6709\u9762\u677f\u6570\u636e">\u5237\u65b0</button>
+            <button class="globalRefreshBtn" id="globalRefreshBtn" type="button" aria-label="\u5237\u65b0\u5f53\u524d\u9762\u677f\u6570\u636e">\u5237\u65b0</button>
           </div>
           <div class="sub" id="periodCN">\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f</div>
         </div>
