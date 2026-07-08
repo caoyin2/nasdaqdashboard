@@ -336,6 +336,15 @@ function isOhlcRow(row) {
   );
 }
 
+function isCloseRow(row) {
+  return (
+    Array.isArray(row) &&
+    Array.isArray(row[0]) &&
+    Array.isArray(row[1]) &&
+    Number.isFinite(+row[1][0])
+  );
+}
+
 function findOhlcRows(value) {
   if (!Array.isArray(value)) return null;
 
@@ -348,6 +357,39 @@ function findOhlcRows(value) {
   }
 
   return null;
+}
+
+function findCloseRows(value) {
+  if (!Array.isArray(value)) return null;
+
+  const rows = Array.isArray(value[1]) ? value[1] : null;
+  if (rows && rows.filter(isCloseRow).length >= 2) return rows;
+
+  for (const item of value) {
+    const found = findCloseRows(item);
+    if (found) return found;
+  }
+
+  return null;
+}
+
+function parseGoogleDateTuple(value) {
+  if (!Array.isArray(value)) return NaN;
+
+  const year = toFiniteNumber(value[0]);
+  const month = toFiniteNumber(value[1]);
+  const day = toFiniteNumber(value[2]);
+  const hour = toFiniteNumber(value[3]) ?? 0;
+  const minute = toFiniteNumber(value[4]) ?? 0;
+  const second = toFiniteNumber(value[5]) ?? 0;
+  const offsetSeconds = Array.isArray(value[7]) ? toFiniteNumber(value[7][0]) : null;
+
+  if (![year, month, day, hour, minute, second].every(Number.isFinite)) {
+    return NaN;
+  }
+
+  const localAsUTC = Date.UTC(year, month - 1, day, hour, minute, second);
+  return Number.isFinite(offsetSeconds) ? localAsUTC - offsetSeconds * 1000 : localAsUTC;
 }
 
 function filterLastYears(bars, years) {
@@ -385,26 +427,42 @@ function parseChartPayload(data, symbol, exchange, period) {
     throw new Error(`Google Finance chart ${symbol}:${exchange} payload missing`);
   }
 
-  const rows = findOhlcRows(node[3]) || [];
-  const bars = rows
-    .map((row) => {
-      const t = Date.parse(row[4]);
-      const open = toFiniteNumber(row[0]);
-      const close = toFiniteNumber(row[1]);
-      const high = toFiniteNumber(row[2]);
-      const low = toFiniteNumber(row[3]);
+  const ohlcRows = findOhlcRows(node[3]) || [];
+  const closeRows = ohlcRows.length ? [] : (findCloseRows(node[3]) || []);
+  const bars = ohlcRows.length
+    ? ohlcRows.map((row) => {
+        const t = Date.parse(row[4]);
+        const open = toFiniteNumber(row[0]);
+        const close = toFiniteNumber(row[1]);
+        const high = toFiniteNumber(row[2]);
+        const low = toFiniteNumber(row[3]);
 
-      if (![t, open, high, low, close].every(Number.isFinite)) return null;
+        if (![t, open, high, low, close].every(Number.isFinite)) return null;
 
-      return {
-        t,
-        open,
-        high,
-        low,
-        close,
-        label: row[4],
-      };
-    })
+        return {
+          t,
+          open,
+          high,
+          low,
+          close,
+          label: row[4],
+        };
+      })
+    : closeRows.map((row) => {
+        const t = parseGoogleDateTuple(row[0]);
+        const close = toFiniteNumber(row[1][0]);
+
+        if (![t, close].every(Number.isFinite)) return null;
+
+        return {
+          t,
+          open: close,
+          high: close,
+          low: close,
+          close,
+          label: new Date(t).toISOString(),
+        };
+      })
     .filter(Boolean)
     .sort((a, b) => a.t - b.t);
 
@@ -429,7 +487,10 @@ function parseChartPayload(data, symbol, exchange, period) {
 function buildChartRequest(symbol, exchange, period) {
   const entity = [[null, [symbol, exchange]]];
   const rangeCode = PERIOD_RANGE_CODES[period] || PERIOD_RANGE_CODES["1D"];
-  return [entity, rangeCode, null, null, null, null, null, 1];
+  if (period === "1D") {
+    return [entity, rangeCode, null, null, null, null, null, 1];
+  }
+  return [entity, rangeCode];
 }
 
 async function fetchIndexPeriodWithMapping(index, period, mapping) {

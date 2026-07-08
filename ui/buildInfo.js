@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.9",
+  version: "v1.3.10",
   shortSha: "",
   fullSha: "",
-  message: "Replace SOX with SP500",
+  message: "Align Google Finance periods",
 };
