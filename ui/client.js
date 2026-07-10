@@ -1832,25 +1832,6 @@ export function getClientScript() {
       ].join("");
     }
 
-    var SECTOR_ICON_MARKS = {
-      XLC: { color: "#67d4ff", svg: '<path d="M12 4v16M7.5 8.5a7 7 0 0 0 0 7M16.5 8.5a7 7 0 0 1 0 7"/><circle cx="12" cy="12" r="2.1"/>' },
-      XLY: { color: "#f6b75a", svg: '<path d="M5 8h14l-1 12H6L5 8Z"/><path d="m8 8 1.5-3h5L16 8M9 12h.01M15 12h.01"/>' },
-      XLP: { color: "#9ee06f", svg: '<path d="M4 9h16l-2 10H6L4 9Z"/><path d="m8 9 4-5 4 5M9 13h.01M12 13h.01M15 13h.01"/>' },
-      XLE: { color: "#ff9f6d", svg: '<path d="m13 2-8 12h7l-1 8 8-12h-7l1-8Z"/>' },
-      XLF: { color: "#b6a0ff", svg: '<path d="m3 9 9-5 9 5H3ZM5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/>' },
-      XLV: { color: "#ff7ea8", svg: '<path d="M12 5v14M5 12h14"/><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/>' },
-      XLI: { color: "#71c7bd", svg: '<path d="M3 21V10l6 3V9l6 3V5l6 3v13H3Z"/><path d="M7 17h2M12 17h2M17 17h1"/>' },
-      XLB: { color: "#d9b878", svg: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>' },
-      XLRE: { color: "#75a9ff", svg: '<path d="M4 21V5h11v16M15 10h5v11M8 9h3M8 13h3M8 17h3"/>' },
-      XLK: { color: "#67e8d1", svg: '<rect x="6.5" y="6.5" width="11" height="11" rx="2"/><path d="M9 2v4.5M15 2v4.5M9 17.5V22M15 17.5V22M2 9h4.5M2 15h4.5M17.5 9H22M17.5 15H22"/>' },
-      XLU: { color: "#f7d46d", svg: '<path d="M8 3v7M16 3v7M6 10h12v3a6 6 0 0 1-6 6v2M9 21h6"/>' }
-    };
-
-    function sectorIconHTML(symbol) {
-      var mark = SECTOR_ICON_MARKS[String(symbol || "").toUpperCase()] || SECTOR_ICON_MARKS.XLC;
-      return '<span class="sectorIcon" style="--sector-icon:' + mark.color + '" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + mark.svg + '</svg></span>';
-    }
-
     function sectorMaxAbsChange(items) {
       var values = (items || []).map(function (item) {
         return Math.abs(Number.isFinite(item && item.changePct) ? item.changePct : 0);
@@ -1917,8 +1898,8 @@ export function getClientScript() {
         '<article class="sectorHeatTile ' + tone + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
           '<div class="sectorHeatHeader">',
             '<div class="starIdentity">',
-              '<div class="starIconWrap sectorIconWrap">',
-                sectorIconHTML(item.symbol),
+              '<div class="starIconWrap">',
+                '<img class="starIcon" src="' + esc(item.icon) + '" alt="' + esc(item.symbol) + '" loading="lazy" data-search-symbol="' + esc(item.symbol) + '" data-search-refresh-state="idle" />',
               '</div>',
               '<div class="starNameBox">',
                 '<div class="starName">' + esc(item.nameCN) + '</div>',
@@ -2023,8 +2004,8 @@ export function getClientScript() {
         '<article class="sectorBarRow ' + tone + '" data-symbol="' + esc(item.symbol) + '">',
           '<div class="sectorBarTop">',
             '<div class="starIdentity">',
-              '<div class="starIconWrap sectorIconWrap">',
-                sectorIconHTML(item.symbol),
+              '<div class="starIconWrap">',
+                '<img class="starIcon" src="' + esc(item.icon) + '" alt="' + esc(item.symbol) + '" loading="lazy" data-search-symbol="' + esc(item.symbol) + '" data-search-refresh-state="idle" />',
               '</div>',
               '<div class="starNameBox">',
                 '<div class="starName">' + esc(item.nameCN) + '</div>',

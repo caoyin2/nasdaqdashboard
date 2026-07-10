@@ -16,7 +16,7 @@ function normalizeSymbol(symbol) {
   return String(symbol || "").trim().toUpperCase();
 }
 
-export function buildDefaultIconLight(symbol) {
+function buildDefaultIconLight(symbol) {
   return `https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/${encodeURIComponent(symbol)}.svg`;
 }
 
@@ -25,17 +25,13 @@ function buildDefaultIconDark(symbol) {
 }
 
 function normalizeStoredMeta(symbol, value) {
-  const normalizedSymbol = normalizeSymbol(value?.symbol || symbol);
-
   return {
-    symbol: normalizedSymbol,
+    symbol: normalizeSymbol(value?.symbol || symbol),
     tickerId: Number.isFinite(+value?.tickerId) ? +value.tickerId : null,
-    nameEn: String(value?.nameEn || normalizedSymbol).trim(),
-    slug: String(value?.slug || normalizedSymbol).trim().toLowerCase(),
-    // Keep every company card on the original per-symbol Seeking Alpha asset.
-    // Stored upstream aliases can otherwise make several symbols share one logo.
-    iconLight: buildDefaultIconLight(normalizedSymbol),
-    iconDark: buildDefaultIconDark(normalizedSymbol),
+    nameEn: String(value?.nameEn || normalizeSymbol(symbol)).trim(),
+    slug: String(value?.slug || normalizeSymbol(symbol)).trim().toLowerCase(),
+    iconLight: value?.iconLight || buildDefaultIconLight(symbol),
+    iconDark: value?.iconDark || buildDefaultIconDark(symbol),
     updatedAt: value?.updatedAt || null,
     source: value?.source || "kv",
   };

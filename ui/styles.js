@@ -1208,27 +1208,6 @@ export function getStyles() {
       filter: brightness(2.32) saturate(1.40) contrast(1.14);
     }
 
-    .sectorIconWrap{
-      background:
-        radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--sector-icon, #67d4ff) 18%, transparent), transparent 64%),
-        linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
-    }
-
-    .sectorIcon{
-      width: 32px;
-      height: 32px;
-      display:grid;
-      place-items:center;
-      color: var(--sector-icon, #67d4ff);
-      filter: drop-shadow(0 0 9px color-mix(in srgb, var(--sector-icon, #67d4ff) 58%, transparent));
-    }
-
-    .sectorIcon svg{
-      width:100%;
-      height:100%;
-      display:block;
-    }
-
     .starNameBox{
       min-width: 0;
       display:grid;

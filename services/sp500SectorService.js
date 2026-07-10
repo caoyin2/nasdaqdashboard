@@ -7,7 +7,7 @@
  * - non-1D base uses the first bar returned by the selected period
  *
  * Search metadata still goes through KV/searchMetaStore so the panel can
- * reuse cached ticker IDs without coupling sector visuals to upstream assets.
+ * reuse cached ticker IDs and icons without hardcoding them in runtime logic.
  */
 
 import { SP500_SECTOR_ETFS } from "../config.js";
@@ -76,6 +76,7 @@ function buildSectorCard(period, etf, meta, bars1D, periodBarsRaw, ytdBars) {
     tickerId: meta.tickerId,
     symbol: etf.symbol,
     nameCN: etf.nameCN,
+    icon: meta.iconLight || null,
     latestT: Number.isFinite(latestT) ? latestT : null,
     period,
     baseLabel,
@@ -102,6 +103,7 @@ function buildSectorCardFromRealTimeQuote(etf, meta, quote) {
     tickerId: meta.tickerId,
     symbol: etf.symbol,
     nameCN: etf.nameCN,
+    icon: meta.iconLight || null,
     latestT: Number.isFinite(latestT) ? latestT : null,
     period: "1D",
     baseLabel: "\u6628\u6536",
