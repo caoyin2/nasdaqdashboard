@@ -718,6 +718,32 @@ export function getStyles() {
       gap:12px;
     }
 
+    .fgBrand{
+      display:flex;
+      align-items:center;
+      gap: 11px;
+      min-width: 0;
+    }
+
+    .cnnLogo{
+      display:grid;
+      place-items:center;
+      width: 54px;
+      height: 54px;
+      flex: 0 0 54px;
+      padding: 4px;
+      border-radius: 8px;
+      background: #d71920;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.22), 0 8px 18px rgba(215,25,32,.22);
+    }
+
+    .cnnLogo img{
+      display:block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
     .fgEyebrow{
       font-family: var(--mono);
       font-size: 12px;
@@ -1082,6 +1108,11 @@ export function getStyles() {
       width: 16px;
       height: 16px;
       flex: 0 0 16px;
+    }
+
+    .panelSourceOfficialIcon{
+      object-fit: contain;
+      border-radius: 2px;
     }
 
     .starGrid{
@@ -2565,6 +2596,7 @@ export function getStyles() {
       .fsBtn{ display:flex; }
 
       .fgTitle{ font-size: 16px; }
+      .cnnLogo{ width: 48px; height: 48px; flex-basis: 48px; }
       .fgCardInner{ grid-template-columns: 1fr; gap: 12px; }
       .fgStats{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
       .fgGaugeBox{ width: min(100%, 330px); }

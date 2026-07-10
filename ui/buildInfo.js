@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.20",
+  version: "v1.3.21",
   shortSha: "",
   fullSha: "",
-  message: "Show panel data sources",
+  message: "Use official source icons",
 };
