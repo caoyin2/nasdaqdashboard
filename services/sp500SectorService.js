@@ -22,6 +22,9 @@ import {
 import { fetchSeekingAlphaPeriod, fetchSeekingAlphaRealTimeQuotes } from "./seekingAlpha.js";
 import { getSearchMetaBatch, refreshSearchMeta } from "./searchMetaStore.js";
 
+const SP500_INDEX_ICON_SYMBOL = "SPGI";
+const SP500_INDEX_ICON_URL = "https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/SPGI.svg";
+
 function maxLatestTime(items) {
   const values = (items || [])
     .map((item) => item?.latestT)
@@ -76,7 +79,8 @@ function buildSectorCard(period, etf, meta, bars1D, periodBarsRaw, ytdBars) {
     tickerId: meta.tickerId,
     symbol: etf.symbol,
     nameCN: etf.nameCN,
-    icon: meta.iconLight || null,
+    icon: SP500_INDEX_ICON_URL,
+    iconRefreshSymbol: SP500_INDEX_ICON_SYMBOL,
     latestT: Number.isFinite(latestT) ? latestT : null,
     period,
     baseLabel,
@@ -103,7 +107,8 @@ function buildSectorCardFromRealTimeQuote(etf, meta, quote) {
     tickerId: meta.tickerId,
     symbol: etf.symbol,
     nameCN: etf.nameCN,
-    icon: meta.iconLight || null,
+    icon: SP500_INDEX_ICON_URL,
+    iconRefreshSymbol: SP500_INDEX_ICON_SYMBOL,
     latestT: Number.isFinite(latestT) ? latestT : null,
     period: "1D",
     baseLabel: "\u6628\u6536",

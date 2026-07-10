@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.26",
+  version: "v1.3.27",
   shortSha: "",
   fullSha: "",
-  message: "Add saved light theme",
+  message: "Use SP500 icon for sector ETFs",
 };
