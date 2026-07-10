@@ -385,7 +385,7 @@ export function getClientScript() {
     var INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA = 1;
     var INDEX_WEIGHTS_LOCAL_CACHE_PREFIX = "nasdaqDashboard.indexWeights." + INDEX_WEIGHTS_API_VERSION + ".";
     var SP500_SECTOR_API_VERSION = "20260406a";
-    var FUND_PREMIUM_API_VERSION = "20260415b";
+    var FUND_PREMIUM_API_VERSION = "lof-valuation-date-v2";
     var COMMON_WEIGHTS_CODE = "COMMON";
     var WEIGHTS_INDEX_OPTIONS = [
       { code: COMMON_WEIGHTS_CODE, label: "\\u5171\\u540c\\u6210\\u4efd\\u80a1" },
@@ -1757,14 +1757,14 @@ export function getClientScript() {
               ["\u8bf7\u6c42\u5468\u671f", index.period || "1Y"],
               ["\u51c0\u503c\u65e5\u6536\u76d8", (index.navDate || "--") + " / " + calcNumberText(index.navClose, 4)],
               ["\u51c0\u503c\u65e5\u6570\u636e\u65f6\u95f4", calcTimeText(index.navTime)],
-              ["\u4ea4\u6613\u65e5\u6536\u76d8", (index.tradeDate || "--") + " / " + calcNumberText(index.tradeClose, 4)],
-              ["\u4ea4\u6613\u65e5\u6570\u636e\u65f6\u95f4", calcTimeText(index.tradeTime)],
+              ["\u6d77\u5916\u4f30\u503c\u65e5\u6536\u76d8", (index.tradeDate || "--") + " / " + calcNumberText(index.tradeClose, 4)],
+              ["\u6d77\u5916\u4f30\u503c\u65e5\u6570\u636e\u65f6\u95f4", calcTimeText(index.tradeTime)],
               ["\u6307\u6570\u4fee\u6b63\u500d\u6570", calcNumberText(calc.indexMultiplier, 8)],
               ["\u533a\u95f4\u6da8\u8dcc", calcPctText(index.changePct)],
             ]),
             fundCalcSectionHTML("4. \u4eba\u6c11\u5e01\u7f8e\u5143\u4e2d\u95f4\u4ef7\u4fee\u6b63", [
               ["\u51c0\u503c\u65e5\u6c47\u7387", (fx.navDate || "--") + " / " + calcNumberText(fx.navRate, 4)],
-              ["\u4ea4\u6613\u65e5\u6c47\u7387", (fx.tradeDate || "--") + " / " + calcNumberText(fx.tradeRate, 4)],
+              ["\u6d77\u5916\u4f30\u503c\u65e5\u6c47\u7387", (fx.tradeDate || "--") + " / " + calcNumberText(fx.tradeRate, 4)],
               ["\u6c47\u7387\u4fee\u6b63\u500d\u6570", calcNumberText(calc.fxMultiplier, 8)],
               ["\u533a\u95f4\u53d8\u5316", calcPctText(fx.changePct)],
             ]),

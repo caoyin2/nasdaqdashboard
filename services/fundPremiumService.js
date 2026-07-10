@@ -256,8 +256,9 @@ async function fetchLofBaseInfo(marketSymbol) {
 
 async function buildLofPremiumContext(fund, fields) {
   // 161128 is a QDII-LOF. Tencent's own premium field is based on the last
-  // published NAV, so estimate the NAV for the quote date with SP500-45 and
-  // USD/CNY central parity changes before calculating the displayed premium.
+  // published NAV. Any estimate must advance the index and the FX rate to the
+  // same overseas valuation date. Using the domestic quote date for FX can
+  // otherwise apply a newer exchange rate to an already-valued NAV.
   const tradePrice = toFiniteNumber(fields[3]);
   const tradeDate = parseTencentBeijingDateKey(fields[30]);
   const quoteTime = parseTencentBeijingTime(fields[30]);
@@ -271,10 +272,8 @@ async function buildLofPremiumContext(fund, fields) {
     throw new Error(`LOF premium input incomplete for ${fund.marketSymbol}`);
   }
 
-  const [index, fx] = await Promise.all([
-    fetchSp500TechDailyContext(publishedNavDate, tradeDate),
-    fetchUsdCnyContext(publishedNavDate, tradeDate),
-  ]);
+  const index = await fetchSp500TechDailyContext(publishedNavDate, tradeDate);
+  const fx = await fetchUsdCnyContext(publishedNavDate, index.tradeDate);
 
   const indexMultiplier = index.tradeClose / index.navClose;
   const fxMultiplier = fx.tradeRate / fx.navRate;
