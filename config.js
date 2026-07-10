@@ -8,12 +8,30 @@ export const UPSTREAM = "https://static.seekingalpha.com/cdn/finance-api/lua_cha
 export const CNN_FG_UPSTREAM = "https://production.dataviz.cnn.io/index/fearandgreed/graphdata";
 export const MARKET_TZ = "America/New_York";
 
+export const INDEX_DATA_SOURCES = {
+  yahoo: {
+    key: "yahoo",
+    label: "雅虎台湾",
+    periods: ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "MAX"],
+  },
+  google: {
+    key: "google",
+    label: "谷歌财经",
+    periods: ["1D", "1M", "6M", "YTD", "1Y", "5Y", "MAX"],
+  },
+};
+
+export function normalizeIndexDataSource(raw) {
+  return String(raw || "").trim().toLowerCase() === "google" ? "google" : "yahoo";
+}
+
 export const INDEXES = [
   {
     tickerId: 766533,
     symbol: "SP500-45",
     googleSymbol: "SP500-45",
     googleExchange: "INDEXSP",
+    yahooSymbol: "^SP500-45",
     nameCN: "\u6807\u666e500\u4fe1\u606f\u79d1\u6280\uff08SP500-45\uff09",
     iconSymbol: "SPGI",
   },
@@ -22,6 +40,7 @@ export const INDEXES = [
     symbol: "NDXTMC",
     googleSymbol: "NDXTMC",
     googleExchange: "INDEXNASDAQ",
+    yahooSymbol: "^NDXTMC",
     nameCN: "\u7eb3\u65af\u8fbe\u514b\u79d1\u6280\u5e02\u503c\u52a0\u6743\uff08NDXTMC\uff09",
     iconSymbol: "NDAQ",
   },
@@ -30,6 +49,7 @@ export const INDEXES = [
     symbol: "NDX",
     googleSymbol: "NDX",
     googleExchange: "INDEXNASDAQ",
+    yahooSymbol: "^NDX",
     nameCN: "\u7eb3\u65af\u8fbe\u514b100\uff08NDX\uff09",
     iconSymbol: "NDAQ",
   },
@@ -38,6 +58,7 @@ export const INDEXES = [
     symbol: "SP500",
     googleSymbol: ".INX",
     googleExchange: "INDEXSP",
+    yahooSymbol: "^SPX",
     nameCN: "\u6807\u666e500\uff08SP500\uff09",
     iconSymbol: "SPGI",
   },

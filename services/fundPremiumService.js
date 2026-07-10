@@ -18,9 +18,9 @@
  * - 78: reference NAV, kept for diagnostics only
  */
 
-import { FUND_PREMIUM_FUNDS, INDEXES } from "../config.js";
+import { FUND_PREMIUM_FUNDS, INDEXES, normalizeIndexDataSource } from "../config.js";
 import { marketDateKey } from "../lib/time.js";
-import { fetchGoogleFinanceIndexPeriod } from "./googleFinance.js";
+import { fetchIndexPeriodBySource, indexDataSourceLabel } from "./indexDataSource.js";
 
 const TENCENT_QT_URL = "https://qt.gtimg.cn/";
 const TENCENT_FUND_PRICE_ZONE_URL = "https://web.ifzq.gtimg.cn/fund/newfund/fundBase/getPriceZone";
@@ -122,19 +122,22 @@ function pickOnOrBefore(rows, targetDate, dateSelector) {
   return sorted.length ? sorted[sorted.length - 1] : null;
 }
 
-async function fetchSp500TechDailyContext(navDate, tradeDate) {
+async function fetchSp500TechDailyContext(navDate, tradeDate, source) {
   const index = INDEXES.find((item) => item.symbol === SP500_TECH_INDEX_SYMBOL);
-  if (!index?.googleExchange) {
-    throw new Error(`${SP500_TECH_INDEX_SYMBOL} Google Finance exchange missing`);
+  if (!index) {
+    throw new Error(`${SP500_TECH_INDEX_SYMBOL} index configuration missing`);
   }
 
+  const normalizedSource = normalizeIndexDataSource(source);
   const period = "YTD";
-  const raw = await fetchGoogleFinanceIndexPeriod(period, index);
-  const bars = (raw?.bars || []).map((bar) => ({
-    date: marketDateKey(bar.t),
-    close: bar.close,
-    t: bar.t,
-  }));
+  const raw = await fetchIndexPeriodBySource(normalizedSource, period, index);
+  const bars = (raw?.bars || [])
+    .filter((bar) => Number.isFinite(bar?.close) && bar.close > 0)
+    .map((bar) => ({
+      date: marketDateKey(bar.t),
+      close: bar.close,
+      t: bar.t,
+    }));
 
   const navPoint = pickOnOrBefore(bars, navDate, (bar) => bar.date);
   const tradePoint = pickOnOrBefore(bars, tradeDate, (bar) => bar.date);
@@ -146,12 +149,15 @@ async function fetchSp500TechDailyContext(navDate, tradeDate) {
   return {
     symbol: SP500_TECH_INDEX_SYMBOL,
     tickerId: index.tickerId,
+    dataSource: normalizedSource,
+    source: indexDataSourceLabel(normalizedSource),
+    yahooSymbol: index.yahooSymbol || null,
     googleSymbol: index.googleSymbol || index.symbol,
     googleExchange: index.googleExchange,
-    googleQuote: raw.googleQuote || `${index.googleSymbol || index.symbol}:${index.googleExchange}`,
+    googleQuote: raw.googleQuote || null,
+    yahooQuote: raw.yahooSymbol || index.yahooSymbol || null,
     period,
-    source: "Google Finance c2u4wc",
-    requestUrl: raw.pageUrl || null,
+    requestUrl: raw.pageUrl || raw.requestUrl || null,
     requestedNavDate: navDate,
     requestedTradeDate: tradeDate,
     navDate: navPoint.date,
@@ -248,7 +254,7 @@ async function fetchLofBaseInfo(marketSymbol) {
   return json.data;
 }
 
-async function buildLofPremiumContext(fund, fields) {
+async function buildLofPremiumContext(fund, fields, source) {
   // 161128 is a QDII-LOF. Tencent's own premium field is based on the last
   // published NAV, so estimate the NAV for the quote date with SP500-45 and
   // USD/CNY central parity changes before calculating the displayed premium.
@@ -266,7 +272,7 @@ async function buildLofPremiumContext(fund, fields) {
   }
 
   const [index, fx] = await Promise.all([
-    fetchSp500TechDailyContext(publishedNavDate, tradeDate),
+    fetchSp500TechDailyContext(publishedNavDate, tradeDate, source),
     fetchUsdCnyContext(publishedNavDate, tradeDate),
   ]);
 
@@ -364,7 +370,8 @@ function maxLatestTime(items) {
   return values.length ? Math.max(...values) : null;
 }
 
-export async function buildFundPremiumPayload() {
+export async function buildFundPremiumPayload(source) {
+  const normalizedSource = normalizeIndexDataSource(source);
   const funds = FUND_PREMIUM_FUNDS.map((fund) => ({
     ...fund,
     marketSymbol: toMarketSymbol(fund.code),
@@ -400,7 +407,9 @@ export async function buildFundPremiumPayload() {
 
   const lofFund = funds.find((fund) => fund.code === LOF_SP500_TECH_CODE);
   const lofFields = lofFund ? variableMap.get(lofFund.marketSymbol) : null;
-  const lofPremium = lofFund && lofFields ? await buildLofPremiumContext(lofFund, lofFields) : null;
+  const lofPremium = lofFund && lofFields
+    ? await buildLofPremiumContext(lofFund, lofFields, normalizedSource)
+    : null;
 
   const items = funds.map((fund) => {
     const fields = variableMap.get(fund.marketSymbol);
@@ -424,6 +433,8 @@ export async function buildFundPremiumPayload() {
   return {
     ok: true,
     title: "\u57fa\u91d1\u6298\u6ea2\u4ef7",
+    indexSource: normalizedSource,
+    indexSourceLabel: indexDataSourceLabel(normalizedSource),
     asOfMs: maxLatestTime(items),
     tradeDate: latestTradeDate(items),
     items,

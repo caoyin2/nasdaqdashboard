@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.11",
+  version: "v1.3.13",
   shortSha: "",
   fullSha: "",
-  message: "Use Google Finance indexes",
+  message: "Hardcode index source icons",
 };

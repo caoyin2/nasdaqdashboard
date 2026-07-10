@@ -7,7 +7,7 @@
  * 3. 调用真正的业务函数 buildQuotePayload(period)
  */
 
-import { normalizePeriod } from "./config.js";
+import { normalizeIndexDataSource, normalizePeriod } from "./config.js";
 import { corsHeaders, htmlResponse, jsonResponse } from "./lib/http.js";
 import { fetchCnnFearGreedSummary } from "./services/cnnFearGreed.js";
 import { buildFundPremiumPayload } from "./services/fundPremiumService.js";
@@ -260,7 +260,8 @@ export default {
     if (url.pathname === "/api/quote") {
       try {
         const period = normalizePeriod(url.searchParams.get("p"));
-        const payload = await buildQuotePayload(period, env);
+        const source = normalizeIndexDataSource(url.searchParams.get("source"));
+        const payload = await buildQuotePayload(period, env, source);
         return jsonResponse(payload, origin, 200, { cacheSeconds: 0 });
       } catch (error) {
         return jsonResponse(
@@ -335,7 +336,8 @@ export default {
 
     if (url.pathname === "/api/fund-premiums") {
       try {
-        const payload = await buildFundPremiumPayload();
+        const source = normalizeIndexDataSource(url.searchParams.get("source"));
+        const payload = await buildFundPremiumPayload(source);
         return jsonResponse(payload, origin, 200, { cacheSeconds: 0 });
       } catch (error) {
         return jsonResponse(

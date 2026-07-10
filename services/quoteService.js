@@ -6,14 +6,14 @@
  * 避免它跟随 1D 轮询一起重复刷新。
  */
 
-import { INDEXES, LINE_COLORS } from "../config.js";
+import { INDEXES, LINE_COLORS, normalizeIndexDataSource } from "../config.js";
 import {
   fmtUTC,
   getLastBar,
   patchBarsWithLatest1D,
   pickFirstCloseFromBars,
 } from "../lib/time.js";
-import { fetchGoogleFinanceIndexPeriod } from "./googleFinance.js";
+import { fetchIndexPeriodBySource, indexDataSourceLabel } from "./indexDataSource.js";
 import { getSearchMetaBatch } from "./searchMetaStore.js";
 
 function maxLatestTime(items) {
@@ -39,15 +39,15 @@ function buildQuoteLastBar(quote, fallbackBar) {
     high: Math.max(Number.isFinite(fallbackBar?.high) ? fallbackBar.high : base, close),
     low: Math.min(Number.isFinite(fallbackBar?.low) ? fallbackBar.low : base, close),
     close,
-    label: "GOOGLE_QUOTE_LAST",
+    label: "INDEX_QUOTE_LAST",
   };
 }
 
-async function buildGoogleFinanceIndexItem(idx, i, period, searchMetaMap) {
-  const oneDayPromise = fetchGoogleFinanceIndexPeriod("1D", idx);
+async function buildIndexItemFromSource(idx, i, period, searchMetaMap, source) {
+  const oneDayPromise = fetchIndexPeriodBySource(source, "1D", idx);
   const periodPromise = period === "1D"
     ? oneDayPromise
-    : fetchGoogleFinanceIndexPeriod(period, idx);
+    : fetchIndexPeriodBySource(source, period, idx);
 
   const [oneDayRaw, periodRaw] = await Promise.all([
     oneDayPromise,
@@ -78,11 +78,13 @@ async function buildGoogleFinanceIndexItem(idx, i, period, searchMetaMap) {
     if (!Number.isFinite(baseClose)) baseClose = null;
   }
 
-  const barsForSeries = period === "1D"
-    ? patchBarsWithLatest1D(bars1D || [], quoteLastBar)
-    : patchBarsWithLatest1D(periodBarsRaw || [], quoteLastBar);
+  const barsForSeries = normalizeIndexDataSource(source) === "yahoo"
+    ? (period === "1D" ? bars1D : periodBarsRaw)
+    : (period === "1D"
+      ? patchBarsWithLatest1D(bars1D || [], quoteLastBar)
+      : patchBarsWithLatest1D(periodBarsRaw || [], quoteLastBar));
 
-  return buildIndexItem(idx, i, searchMetaMap, {
+  return buildIndexItem(idx, i, searchMetaMap, source, {
     latestT,
     lastClose,
     baseClose,
@@ -90,7 +92,7 @@ async function buildGoogleFinanceIndexItem(idx, i, period, searchMetaMap) {
   });
 }
 
-function buildIndexItem(idx, i, searchMetaMap, data) {
+function buildIndexItem(idx, i, searchMetaMap, source, data) {
   const baseClose = data.baseClose;
   const lastClose = data.lastClose;
   const barsForSeries = data.barsForSeries || [];
@@ -118,8 +120,11 @@ function buildIndexItem(idx, i, searchMetaMap, data) {
   return {
     tickerId: idx.tickerId,
     symbol: idx.symbol,
+    yahooSymbol: idx.yahooSymbol || null,
     googleSymbol: idx.googleSymbol || idx.symbol,
     googleExchange: idx.googleExchange || null,
+    dataSource: normalizeIndexDataSource(source),
+    dataSourceLabel: indexDataSourceLabel(source),
     nameCN: idx.nameCN,
     color: LINE_COLORS[i % LINE_COLORS.length],
     iconSymbol: idx.iconSymbol || null,
@@ -135,7 +140,8 @@ function buildIndexItem(idx, i, searchMetaMap, data) {
   };
 }
 
-export async function buildQuotePayload(period, env) {
+export async function buildQuotePayload(period, env, source) {
+  const normalizedSource = normalizeIndexDataSource(source);
   const iconSymbols = Array.from(
     new Set(
       INDEXES
@@ -148,7 +154,9 @@ export async function buildQuotePayload(period, env) {
     allowFetch: true,
   });
 
-  const indexJobs = INDEXES.map((idx, i) => buildGoogleFinanceIndexItem(idx, i, period, searchMetaMap));
+  const indexJobs = INDEXES.map((idx, i) =>
+    buildIndexItemFromSource(idx, i, period, searchMetaMap, normalizedSource)
+  );
 
   let items;
   try {
@@ -166,6 +174,8 @@ export async function buildQuotePayload(period, env) {
 
   return {
     ok: true,
+    source: normalizedSource,
+    sourceLabel: indexDataSourceLabel(normalizedSource),
     period,
     asOfMs: Number.isFinite(asOfMs) ? asOfMs : null,
     asOfUTC,

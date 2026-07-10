@@ -224,6 +224,47 @@ export function getStyles() {
       box-shadow: inset 0 0 0 1px rgba(0,174,239,.25);
     }
 
+    .indexSourceSeg{
+      display:inline-flex;
+      align-items:center;
+      gap: 4px;
+      padding: 4px;
+      width: fit-content;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255,255,255,.035);
+    }
+
+    .indexSourceSeg button{
+      appearance:none;
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      min-height: 30px;
+      padding: 5px 8px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: rgba(230,237,247,.70);
+      background: transparent;
+      cursor:pointer;
+      font-family: var(--mono);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .indexSourceSeg button.active{
+      color: rgba(255,255,255,.96);
+      border-color: rgba(0,224,255,.24);
+      background: rgba(0,174,239,.14);
+    }
+
+    .indexSourceIcon{
+      display:block;
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+    }
+
     .asof{
       font-family: var(--mono);
       font-size: 12px;
@@ -2450,6 +2491,10 @@ export function getStyles() {
       .seg button{
         flex: 0 0 auto;
         padding: 8px 10px;
+      }
+
+      .indexSourceSeg{
+        max-width: 100%;
       }
 
       .asof{

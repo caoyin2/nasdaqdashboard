@@ -160,8 +160,28 @@ export function getClientScript() {
 
     var META = APP_CONFIG.meta || [];
     var PERIOD_LABELS = APP_CONFIG.periodLabels || {};
+    var INDEX_SOURCES = Array.isArray(APP_CONFIG.indexSources) ? APP_CONFIG.indexSources : [];
     var UP_COLOR = APP_CONFIG.upColor || "rgba(255,77,109,.95)";
     var DOWN_COLOR = APP_CONFIG.downColor || "rgba(34,197,94,.95)";
+
+    function normalizeIndexSource(value) {
+      return String(value || "").toLowerCase() === "google" ? "google" : "yahoo";
+    }
+
+    function indexSourceConfig(source) {
+      var key = normalizeIndexSource(source);
+      return INDEX_SOURCES.find(function (item) { return item && item.key === key; }) || {
+        key: key,
+        label: key === "google" ? "谷歌财经" : "雅虎台湾",
+        periods: key === "google"
+          ? ["1D", "1M", "6M", "YTD", "1Y", "5Y", "MAX"]
+          : ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "MAX"]
+      };
+    }
+
+    function sourceSupportsPeriod(source, period) {
+      return indexSourceConfig(source).periods.indexOf(period) >= 0;
+    }
 
     var dtfBJ = new Intl.DateTimeFormat("zh-CN", {
       timeZone: "Asia/Shanghai",
@@ -338,6 +358,7 @@ export function getClientScript() {
       timeIndex: new Map(),
       hoverTime: null,
       period: "1D",
+      indexSource: "yahoo",
       page: "overview"
     };
 
@@ -411,6 +432,51 @@ export function getClientScript() {
       if (page === "sectors") return "\u9762\u677f\uff1a\u6807\u666e500\u677f\u5757ETF";
       if (page === "fundPremiums") return "\u9762\u677f\uff1a\u57fa\u91d1\u6298\u6ea2\u4ef7";
       return "\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f";
+    }
+
+    function overviewCacheKey(period, source) {
+      return normalizeIndexSource(source) + ":" + period;
+    }
+
+    function syncOverviewSourceControls() {
+      var source = normalizeIndexSource(state.indexSource);
+      var sourceSeg = $("indexSourceSeg");
+      if (sourceSeg) {
+        sourceSeg.querySelectorAll("button[data-index-source]").forEach(function (button) {
+          button.classList.toggle("active", button.getAttribute("data-index-source") === source);
+        });
+      }
+
+      var seg = $("seg");
+      if (!seg) return;
+      seg.querySelectorAll("button[data-p]").forEach(function (button) {
+        var period = button.getAttribute("data-p");
+        var supported = sourceSupportsPeriod(source, period);
+        button.hidden = !supported;
+        button.disabled = !supported;
+        button.classList.toggle("active", supported && period === state.period);
+      });
+    }
+
+    function switchIndexSource(source) {
+      var nextSource = normalizeIndexSource(source);
+      if (nextSource === state.indexSource) return;
+
+      state.indexSource = nextSource;
+      if (!sourceSupportsPeriod(nextSource, state.period)) {
+        state.period = "1D";
+      }
+      state.hoverTime = null;
+      periodCache.clear();
+      if (fundPremiumState.fetchCtrl) fundPremiumState.fetchCtrl.abort();
+      fundPremiumState.cache = null;
+      fundPremiumState.detailSymbol = null;
+      syncOverviewSourceControls();
+
+      if (state.page === "overview") {
+        clearOverviewPanelData({ keepFearGreed: true });
+        scheduleRender(state.period, { force: true, source: nextSource });
+      }
     }
 
     function rebuildTimes() {
@@ -1554,11 +1620,11 @@ export function getClientScript() {
       var fx = calc.fx || {};
       var quote = calc.quoteSource || {};
       var nav = calc.navSource || {};
-      var indexQuoteText = index.googleQuote ||
+      var indexQuoteText = index.yahooQuote || index.googleQuote ||
         ((index.googleSymbol || index.symbol) && index.googleExchange
           ? (index.googleSymbol || index.symbol) + ":" + index.googleExchange
           : "");
-      var indexSourceText = (index.source || "Google Finance") +
+      var indexSourceText = (index.source || "指数数据源") +
         (indexQuoteText ? " / " + indexQuoteText : (index.tickerId ? " / ticker_id=" + index.tickerId : ""));
       var estimatedFormula = "\u4f30\u7b97\u51c0\u503c = " +
         calcNumberText(calc.publishedNav, 6) + " \u00d7 " +
@@ -2688,10 +2754,14 @@ export function getClientScript() {
       }, API_TIMEOUT_MS);
 
       try {
-        var res = await fetch("/api/fund-premiums?v=" + encodeURIComponent(FUND_PREMIUM_API_VERSION), {
+        var res = await fetch(
+          "/api/fund-premiums?v=" + encodeURIComponent(FUND_PREMIUM_API_VERSION) +
+          "&source=" + encodeURIComponent(state.indexSource),
+          {
           cache: "no-store",
           signal: controller.signal
-        });
+          }
+        );
         if (!res.ok) throw new Error("HTTP " + res.status);
         var payload = await res.json();
         if (!payload.ok) throw new Error(payload.error || "Fund premium API error");
@@ -2716,7 +2786,7 @@ export function getClientScript() {
       var opts = options || {};
       fundPremiumState.touched = true;
 
-      if (!opts.force && fundPremiumState.cache) {
+      if (!opts.force && fundPremiumState.cache && fundPremiumState.cache.indexSource === state.indexSource) {
         fundPremiumState.statusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u6570\u636e";
         fundPremiumState.statusType = "ok";
         renderFundPremiumPanel();
@@ -2762,9 +2832,10 @@ export function getClientScript() {
       starForwardPeState.attempted = false;
     }
 
-    function clearOverviewPanelData() {
-      periodCache.delete(state.period);
-      fearGreedCache = null;
+    function clearOverviewPanelData(options) {
+      var opts = options || {};
+      periodCache.delete(overviewCacheKey(state.period, state.indexSource));
+      if (!opts.keepFearGreed) fearGreedCache = null;
       state.items = [];
       state.times = [];
       state.timeIndex = new Map();
@@ -2782,7 +2853,7 @@ export function getClientScript() {
 
       setOverviewCurrentPeriod(state.period);
       draw();
-      renderFearGreedLoading();
+      if (!opts.keepFearGreed) renderFearGreedLoading();
     }
 
     async function forceRefreshCurrentPanel() {
@@ -2959,6 +3030,7 @@ export function getClientScript() {
 
     async function fetchPeriod(period, options) {
       var opts = options || {};
+      var source = normalizeIndexSource(opts.source || state.indexSource);
       var controller = new AbortController();
       var timedOut = false;
 
@@ -2972,10 +3044,13 @@ export function getClientScript() {
 
       var res;
       try {
-        res = await fetch("/api/quote?p=" + encodeURIComponent(period), {
+        res = await fetch(
+          "/api/quote?p=" + encodeURIComponent(period) + "&source=" + encodeURIComponent(source),
+          {
           cache: "no-store",
           signal: controller.signal
-        });
+          }
+        );
       } catch (error) {
         if (controller.signal.aborted && !timedOut) {
           return null;
@@ -2994,16 +3069,18 @@ export function getClientScript() {
       if (!res.ok) throw new Error("HTTP " + res.status);
       var q = await res.json();
       if (!q.ok) throw new Error(q.error || "API error");
-      periodCache.set(period, { q: q, savedAt: Date.now() });
+      periodCache.set(overviewCacheKey(period, source), { q: q, savedAt: Date.now() });
       return q;
     }
 
     async function ensureData(period, options) {
       var opts = options || {};
-      if (!opts.force && periodCache.has(period)) {
-        return { q: periodCache.get(period).q, fromCache: true };
+      var source = normalizeIndexSource(opts.source || state.indexSource);
+      var key = overviewCacheKey(period, source);
+      if (!opts.force && periodCache.has(key)) {
+        return { q: periodCache.get(key).q, fromCache: true };
       }
-      var q = await fetchPeriod(period, opts);
+      var q = await fetchPeriod(period, Object.assign({}, opts, { source: source }));
       return q ? { q: q, fromCache: false } : null;
     }
 
@@ -3065,12 +3142,13 @@ export function getClientScript() {
 
     async function renderPeriod(period, options) {
       var opts = options || {};
+      var source = normalizeIndexSource(opts.source || state.indexSource);
       try {
         setOverviewCurrentPeriod(period);
         setStatus(opts.force ? "\u4ece\u7f51\u7edc\u83b7\u53d6\u4e2d..." : ("\u6b63\u5728\u52a0\u8f7d " + (PERIOD_LABELS[period] || period) + " \u6570\u636e..."), "ok");
-        var result = await ensureData(period, opts);
+        var result = await ensureData(period, Object.assign({}, opts, { source: source }));
         if (!result) return;
-        if (period !== state.period) return;
+        if (period !== state.period || source !== state.indexSource) return;
         applyData(result.q);
         setStatus(result.fromCache ? "\u5df2\u4f7f\u7528\u7f13\u5b58\u6570\u636e" : "\u5df2\u7f13\u5b58\u5f53\u524d\u5468\u671f\u6570\u636e", "ok");
       } catch (error) {
@@ -3089,18 +3167,25 @@ export function getClientScript() {
       if (!btn) return;
 
       var p = btn.getAttribute("data-p");
-      if (!p || p === state.period) return;
+      if (!p || p === state.period || !sourceSupportsPeriod(state.indexSource, p)) return;
 
       state.period = p;
       state.hoverTime = null;
 
-      $("seg").querySelectorAll("button[data-p]").forEach(function (b) {
-        b.classList.toggle("active", b.getAttribute("data-p") === p);
-      });
+      syncOverviewSourceControls();
 
       startAutoRefresh();
       scheduleRender(p, { force: false });
     });
+
+    var indexSourceSeg = $("indexSourceSeg");
+    if (indexSourceSeg) {
+      indexSourceSeg.addEventListener("click", function (e) {
+        var btn = e.target && e.target.closest ? e.target.closest("button[data-index-source]") : null;
+        if (!btn) return;
+        switchIndexSource(btn.getAttribute("data-index-source"));
+      });
+    }
 
     var pageSeg = $("pageSeg");
     if (pageSeg) {
@@ -3366,6 +3451,7 @@ export function getClientScript() {
     renderSectorPanel();
     renderWeightsPanel();
     loadFearGreed({ force: true });
+    syncOverviewSourceControls();
     setActivePage("overview");
     scheduleRender(state.period, { force: true });
     startAutoRefresh();

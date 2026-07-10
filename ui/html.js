@@ -1,5 +1,6 @@
 import {
   DOWN_COLOR,
+  INDEX_DATA_SOURCES,
   INDEXES,
   LINE_COLORS,
   PERIOD_LABELS,
@@ -31,6 +32,18 @@ const NASDAQ_LOGO_SVG = `<svg class="logo" role="img" aria-label="NASDAQ" fill="
   </g>
 </svg>`;
 
+const YAHOO_TAIWAN_SOURCE_ICON_SVG = `<svg class="indexSourceIcon indexSourceYahoo" viewBox="0 0 20 20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <rect width="20" height="20" rx="4" fill="#6001d2"/>
+  <text x="10" y="13.25" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="10.5" font-weight="700">Y!</text>
+</svg>`;
+
+const GOOGLE_FINANCE_SOURCE_ICON_SVG = `<svg class="indexSourceIcon indexSourceGoogle" viewBox="0 0 24 24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <path fill="#4285f4" d="M21.35 12.27c0-.79-.07-1.55-.2-2.27H12v4.3h5.23a4.47 4.47 0 0 1-1.94 2.93v2.77h3.58c2.09-1.93 3.3-4.77 3.3-7.73z"/>
+  <path fill="#34a853" d="M12 21.5c2.7 0 4.96-.9 6.61-2.5l-3.58-2.77c-.99.66-2.26 1.05-3.73 1.05-2.87 0-5.3-1.94-6.17-4.55H1.42v2.84A9.98 9.98 0 0 0 12 21.5z"/>
+  <path fill="#fbbc05" d="M5.83 12.73a6 6 0 0 1 0-3.46V6.43H1.42a9.99 9.99 0 0 0 0 9.14l4.41-2.84z"/>
+  <path fill="#ea4335" d="M12 5.94c1.57 0 2.97.54 4.08 1.61l3.06-3.06C16.95 2.45 14.7 1.5 12 1.5A9.98 9.98 0 0 0 1.42 6.43l4.41 2.84C6.7 7.88 9.13 5.94 12 5.94z"/>
+</svg>`;
+
 export function getHtml() {
   const meta = INDEXES.map((item, index) => ({
     ...item,
@@ -40,9 +53,16 @@ export function getHtml() {
   const appConfig = {
     meta,
     periodLabels: PERIOD_LABELS,
+    indexSources: Object.values(INDEX_DATA_SOURCES),
     upColor: UP_COLOR,
     downColor: DOWN_COLOR,
   };
+  const yahooPeriods = INDEX_DATA_SOURCES.yahoo.periods;
+  const sourceKeysForPeriod = (period) =>
+    Object.values(INDEX_DATA_SOURCES)
+      .filter((source) => source.periods.includes(period))
+      .map((source) => source.key)
+      .join(",");
 
   const nasdaqFaviconUrl =
     "https://www.nasdaq.com/sites/acquia.prod/files/favicon.ico";
@@ -112,14 +132,19 @@ export function getHtml() {
             <div class="right">
               <div id="fearGreedCard"></div>
 
+              <div class="indexSourceSeg" id="indexSourceSeg" aria-label="指数数据来源">
+                <button data-index-source="yahoo" class="active" type="button" title="雅虎台湾">
+                  ${YAHOO_TAIWAN_SOURCE_ICON_SVG}
+                  <span>雅虎台湾</span>
+                </button>
+                <button data-index-source="google" type="button" title="谷歌财经">
+                  ${GOOGLE_FINANCE_SOURCE_ICON_SVG}
+                  <span>谷歌财经</span>
+                </button>
+              </div>
+
               <div class="seg" id="seg">
-                <button data-p="1D" class="active">${PERIOD_LABELS["1D"]}</button>
-                <button data-p="1M">${PERIOD_LABELS["1M"]}</button>
-                <button data-p="6M">${PERIOD_LABELS["6M"]}</button>
-                <button data-p="YTD">${PERIOD_LABELS["YTD"]}</button>
-                <button data-p="1Y">${PERIOD_LABELS["1Y"]}</button>
-                <button data-p="5Y">${PERIOD_LABELS["5Y"]}</button>
-                <button data-p="MAX">${PERIOD_LABELS["MAX"]}</button>
+                ${yahooPeriods.map((period) => `<button data-p="${period}" data-sources="${sourceKeysForPeriod(period)}" class="${period === "1D" ? "active" : ""}">${PERIOD_LABELS[period]}</button>`).join("")}
               </div>
 
               <div class="overviewMeta">
