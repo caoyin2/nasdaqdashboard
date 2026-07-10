@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.29",
+  version: "v1.3.30",
   shortSha: "",
   fullSha: "",
-  message: "Clarify LOF premium calculation",
+  message: "Refine Shenzhen exchange branding",
 };

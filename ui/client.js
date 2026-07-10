@@ -198,7 +198,7 @@ export function getClientScript() {
     }
 
     function panelSourceIconHTML(source) {
-      var officialIcon = PANEL_SOURCE_ICON_DATA[source];
+      var officialIcon = source === "szse" ? null : PANEL_SOURCE_ICON_DATA[source];
       if (officialIcon) {
         return '<img class="panelSourceIcon panelSourceOfficialIcon" src="' + officialIcon + '" alt="" aria-hidden="true" />';
       }
@@ -218,7 +218,7 @@ export function getClientScript() {
         return '<svg class="panelSourceIcon" viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#b6202a"/><path d="M5.2 5.1 10 10l4.8-4.9M10 10v5.1M6.6 12.1h6.8" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       }
       if (source === "szse") {
-        return '<svg class="panelSourceIcon" viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#d83b49"/><path d="M5.3 5.1h9.4L5.3 14.9h9.4" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        return '<svg class="panelSourceIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.6 12.2C4.7 7.4 8.9 3.8 14 3.8c2.5 0 4.8.9 6.5 2.5-4.5-.3-8.3 3.1-8.3 7.6 0 1.4.3 2.7 1 3.8-4.8-.1-8.8-3.3-9.6-7.7Z" fill="#117fc6"/><path d="M20.4 11.8C19.3 16.6 15.1 20.2 10 20.2c-2.5 0-4.8-.9-6.5-2.5 4.5.3 8.3-3.1 8.3-7.6 0-1.4-.3-2.7-1-3.8 4.8.1 8.8 3.3 9.6 7.7Z" fill="#4eb8ec"/></svg>';
       }
       if (source === "ishares") {
         return '<svg class="panelSourceIcon" viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#202a35"/><path d="M6.3 5.1h7.4M10 5.1v9.8M7.6 8.2h4.8" fill="none" stroke="#9ed16a" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="14.9" r="1" fill="#9ed16a"/></svg>';
@@ -235,13 +235,13 @@ export function getClientScript() {
     function weightSourceBadgesHTML(indexCode) {
       if (indexCode === COMMON_WEIGHTS_CODE) {
         return panelSourceBadgesHTML([
-          { key: "szse", label: "深交所" },
+          { key: "szse", label: "深圳证券交易所" },
           { key: "ishares", label: "iShares" }
         ]);
       }
       return panelSourceBadgesHTML([
         indexCode === "NDXTMC"
-          ? { key: "szse", label: "深交所" }
+          ? { key: "szse", label: "深圳证券交易所" }
           : { key: "ishares", label: "iShares" }
       ]);
     }
@@ -380,7 +380,7 @@ export function getClientScript() {
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
     var OVERVIEW_API_TIMEOUT_MS = 30000;
-    var INDEX_WEIGHTS_API_VERSION = "weights-ui-2";
+    var INDEX_WEIGHTS_API_VERSION = "weights-ui-3";
     var INDEX_WEIGHTS_LOCAL_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
     var INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA = 1;
     var INDEX_WEIGHTS_LOCAL_CACHE_PREFIX = "nasdaqDashboard.indexWeights." + INDEX_WEIGHTS_API_VERSION + ".";
