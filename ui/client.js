@@ -468,9 +468,6 @@ export function getClientScript() {
       }
       state.hoverTime = null;
       periodCache.clear();
-      if (fundPremiumState.fetchCtrl) fundPremiumState.fetchCtrl.abort();
-      fundPremiumState.cache = null;
-      fundPremiumState.detailSymbol = null;
       syncOverviewSourceControls();
 
       if (state.page === "overview") {
@@ -2754,14 +2751,10 @@ export function getClientScript() {
       }, API_TIMEOUT_MS);
 
       try {
-        var res = await fetch(
-          "/api/fund-premiums?v=" + encodeURIComponent(FUND_PREMIUM_API_VERSION) +
-          "&source=" + encodeURIComponent(state.indexSource),
-          {
+        var res = await fetch("/api/fund-premiums?v=" + encodeURIComponent(FUND_PREMIUM_API_VERSION), {
           cache: "no-store",
           signal: controller.signal
-          }
-        );
+        });
         if (!res.ok) throw new Error("HTTP " + res.status);
         var payload = await res.json();
         if (!payload.ok) throw new Error(payload.error || "Fund premium API error");
@@ -2786,7 +2779,7 @@ export function getClientScript() {
       var opts = options || {};
       fundPremiumState.touched = true;
 
-      if (!opts.force && fundPremiumState.cache && fundPremiumState.cache.indexSource === state.indexSource) {
+      if (!opts.force && fundPremiumState.cache) {
         fundPremiumState.statusText = "\u5df2\u4f7f\u7528\u7f13\u5b58\u6570\u636e";
         fundPremiumState.statusType = "ok";
         renderFundPremiumPanel();

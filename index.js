@@ -336,8 +336,7 @@ export default {
 
     if (url.pathname === "/api/fund-premiums") {
       try {
-        const source = normalizeIndexDataSource(url.searchParams.get("source"));
-        const payload = await buildFundPremiumPayload(source);
+        const payload = await buildFundPremiumPayload();
         return jsonResponse(payload, origin, 200, { cacheSeconds: 0 });
       } catch (error) {
         return jsonResponse(

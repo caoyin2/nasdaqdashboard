@@ -18,7 +18,7 @@
  * - 78: reference NAV, kept for diagnostics only
  */
 
-import { FUND_PREMIUM_FUNDS, INDEXES, normalizeIndexDataSource } from "../config.js";
+import { FUND_PREMIUM_FUNDS, INDEXES } from "../config.js";
 import { marketDateKey } from "../lib/time.js";
 import { fetchIndexPeriodBySource, indexDataSourceLabel } from "./indexDataSource.js";
 
@@ -27,6 +27,7 @@ const TENCENT_FUND_PRICE_ZONE_URL = "https://web.ifzq.gtimg.cn/fund/newfund/fund
 const CHINA_MONEY_USD_CNY_URL = "https://www.chinamoney.com.cn/ags/ms/cm-u-bk-ccpr/CcprHisNew";
 const LOF_SP500_TECH_CODE = "161128";
 const SP500_TECH_INDEX_SYMBOL = "SP500-45";
+const LOF_INDEX_DATA_SOURCE = "google";
 
 function toMarketSymbol(code) {
   const value = String(code || "").trim();
@@ -122,15 +123,14 @@ function pickOnOrBefore(rows, targetDate, dateSelector) {
   return sorted.length ? sorted[sorted.length - 1] : null;
 }
 
-async function fetchSp500TechDailyContext(navDate, tradeDate, source) {
+async function fetchSp500TechDailyContext(navDate, tradeDate) {
   const index = INDEXES.find((item) => item.symbol === SP500_TECH_INDEX_SYMBOL);
   if (!index) {
     throw new Error(`${SP500_TECH_INDEX_SYMBOL} index configuration missing`);
   }
 
-  const normalizedSource = normalizeIndexDataSource(source);
   const period = "YTD";
-  const raw = await fetchIndexPeriodBySource(normalizedSource, period, index);
+  const raw = await fetchIndexPeriodBySource(LOF_INDEX_DATA_SOURCE, period, index);
   const bars = (raw?.bars || [])
     .filter((bar) => Number.isFinite(bar?.close) && bar.close > 0)
     .map((bar) => ({
@@ -149,8 +149,8 @@ async function fetchSp500TechDailyContext(navDate, tradeDate, source) {
   return {
     symbol: SP500_TECH_INDEX_SYMBOL,
     tickerId: index.tickerId,
-    dataSource: normalizedSource,
-    source: indexDataSourceLabel(normalizedSource),
+    dataSource: LOF_INDEX_DATA_SOURCE,
+    source: indexDataSourceLabel(LOF_INDEX_DATA_SOURCE),
     yahooSymbol: index.yahooSymbol || null,
     googleSymbol: index.googleSymbol || index.symbol,
     googleExchange: index.googleExchange,
@@ -254,7 +254,7 @@ async function fetchLofBaseInfo(marketSymbol) {
   return json.data;
 }
 
-async function buildLofPremiumContext(fund, fields, source) {
+async function buildLofPremiumContext(fund, fields) {
   // 161128 is a QDII-LOF. Tencent's own premium field is based on the last
   // published NAV, so estimate the NAV for the quote date with SP500-45 and
   // USD/CNY central parity changes before calculating the displayed premium.
@@ -272,7 +272,7 @@ async function buildLofPremiumContext(fund, fields, source) {
   }
 
   const [index, fx] = await Promise.all([
-    fetchSp500TechDailyContext(publishedNavDate, tradeDate, source),
+    fetchSp500TechDailyContext(publishedNavDate, tradeDate),
     fetchUsdCnyContext(publishedNavDate, tradeDate),
   ]);
 
@@ -370,8 +370,7 @@ function maxLatestTime(items) {
   return values.length ? Math.max(...values) : null;
 }
 
-export async function buildFundPremiumPayload(source) {
-  const normalizedSource = normalizeIndexDataSource(source);
+export async function buildFundPremiumPayload() {
   const funds = FUND_PREMIUM_FUNDS.map((fund) => ({
     ...fund,
     marketSymbol: toMarketSymbol(fund.code),
@@ -407,9 +406,7 @@ export async function buildFundPremiumPayload(source) {
 
   const lofFund = funds.find((fund) => fund.code === LOF_SP500_TECH_CODE);
   const lofFields = lofFund ? variableMap.get(lofFund.marketSymbol) : null;
-  const lofPremium = lofFund && lofFields
-    ? await buildLofPremiumContext(lofFund, lofFields, normalizedSource)
-    : null;
+  const lofPremium = lofFund && lofFields ? await buildLofPremiumContext(lofFund, lofFields) : null;
 
   const items = funds.map((fund) => {
     const fields = variableMap.get(fund.marketSymbol);
@@ -433,8 +430,8 @@ export async function buildFundPremiumPayload(source) {
   return {
     ok: true,
     title: "\u57fa\u91d1\u6298\u6ea2\u4ef7",
-    indexSource: normalizedSource,
-    indexSourceLabel: indexDataSourceLabel(normalizedSource),
+    indexSource: LOF_INDEX_DATA_SOURCE,
+    indexSourceLabel: indexDataSourceLabel(LOF_INDEX_DATA_SOURCE),
     asOfMs: maxLatestTime(items),
     tradeDate: latestTradeDate(items),
     items,
