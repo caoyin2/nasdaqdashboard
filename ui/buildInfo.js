@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.14",
+  version: "v1.3.15",
   shortSha: "",
   fullSha: "",
-  message: "Lock LOF index to Google Finance",
+  message: "Cache index source switches",
 };

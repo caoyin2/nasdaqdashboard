@@ -467,12 +467,16 @@ export function getClientScript() {
         state.period = "1D";
       }
       state.hoverTime = null;
-      periodCache.clear();
       syncOverviewSourceControls();
 
       if (state.page === "overview") {
-        clearOverviewPanelData({ keepFearGreed: true });
-        scheduleRender(state.period, { force: true, source: nextSource });
+        var cached = periodCache.get(overviewCacheKey(state.period, nextSource));
+        if (cached) {
+          applyData(cached.q);
+          setStatus("已切换到" + indexSourceConfig(nextSource).label + "缓存数据", "ok");
+        } else {
+          setStatus("已切换来源，正在准备首次打开时加载的数据...", "ok");
+        }
       }
     }
 
@@ -2859,7 +2863,7 @@ export function getClientScript() {
           clearOverviewPanelData();
           await Promise.allSettled([
             loadFearGreed({ force: true }),
-            renderPeriod(state.period, { force: true }),
+            renderPeriod(state.period, { force: true, primeAlternate: false }),
           ]);
           return;
         }
@@ -3077,6 +3081,30 @@ export function getClientScript() {
       return q ? { q: q, fromCache: false } : null;
     }
 
+    function primeOverviewSourcePeriod(period, source) {
+      var normalized = normalizeIndexSource(source);
+      var key = overviewCacheKey(period, normalized);
+      if (periodCache.has(key)) return;
+
+      ensureData(period, { source: normalized }).then(function (result) {
+        if (!result || period !== state.period || normalized !== state.indexSource) return;
+        applyData(result.q);
+        setStatus("已切换到" + indexSourceConfig(normalized).label + "缓存数据", "ok");
+      }).catch(function (error) {
+        if (period === state.period && normalized === state.indexSource) {
+          setStatus(error && error.message ? error.message : "数据准备失败", "err");
+        }
+      });
+    }
+
+    function primeAlternateIndexSource(period, source) {
+      var normalized = normalizeIndexSource(source);
+      var alternate = INDEX_SOURCES.find(function (item) {
+        return item && item.key !== normalized && sourceSupportsPeriod(item.key, period);
+      });
+      if (alternate) primeOverviewSourcePeriod(period, alternate.key);
+    }
+
     async function fetchFearGreedData(options) {
       var opts = options || {};
       var controller = new AbortController();
@@ -3141,6 +3169,7 @@ export function getClientScript() {
         setStatus(opts.force ? "\u4ece\u7f51\u7edc\u83b7\u53d6\u4e2d..." : ("\u6b63\u5728\u52a0\u8f7d " + (PERIOD_LABELS[period] || period) + " \u6570\u636e..."), "ok");
         var result = await ensureData(period, Object.assign({}, opts, { source: source }));
         if (!result) return;
+        if (opts.primeAlternate !== false) primeAlternateIndexSource(period, source);
         if (period !== state.period || source !== state.indexSource) return;
         applyData(result.q);
         setStatus(result.fromCache ? "\u5df2\u4f7f\u7528\u7f13\u5b58\u6570\u636e" : "\u5df2\u7f13\u5b58\u5f53\u524d\u5468\u671f\u6570\u636e", "ok");
