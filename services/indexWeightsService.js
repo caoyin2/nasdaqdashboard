@@ -1,5 +1,5 @@
 import { INDEX_WEIGHTS_FALLBACK_META } from "./indexWeightsFallback.js";
-import { getSearchMetaBatch } from "./searchMetaStore.js";
+import { buildDefaultIconLight, getSearchMetaBatch } from "./searchMetaStore.js";
 
 const SHENZHEN_TZ = "Asia/Shanghai";
 const ETF_BASKET_LOOKBACK_DAYS = 45;
@@ -386,7 +386,7 @@ async function enrichItems(items, env, options = {}) {
       return {
         symbol: item.symbol,
         nameEn: meta?.nameEn || fallback?.nameEn || item.symbol,
-        iconLight: meta?.iconLight || fallback?.iconLight || null,
+        iconLight: meta?.iconLight || fallback?.iconLight || buildDefaultIconLight(item.symbol),
         slug: meta?.slug || fallback?.slug || item.symbol.toLowerCase(),
         shares: item.shares ?? null,
         purchaseAmount: item.purchaseAmount ?? null,
@@ -498,7 +498,7 @@ export async function buildCommonIndexWeightsPayload(env) {
     return {
       symbol,
       nameEn: meta?.nameEn || fallback?.nameEn || symbol,
-      iconLight: meta?.iconLight || fallback?.iconLight || null,
+      iconLight: meta?.iconLight || fallback?.iconLight || buildDefaultIconLight(symbol),
       slug: meta?.slug || fallback?.slug || symbol.toLowerCase(),
       weights,
       totalWeightPct,

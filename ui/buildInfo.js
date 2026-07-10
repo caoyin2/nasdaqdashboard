@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.23",
+  version: "v1.3.24",
   shortSha: "",
   fullSha: "",
-  message: "Repair CNN icon and add sector icons",
+  message: "Restore original Seeking Alpha icon links",
 };
