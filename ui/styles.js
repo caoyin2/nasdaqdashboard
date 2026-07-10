@@ -1053,6 +1053,37 @@ export function getStyles() {
     .starPanelMetaText.ok{ color: rgba(0,224,255,.85); }
     .starPanelMetaText.err{ color: rgba(255,77,109,.90); }
 
+    .panelSourceBadges{
+      display:flex;
+      align-items:center;
+      gap: 6px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .panelSourceBadge{
+      display:inline-flex;
+      align-items:center;
+      gap: 5px;
+      min-height: 24px;
+      padding: 3px 7px 3px 4px;
+      border: 1px solid rgba(132,151,179,.28);
+      border-radius: 6px;
+      background: rgba(255,255,255,.035);
+      color: rgba(228,236,247,.86);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .panelSourceIcon{
+      display:block;
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
+    }
+
     .starGrid{
       display:grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2131,6 +2162,7 @@ export function getStyles() {
 
     .weightsMeta .ok{ color: rgba(0,224,255,.85); }
     .weightsMeta .err{ color: rgba(255,77,109,.90); }
+    .weightsMeta .panelSourceBadges{ justify-content: flex-end; }
 
     .weightsIndexSeg{
       display:inline-flex;
@@ -2829,6 +2861,8 @@ export function getStyles() {
         justify-items: start;
         text-align: left;
       }
+
+      .weightsMeta .panelSourceBadges{ justify-content: flex-start; }
 
       .weightsIndexSeg{
         width: 100%;

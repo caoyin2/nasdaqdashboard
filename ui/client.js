@@ -183,6 +183,51 @@ export function getClientScript() {
       return indexSourceConfig(source).periods.indexOf(period) >= 0;
     }
 
+    function panelSourceIconHTML(source) {
+      if (source === "seekingAlpha") {
+        return '<svg class="panelSourceIcon" viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#111827"/><path d="M4 14.5 7.1 11l2.2 1.9L15.8 6" fill="none" stroke="#43d7b1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.7 6h3.1v3.1" fill="none" stroke="#43d7b1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      }
+      if (source === "stockAnalysis") {
+        return '<svg class="panelSourceIcon" viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#2158d6"/><path d="M4.5 13.7h11M5.2 11l2.6-3 2.3 1.8L14.8 5" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      }
+      if (source === "tencent") {
+        return '<svg class="panelSourceIcon" viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#1496e8"/><path d="M4.2 5.3h11.6M10 5.3v9.4M6.3 8.4h7.4" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="14.8" r="1.1" fill="#fff"/></svg>';
+      }
+      if (source === "google") {
+        return '<svg class="panelSourceIcon" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285f4" d="M21.35 12.27c0-.79-.07-1.55-.2-2.27H12v4.3h5.23a4.47 4.47 0 0 1-1.94 2.93v2.77h3.58c2.09-1.93 3.3-4.77 3.3-7.73z"/><path fill="#34a853" d="M12 21.5c2.7 0 4.96-.9 6.61-2.5l-3.58-2.77c-.99.66-2.26 1.05-3.73 1.05-2.87 0-5.3-1.94-6.17-4.55H1.42v2.84A9.98 9.98 0 0 0 12 21.5z"/><path fill="#fbbc05" d="M5.83 12.73a6 6 0 0 1 0-3.46V6.43H1.42a9.99 9.99 0 0 0 0 9.14l4.41-2.84z"/><path fill="#ea4335" d="M12 5.94c1.57 0 2.97.54 4.08 1.61l3.06-3.06C16.95 2.45 14.7 1.5 12 1.5A9.98 9.98 0 0 0 1.42 6.43l4.41 2.84C6.7 7.88 9.13 5.94 12 5.94z"/></svg>';
+      }
+      if (source === "chinamoney") {
+        return '<svg class="panelSourceIcon" viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#b6202a"/><path d="M5.2 5.1 10 10l4.8-4.9M10 10v5.1M6.6 12.1h6.8" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      }
+      if (source === "szse") {
+        return '<svg class="panelSourceIcon" viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#d83b49"/><path d="M5.3 5.1h9.4L5.3 14.9h9.4" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      }
+      if (source === "ishares") {
+        return '<svg class="panelSourceIcon" viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#202a35"/><path d="M6.3 5.1h7.4M10 5.1v9.8M7.6 8.2h4.8" fill="none" stroke="#9ed16a" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="14.9" r="1" fill="#9ed16a"/></svg>';
+      }
+      return '<svg class="panelSourceIcon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="#64748b"/></svg>';
+    }
+
+    function panelSourceBadgesHTML(entries) {
+      return '<div class="panelSourceBadges" aria-label="数据来源">' + (entries || []).map(function (entry) {
+        return '<span class="panelSourceBadge" title="数据来源：' + esc(entry.label) + '">' + panelSourceIconHTML(entry.key) + '<span>' + esc(entry.label) + '</span></span>';
+      }).join("") + '</div>';
+    }
+
+    function weightSourceBadgesHTML(indexCode) {
+      if (indexCode === COMMON_WEIGHTS_CODE) {
+        return panelSourceBadgesHTML([
+          { key: "szse", label: "深交所" },
+          { key: "ishares", label: "iShares" }
+        ]);
+      }
+      return panelSourceBadgesHTML([
+        indexCode === "NDXTMC"
+          ? { key: "szse", label: "深交所" }
+          : { key: "ishares", label: "iShares" }
+      ]);
+    }
+
     var dtfBJ = new Intl.DateTimeFormat("zh-CN", {
       timeZone: "Asia/Shanghai",
       year: "numeric",
@@ -1510,6 +1555,10 @@ export function getClientScript() {
           '</div>',
           '<div class="starPanelMeta">',
             '<div class="starPanelMetaText ' + statusClass + '">' + esc(starsState.statusText) + '</div>',
+            panelSourceBadgesHTML([
+              { key: "seekingAlpha", label: "Seeking Alpha" },
+              { key: "stockAnalysis", label: "Stock Analysis" }
+            ]),
             '<div class="starPanelMetaText">\u5f53\u524d\u5468\u671f\uff1a' + esc(periodLabel) + '</div>',
             '<div class="starPanelMetaText">' + esc(latestText) + '</div>',
           '</div>',
@@ -1565,6 +1614,7 @@ export function getClientScript() {
           '</div>',
           '<div class="starPanelMeta">',
             '<div class="starPanelMetaText ' + statusClass + '">' + esc(sectorsState.statusText) + '</div>',
+            panelSourceBadgesHTML([{ key: "seekingAlpha", label: "Seeking Alpha" }]),
             '<div class="starPanelMetaText">\u5f53\u524d\u5468\u671f\uff1a' + esc(periodLabel) + '</div>',
             '<div class="starPanelMetaText">' + esc(latestText) + '</div>',
           '</div>',
@@ -1742,6 +1792,11 @@ export function getClientScript() {
           '</div>',
           '<div class="starPanelMeta">',
             '<div class="starPanelMetaText ' + statusClass + '">' + esc(fundPremiumState.statusText) + '</div>',
+            panelSourceBadgesHTML([
+              { key: "tencent", label: "腾讯财经" },
+              { key: "google", label: "谷歌财经" },
+              { key: "chinamoney", label: "中国货币网" }
+            ]),
             '<div class="starPanelMetaText">' + esc(latestText) + '</div>',
           '</div>',
           gridHtml,
@@ -2192,6 +2247,7 @@ export function getClientScript() {
             '</div>',
             '<div class="weightsMeta">',
               '<div class="' + statusClass + '">' + esc(weightsState.commonStatusText) + '</div>',
+              weightSourceBadgesHTML(COMMON_WEIGHTS_CODE),
               payload ? '<div>\u5171\u540c\u6210\u4efd\u80a1\uff1a<strong>' + esc(String(payload.itemCount || 0)) + '</strong></div>' : '',
               payload ? '<div>' + esc(weightCacheRefreshText(payload)) + '</div>' : '',
             '</div>',
@@ -2230,6 +2286,7 @@ export function getClientScript() {
             '</div>',
             '<div class="weightsMeta">',
               '<div class="' + statusClass + '">' + esc(weightsState.statusText) + '</div>',
+              weightSourceBadgesHTML(weightsState.activeIndex),
               '<div>\u6307\u6570\uff1a<strong>' + esc(indexTitle) + '</strong></div>',
               showDataDate
                 ? '<div>\u6e05\u5355\u65e5\u671f\uff1a<strong>' + esc(formatBasketDate(cached.basketDate)) + '</strong></div>'

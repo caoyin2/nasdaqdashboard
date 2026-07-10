@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.19",
+  version: "v1.3.20",
   shortSha: "",
   fullSha: "",
-  message: "Clarify index source cache state",
+  message: "Show panel data sources",
 };
