@@ -2853,76 +2853,18 @@ export function getClientScript() {
       if (!opts.keepFearGreed) renderFearGreedLoading();
     }
 
-    function getAllOverviewRefreshJobs() {
-      var jobs = [];
-      var seen = Object.create(null);
-
-      INDEX_SOURCES.forEach(function (sourceConfig) {
-        if (!sourceConfig || !sourceConfig.key || !Array.isArray(sourceConfig.periods)) return;
-        sourceConfig.periods.forEach(function (period) {
-          var source = normalizeIndexSource(sourceConfig.key);
-          var key = overviewCacheKey(period, source);
-          if (seen[key]) return;
-          seen[key] = true;
-          jobs.push({ period: period, source: source });
-        });
-      });
-
-      var activeKey = overviewCacheKey(state.period, state.indexSource);
-      jobs.sort(function (left, right) {
-        var leftPriority = overviewCacheKey(left.period, left.source) === activeKey ? 0 : 1;
-        var rightPriority = overviewCacheKey(right.period, right.source) === activeKey ? 0 : 1;
-        return leftPriority - rightPriority;
-      });
-      return jobs;
-    }
-
-    async function refreshAllOverviewSourcePeriods() {
-      var jobs = getAllOverviewRefreshJobs();
-      var failed = 0;
-
-      for (var index = 0; index < jobs.length; index += 1) {
-        var job = jobs[index];
-        var sourceLabel = indexSourceConfig(job.source).label;
-        var periodLabel = PERIOD_LABELS[job.period] || job.period;
-        setStatus(
-          "正在刷新全部指数数据（" + (index + 1) + "/" + jobs.length + "）：" + sourceLabel + " " + periodLabel,
-          "ok"
-        );
-
-        try {
-          var result = await ensureData(job.period, { force: true, source: job.source });
-          if (result && job.period === state.period && job.source === state.indexSource) {
-            applyData(result.q);
-          }
-        } catch (error) {
-          failed += 1;
-          console.error("overview refresh failed:", job.source, job.period, error);
-        }
-      }
-
-      var active = periodCache.get(overviewCacheKey(state.period, state.indexSource));
-      if (active) applyData(active.q);
-
-      if (failed) {
-        setStatus("全部指数数据刷新完成，" + failed + " 组请求失败", "err");
-      } else {
-        setStatus("已刷新雅虎台湾和谷歌财经全部 " + jobs.length + " 组时间区间数据", "ok");
-      }
-    }
-
     async function forceRefreshCurrentPanel() {
       var currentPage = state.page;
       setGlobalRefreshBusy(true);
 
       try {
         if (currentPage === "overview") {
-          setStatus("正在刷新雅虎台湾和谷歌财经全部时间区间数据...", "ok");
+          setStatus("已清空其他指数缓存，正在刷新当前来源和时间区间数据...", "ok");
           periodCache.clear();
           clearOverviewPanelData();
           await Promise.allSettled([
             loadFearGreed({ force: true }),
-            refreshAllOverviewSourcePeriods(),
+            renderPeriod(state.period, { force: true, primeAlternate: false }),
           ]);
           return;
         }
