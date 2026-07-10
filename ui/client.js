@@ -475,7 +475,11 @@ export function getClientScript() {
           applyData(cached.q);
           setStatus("已切换到" + indexSourceConfig(nextSource).label + "缓存数据", "ok");
         } else {
-          setStatus("已切换来源，正在准备首次打开时加载的数据...", "ok");
+          clearOverviewPanelData({
+            keepFearGreed: true,
+            emptyMessage: "当前来源没有可用缓存。点击顶部刷新加载此来源和时间区间的数据。",
+          });
+          setStatus(indexSourceConfig(nextSource).label + "当前时间区间没有缓存。点击顶部刷新后才会请求数据。", "ok");
         }
       }
     }
@@ -2831,6 +2835,7 @@ export function getClientScript() {
 
     function clearOverviewPanelData(options) {
       var opts = options || {};
+      var emptyMessage = opts.emptyMessage || "已清空旧数据，正在重新获取科技类指数信息...";
       periodCache.delete(overviewCacheKey(state.period, state.indexSource));
       if (!opts.keepFearGreed) fearGreedCache = null;
       state.items = [];
@@ -2840,7 +2845,7 @@ export function getClientScript() {
 
       var idxCards = $("idxCards");
       if (idxCards) {
-        idxCards.innerHTML = '<div class="starPanelEmpty">\u5df2\u6e05\u7a7a\u65e7\u6570\u636e\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f...</div>';
+        idxCards.innerHTML = '<div class="starPanelEmpty">' + emptyMessage + '</div>';
       }
 
       var idxLatestTime = $("idxLatestTime");
