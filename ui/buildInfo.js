@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.28",
+  version: "v1.3.29",
   shortSha: "",
   fullSha: "",
-  message: "Align LOF premium with valuation date",
+  message: "Clarify LOF premium calculation",
 };

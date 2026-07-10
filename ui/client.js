@@ -385,7 +385,7 @@ export function getClientScript() {
     var INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA = 1;
     var INDEX_WEIGHTS_LOCAL_CACHE_PREFIX = "nasdaqDashboard.indexWeights." + INDEX_WEIGHTS_API_VERSION + ".";
     var SP500_SECTOR_API_VERSION = "20260406a";
-    var FUND_PREMIUM_API_VERSION = "lof-valuation-date-v2";
+    var FUND_PREMIUM_API_VERSION = "lof-calculation-detail-v3";
     var COMMON_WEIGHTS_CODE = "COMMON";
     var WEIGHTS_INDEX_OPTIONS = [
       { code: COMMON_WEIGHTS_CODE, label: "\\u5171\\u540c\\u6210\\u4efd\\u80a1" },
@@ -1708,7 +1708,17 @@ export function getClientScript() {
           : "");
       var indexSourceText = (index.source || "指数数据源") +
         (indexQuoteText ? " / " + indexQuoteText : (index.tickerId ? " / ticker_id=" + index.tickerId : ""));
-      var estimatedFormula = "\u4f30\u7b97\u51c0\u503c = " +
+      var hasIndexAdvance = !!(index.navDate && index.tradeDate && index.navDate !== index.tradeDate);
+      var hasFxAdvance = !!(fx.navDate && fx.tradeDate && fx.navDate !== fx.tradeDate);
+      var hasValuationAdvance = hasIndexAdvance || hasFxAdvance;
+      var calculationNavLabel = hasValuationAdvance ? "\u4f30\u7b97\u8ba1\u7b97\u51c0\u503c" : "\u8ba1\u7b97\u4f7f\u7528\u51c0\u503c";
+      var indexStatusText = hasIndexAdvance
+        ? "\u5df2\u6309 " + (index.tradeDate || "--") + " \u7684\u6700\u65b0\u6709\u6548\u7f8e\u80a1\u6536\u76d8\u4fee\u6b63"
+        : "\u6700\u65b0\u51c0\u503c\u5df2\u5305\u542b " + (index.tradeDate || index.navDate || "--") + " \u7f8e\u80a1\u6536\u76d8";
+      var fxStatusText = hasFxAdvance
+        ? "\u5df2\u6309 " + (fx.tradeDate || "--") + " \u4e2d\u95f4\u4ef7\u4fee\u6b63"
+        : "\u6700\u65b0\u51c0\u503c\u5df2\u4f7f\u7528 " + (fx.tradeDate || fx.navDate || "--") + " \u4e2d\u95f4\u4ef7";
+      var calculationFormula = calculationNavLabel + " = " +
         calcNumberText(calc.publishedNav, 6) + " \u00d7 " +
         calcNumberText(calc.indexMultiplier, 8) + " \u00d7 " +
         calcNumberText(calc.fxMultiplier, 8) + " = " +
@@ -1724,7 +1734,7 @@ export function getClientScript() {
           '<div class="fundCalcModal" role="dialog" aria-modal="true" aria-label="161128 \u6298\u6ea2\u4ef7\u8ba1\u7b97\u8be6\u60c5">',
             '<div class="fundCalcHead">',
               '<div>',
-                '<span>\u957f\u6309 3 \u79d2\u6253\u5f00\uff0c\u7528\u4e8e\u6838\u5bf9 LOF \u771f\u5b9e\u6298\u6ea2\u4ef7\u4f30\u7b97\u8fc7\u7a0b</span>',
+                '<span>\u957f\u6309 3 \u79d2\u6253\u5f00\uff0c\u7528\u4e8e\u6838\u5bf9 LOF \u6298\u6ea2\u4ef7\u8ba1\u7b97\u8fc7\u7a0b</span>',
                 '<strong>161128 \u6298\u6ea2\u4ef7\u8ba1\u7b97\u8be6\u60c5</strong>',
               '</div>',
               '<button class="fundCalcClose" type="button" data-fund-calc-close="button">\u5173\u95ed</button>',
@@ -1752,26 +1762,28 @@ export function getClientScript() {
               ["\u51c0\u503c\u5b57\u6bb5", nav.navPath || "--"],
               ["\u65e5\u671f\u5b57\u6bb5", nav.navDatePath || "--"],
             ]),
-            fundCalcSectionHTML("3. \u6807\u666e\u4fe1\u606f\u79d1\u6280\u6307\u6570\u4fee\u6b63", [
-              ["\u6307\u6570\u4ee3\u7801", index.symbol || "SP500-45"],
-              ["\u8bf7\u6c42\u5468\u671f", index.period || "1Y"],
-              ["\u51c0\u503c\u65e5\u6536\u76d8", (index.navDate || "--") + " / " + calcNumberText(index.navClose, 4)],
+            fundCalcSectionHTML("3. \u51c0\u503c\u65e5\u540e\u6807\u666e\u4fe1\u606f\u79d1\u6280\u6307\u6570\u53d8\u5316", [
+              ["\u6307\u6570\u540d\u79f0", "\u6807\u666e\u4fe1\u606f\u79d1\u6280"],
+              ["\u6570\u636e\u8303\u56f4", "\u5e74\u521d\u81f3\u4eca\u65e5\u7ebf"],
+              ["\u51c0\u503c\u5bf9\u5e94\u6307\u6570\u6536\u76d8", (index.navDate || "--") + " / " + calcNumberText(index.navClose, 4)],
               ["\u51c0\u503c\u65e5\u6570\u636e\u65f6\u95f4", calcTimeText(index.navTime)],
-              ["\u6d77\u5916\u4f30\u503c\u65e5\u6536\u76d8", (index.tradeDate || "--") + " / " + calcNumberText(index.tradeClose, 4)],
-              ["\u6d77\u5916\u4f30\u503c\u65e5\u6570\u636e\u65f6\u95f4", calcTimeText(index.tradeTime)],
+              ["\u6700\u65b0\u6709\u6548\u6307\u6570\u6536\u76d8", (index.tradeDate || "--") + " / " + calcNumberText(index.tradeClose, 4)],
+              ["\u6700\u65b0\u6570\u636e\u65f6\u95f4", calcTimeText(index.tradeTime)],
+              ["\u51c0\u503c\u65e5\u540e\u6307\u6570\u53d8\u5316", calcPctText(index.changePct)],
+              ["\u6307\u6570\u53d8\u5316\u72b6\u6001", indexStatusText],
               ["\u6307\u6570\u4fee\u6b63\u500d\u6570", calcNumberText(calc.indexMultiplier, 8)],
-              ["\u533a\u95f4\u6da8\u8dcc", calcPctText(index.changePct)],
             ]),
-            fundCalcSectionHTML("4. \u4eba\u6c11\u5e01\u7f8e\u5143\u4e2d\u95f4\u4ef7\u4fee\u6b63", [
-              ["\u51c0\u503c\u65e5\u6c47\u7387", (fx.navDate || "--") + " / " + calcNumberText(fx.navRate, 4)],
-              ["\u6d77\u5916\u4f30\u503c\u65e5\u6c47\u7387", (fx.tradeDate || "--") + " / " + calcNumberText(fx.tradeRate, 4)],
+            fundCalcSectionHTML("4. \u51c0\u503c\u65e5\u540e\u4eba\u6c11\u5e01\u7f8e\u5143\u6c47\u7387\u53d8\u5316", [
+              ["\u51c0\u503c\u65e5 USD/CNY \u4e2d\u95f4\u4ef7", (fx.navDate || "--") + " / " + calcNumberText(fx.navRate, 4)],
+              ["\u6700\u65b0\u6709\u6548 USD/CNY \u4e2d\u95f4\u4ef7", (fx.tradeDate || "--") + " / " + calcNumberText(fx.tradeRate, 4)],
+              ["\u51c0\u503c\u65e5\u540e\u6c47\u7387\u53d8\u5316", calcPctText(fx.changePct)],
+              ["\u6c47\u7387\u53d8\u5316\u72b6\u6001", fxStatusText],
               ["\u6c47\u7387\u4fee\u6b63\u500d\u6570", calcNumberText(calc.fxMultiplier, 8)],
-              ["\u533a\u95f4\u53d8\u5316", calcPctText(fx.changePct)],
             ]),
-            fundCalcSectionHTML("5. \u4f30\u7b97\u51c0\u503c\u4e0e\u6700\u7ec8\u6298\u6ea2\u4ef7", [
-              ["\u4f30\u7b97\u51c0\u503c", calcNumberText(calc.estimatedNav, 6)],
+            fundCalcSectionHTML("5. \u8ba1\u7b97\u51c0\u503c\u4e0e\u6700\u7ec8\u6298\u6ea2\u4ef7", [
+              [calculationNavLabel, calcNumberText(calc.estimatedNav, 6)],
               ["\u6700\u7ec8\u6298\u6ea2\u4ef7", calcPctText(calc.premiumPct)],
-              ["\u4f30\u7b97\u51c0\u503c\u516c\u5f0f", estimatedFormula],
+              [calculationNavLabel + "\u516c\u5f0f", calculationFormula],
               ["\u6298\u6ea2\u4ef7\u516c\u5f0f", premiumFormula],
             ]),
             '<section class="fundCalcSection fundCalcSourceBlock">',
