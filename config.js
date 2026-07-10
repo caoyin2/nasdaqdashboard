@@ -17,7 +17,7 @@ export const INDEX_DATA_SOURCES = {
   google: {
     key: "google",
     label: "谷歌财经",
-    periods: ["1D", "1M", "6M", "YTD", "1Y", "5Y", "MAX"],
+    periods: ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "MAX"],
   },
 };
 

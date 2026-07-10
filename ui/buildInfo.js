@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.17",
+  version: "v1.3.18",
   shortSha: "",
   fullSha: "",
-  message: "Refresh current index source period",
+  message: "Align index data with official sources",
 };
