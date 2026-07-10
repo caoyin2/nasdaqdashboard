@@ -2,7 +2,6 @@
  * Global configuration shared by the Worker and the frontend.
  */
 import { FUND_LOGOS } from "./assets/fundLogos.js";
-import { FUND_LOGO_OVERRIDES } from "./assets/fundLogoOverrides.js";
 
 export const UPSTREAM = "https://static.seekingalpha.com/cdn/finance-api/lua_charts";
 export const CNN_FG_UPSTREAM = "https://production.dataviz.cnn.io/index/fearandgreed/graphdata";
@@ -102,7 +101,7 @@ export const SP500_SECTOR_ETFS = [
 // Keep the fund premium list in this root config file so Cloudflare Git
 // watch-path rules can detect and publish fund-panel behavior, logo, or LOF pricing changes reliably.
 function fundLogo(code) {
-  return FUND_LOGO_OVERRIDES[code] ?? FUND_LOGOS[code];
+  return FUND_LOGOS[code];
 }
 
 export const FUND_PREMIUM_FUNDS = [

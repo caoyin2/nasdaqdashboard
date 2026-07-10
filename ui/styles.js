@@ -1729,10 +1729,10 @@ export function getStyles() {
     }
 
     .fundPremiumTile .starIconWrap{
-      width: 52px;
-      height: 52px;
-      padding: 0;
-      overflow: visible;
+      width: 86px;
+      height: 48px;
+      padding: 5px;
+      overflow: hidden;
       background:
         radial-gradient(circle at 50% 42%, rgba(255,255,255,.14), rgba(255,255,255,0) 62%),
         linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
@@ -1740,12 +1740,12 @@ export function getStyles() {
     }
 
     .fundPremiumTile .starIcon{
-      width: 32px;
-      height: 32px;
+      width: 76px;
+      height: 38px;
       border-radius: 0;
       object-fit: contain;
       object-position: center;
-      filter: saturate(1.22) contrast(1.12);
+      filter: none;
     }
 
     .fundIconBlank{
@@ -1758,8 +1758,8 @@ export function getStyles() {
     }
 
     .fundIcon{
-      border-radius: 8px;
-      filter: brightness(1.48) saturate(1.18) contrast(1.08);
+      border-radius: 0;
+      filter: none;
     }
 
     .fundPremiumTile[data-fund-lof-detail="1"]{
@@ -3013,13 +3013,14 @@ export function getStyles() {
       }
 
       .fundPremiumTile .starIconWrap{
-        width: 46px;
-        height: 46px;
+        width: 70px;
+        height: 44px;
+        padding: 4px;
       }
 
       .fundPremiumTile .starIcon{
-        width: 28px;
-        height: 28px;
+        width: 62px;
+        height: 34px;
       }
 
       .starNameBox{
