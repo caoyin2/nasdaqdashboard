@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.22",
+  version: "v1.3.23",
   shortSha: "",
   fullSha: "",
-  message: "Use official high-resolution logos",
+  message: "Repair CNN icon and add sector icons",
 };
