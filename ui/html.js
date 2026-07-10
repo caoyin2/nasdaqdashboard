@@ -76,6 +76,7 @@ export function getHtml() {
   <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
   <title>\u7eb3\u65af\u8fbe\u514b\u6307\u6570\u770b\u677f</title>
   <link rel="icon" href="${nasdaqFaviconUrl}" />
+  <script>(function(){try{if(localStorage.getItem("nasdaqDashboard.theme")==="light"){document.documentElement.dataset.theme="light";}}catch(error){}})();</script>
   <style>${getStyles()}</style>
 </head>
 <body>
@@ -87,6 +88,7 @@ export function getHtml() {
           <div class="titleHead">
             <div class="h">\u7eb3\u65af\u8fbe\u514b\u6307\u6570\u770b\u677f</div>
             <button class="globalRefreshBtn" id="globalRefreshBtn" type="button" aria-label="\u5237\u65b0\u5f53\u524d\u9762\u677f\u6570\u636e">\u5237\u65b0</button>
+            <button class="themeToggleBtn" id="themeToggleBtn" type="button" aria-label="\u5207\u6362\u5230\u660e\u4eae\u6a21\u5f0f" title="\u5207\u6362\u5230\u660e\u4eae\u6a21\u5f0f" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg></button>
           </div>
           <div class="sub" id="periodCN">\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f</div>
         </div>

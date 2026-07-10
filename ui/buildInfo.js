@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.25",
+  version: "v1.3.26",
   shortSha: "",
   fullSha: "",
-  message: "Restore v1.3.22 and repair CNN icon",
+  message: "Add saved light theme",
 };

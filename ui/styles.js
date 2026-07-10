@@ -182,6 +182,44 @@ export function getStyles() {
       transform: none;
     }
 
+    .themeToggleBtn{
+      appearance:none;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border: 1px solid rgba(0,224,255,.34);
+      border-radius: 8px;
+      color: rgba(190,246,255,.96);
+      background:
+        radial-gradient(circle at 50% 0%, rgba(0,224,255,.20), transparent 64%),
+        rgba(0,224,255,.07);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.08),
+        0 0 16px rgba(0,224,255,.10);
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease;
+    }
+
+    .themeToggleBtn svg{
+      width: 16px;
+      height: 16px;
+      fill:none;
+      stroke:currentColor;
+      stroke-width:1.8;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+
+    .themeToggleBtn:hover{
+      transform: translateY(-1px);
+      border-color: rgba(0,224,255,.62);
+      background:
+        radial-gradient(circle at 50% 0%, rgba(0,224,255,.28), transparent 64%),
+        rgba(0,224,255,.11);
+    }
+
     .title .sub{
       font-family: var(--mono);
       font-size: 12px;
@@ -2541,6 +2579,11 @@ export function getStyles() {
         font-size: 10px;
       }
 
+      .themeToggleBtn{
+        width: 28px;
+        height: 28px;
+      }
+
       .seg{
         width: 100%;
         overflow-x: auto;
@@ -3031,6 +3074,185 @@ export function getStyles() {
         justify-self: start;
         text-align: left;
       }
+    }
+
+    html[data-theme="light"]{
+      color-scheme: light;
+      --bg:#eef4fb;
+      --card:rgba(255,255,255,.92);
+      --card2:rgba(248,250,252,.88);
+      --border:rgba(148,163,184,.58);
+      --text:rgba(15,23,42,.96);
+      --muted:rgba(71,85,105,.92);
+      --shadow:0 16px 42px rgba(15,23,42,.13);
+      --grid:rgba(71,85,105,.16);
+      --hair:rgba(30,41,59,.28);
+    }
+
+    html[data-theme="light"] body{
+      background:
+        radial-gradient(900px 700px at 30% 10%, rgba(14,165,233,.12), transparent 55%),
+        radial-gradient(1000px 700px at 85% 30%, rgba(59,130,246,.09), transparent 55%),
+        radial-gradient(900px 700px at 50% 95%, rgba(45,212,191,.10), transparent 60%),
+        var(--bg);
+    }
+
+    html[data-theme="light"] .top,
+    html[data-theme="light"] .pageSeg{
+      background:rgba(255,255,255,.84);
+    }
+
+    html[data-theme="light"] .logo{
+      filter:brightness(.34) saturate(1.15);
+    }
+
+    html[data-theme="light"] :is(
+      .buildInfo,
+      .seg,
+      .indexSourceSeg,
+      .starPeriodSeg,
+      .sectorViewSeg,
+      .weightsIndexSeg,
+      .panelSourceBadge,
+      .asof
+    ){
+      background:rgba(255,255,255,.72);
+      border-color:rgba(148,163,184,.50);
+    }
+
+    html[data-theme="light"] :is(.globalRefreshBtn, .themeToggleBtn){
+      color:#0f6e8c;
+      border-color:rgba(8,145,178,.32);
+      background:rgba(8,145,178,.08);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.80), 0 0 16px rgba(8,145,178,.08);
+    }
+
+    html[data-theme="light"] :is(.globalRefreshBtn:hover, .themeToggleBtn:hover){
+      border-color:rgba(8,145,178,.54);
+      background:rgba(8,145,178,.14);
+    }
+
+    html[data-theme="light"] :is(
+      .seg button,
+      .indexSourceSeg button,
+      .pageSeg button,
+      .starPeriodSeg button,
+      .sectorViewSeg button,
+      .weightsIndexSeg button
+    ){
+      color:rgba(30,41,59,.76);
+    }
+
+    html[data-theme="light"] :is(
+      .seg button.active,
+      .indexSourceSeg button.active,
+      .pageSeg button.active,
+      .starPeriodSeg button.active,
+      .sectorViewSeg button.active,
+      .weightsIndexSeg button.active
+    ){
+      color:rgba(15,23,42,.96);
+      background:rgba(14,165,233,.16);
+      box-shadow:inset 0 0 0 1px rgba(14,165,233,.28);
+    }
+
+    html[data-theme="light"] :is(.fgCard, .starPanel, .weightsPanel){
+      background:
+        radial-gradient(900px 320px at 0% 0%, rgba(14,165,233,.12), transparent 58%),
+        radial-gradient(900px 320px at 100% 0%, rgba(59,130,246,.09), transparent 58%),
+        linear-gradient(180deg, rgba(255,255,255,.94), rgba(241,245,249,.88));
+    }
+
+    html[data-theme="light"] :is(
+      .tile,
+      .starCard,
+      .weightCard,
+      .commonWeightRow,
+      .sectorBarRow,
+      .starPanelEmpty,
+      .fgEmpty,
+      .fundCalcSummary div,
+      .fundCalcSection,
+      .starManageItem
+    ){
+      background:rgba(255,255,255,.74);
+      border-color:rgba(148,163,184,.48);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.84);
+    }
+
+    html[data-theme="light"] :is(.commonWeightCell, .fgGaugeCenter, .fgMetric, .fundCalcKv){
+      background:rgba(248,250,252,.88);
+      border-color:rgba(148,163,184,.42);
+    }
+
+    html[data-theme="light"] :is(.fsBtn, .fsHint, .starManageModal, .fundCalcModal){
+      background:rgba(255,255,255,.96);
+      border-color:rgba(148,163,184,.56);
+      box-shadow:0 20px 60px rgba(15,23,42,.20);
+    }
+
+    html[data-theme="light"] :is(.starManageOverlay, .fundCalcOverlay){
+      background:rgba(15,23,42,.38);
+    }
+
+    html[data-theme="light"] :is(.starIcon, .weightIcon){
+      filter:none;
+    }
+
+    html[data-theme="light"] :is(
+      .buildInfoLine,
+      .title .h,
+      .name,
+      .kv b,
+      .fgTitle,
+      .fgBadge,
+      .starPanelTitle strong,
+      .starName,
+      .starPriceValue,
+      .starManageTitle strong,
+      .starManageItemMain strong,
+      .starManageItemMain span,
+      .sectorHeatPrice,
+      .sectorHeatPct,
+      .sectorHeatMeta strong,
+      .sectorHeatDeltaInline,
+      .sectorBarValues strong,
+      .sectorBarAxis strong,
+      .sectorBarMeta strong,
+      .weightsTitle strong,
+      .weightsMeta strong,
+      .commonWeightCell strong,
+      .weightName,
+      .fundCalcHead strong,
+      .fundCalcSummary strong,
+      .fundCalcSection h4,
+      .fundCalcKv strong,
+      .fundCalcSourceBlock strong
+    ){
+      color:rgba(15,23,42,.96);
+    }
+
+    html[data-theme="light"] :is(
+      .buildInfoSubline,
+      .idxMetrics,
+      .kv,
+      .starMetrics,
+      .starCardLatest,
+      .sectorHeatMeta,
+      .sectorHeatMetaLatest,
+      .sectorBarValues span,
+      .sectorBarAxis,
+      .sectorBarMeta,
+      .commonWeightCell span,
+      .fundCalcSummary span,
+      .fundCalcKv span,
+      .fundCalcSourceBlock p
+    ){
+      color:rgba(71,85,105,.88);
+    }
+
+    html[data-theme="light"] :is(.fsBtn svg, .fgGaugeValueLabel){
+      fill:rgba(15,23,42,.84);
     }
 
     @supports (-webkit-touch-callout: none) {

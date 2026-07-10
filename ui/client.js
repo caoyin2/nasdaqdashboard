@@ -425,6 +425,69 @@ export function getClientScript() {
       page: "overview"
     };
 
+    var THEME_STORAGE_KEY = "nasdaqDashboard.theme";
+    var activeTheme = document.documentElement.dataset.theme === "light" ? "light" : "dark";
+    var THEME_SUN_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>';
+    var THEME_MOON_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 14.2A8.6 8.6 0 0 1 9.8 3.8 8.6 8.6 0 1 0 20.2 14.2Z"></path></svg>';
+
+    function canvasPalette() {
+      if (activeTheme === "light") {
+        return {
+          labelInk: "rgba(255,255,255,.96)",
+          empty: "rgba(71,85,105,.72)",
+          axis: "rgba(71,85,105,.88)",
+          zero: "rgba(71,85,105,.30)",
+          legend: "rgba(15,23,42,.88)",
+          tooltip: "rgba(255,255,255,.92)",
+          tooltipBorder: "rgba(100,116,139,.50)",
+          tooltipText: "rgba(15,23,42,.95)"
+        };
+      }
+
+      return {
+        labelInk: "rgba(9,13,22,.92)",
+        empty: "rgba(230,237,247,.55)",
+        axis: "rgba(138,160,198,.92)",
+        zero: "rgba(230,237,247,.18)",
+        legend: "rgba(230,237,247,.85)",
+        tooltip: "rgba(9,13,22,.70)",
+        tooltipBorder: "rgba(31,43,61,.85)",
+        tooltipText: "rgba(230,237,247,.95)"
+      };
+    }
+
+    function syncThemeToggle() {
+      var button = $("themeToggleBtn");
+      if (!button) return;
+
+      var isLight = activeTheme === "light";
+      var label = isLight ? "\u5207\u6362\u5230\u9ed1\u6697\u6a21\u5f0f" : "\u5207\u6362\u5230\u660e\u4eae\u6a21\u5f0f";
+      button.innerHTML = isLight ? THEME_MOON_ICON : THEME_SUN_ICON;
+      button.setAttribute("aria-label", label);
+      button.setAttribute("title", label);
+      button.setAttribute("aria-pressed", isLight ? "true" : "false");
+    }
+
+    function applyTheme(theme, persist) {
+      activeTheme = theme === "light" ? "light" : "dark";
+      if (activeTheme === "light") {
+        document.documentElement.dataset.theme = "light";
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+      }
+
+      if (persist) {
+        try {
+          localStorage.setItem(THEME_STORAGE_KEY, activeTheme);
+        } catch (error) {
+          console.warn("theme preference could not be saved:", error);
+        }
+      }
+
+      syncThemeToggle();
+      draw();
+    }
+
     var periodCache = new Map();
     var fearGreedCache = null;
     var starsState = {
@@ -663,6 +726,7 @@ export function getClientScript() {
       var plotH = args.plotH;
       var yOf = args.yOf;
       var font = args.font;
+      var palette = canvasPalette();
 
       var x = padL + plotW + 10 * DPR;
       var labelH = 18 * DPR;
@@ -745,7 +809,7 @@ export function getClientScript() {
         ctx.fillStyle = node.pct >= 0 ? UP_COLOR : DOWN_COLOR;
         roundRect(ctx, bx, by, node.w, labelH, radius);
         ctx.fill();
-        ctx.fillStyle = "rgba(9,13,22,.92)";
+        ctx.fillStyle = palette.labelInk;
         ctx.fillText(node.text, bx + 7 * DPR, node.y);
       });
 
@@ -755,11 +819,12 @@ export function getClientScript() {
     function draw() {
       var W = canvas.width;
       var H = canvas.height;
+      var palette = canvasPalette();
       ctx.clearRect(0, 0, W, H);
 
       if (!state.items.length || state.times.length < 2) {
         ctx.save();
-        ctx.fillStyle = "rgba(230,237,247,.55)";
+        ctx.fillStyle = palette.empty;
         ctx.font = (14 * DPR) + "px ui-monospace";
         ctx.textAlign = "center";
         ctx.fillText("\u6682\u65e0\u6570\u636e", W / 2, H / 2);
@@ -802,7 +867,7 @@ export function getClientScript() {
       ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--grid").trim();
       ctx.lineWidth = 1 * DPR;
       ctx.font = axisFont;
-      ctx.fillStyle = "rgba(138,160,198,.92)";
+      ctx.fillStyle = palette.axis;
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
 
@@ -818,7 +883,7 @@ export function getClientScript() {
 
       var y0 = yOf(0);
       ctx.save();
-      ctx.strokeStyle = "rgba(230,237,247,.18)";
+      ctx.strokeStyle = palette.zero;
       ctx.lineWidth = 1 * DPR;
       ctx.beginPath();
       ctx.moveTo(padL, y0);
@@ -848,7 +913,7 @@ export function getClientScript() {
         var label = item.nameCN;
         ctx.fillStyle = item.color;
         ctx.fillRect(lx, ly + 4 * DPR, 10 * DPR, 10 * DPR);
-        ctx.fillStyle = "rgba(230,237,247,.85)";
+        ctx.fillStyle = palette.legend;
         ctx.fillText(label, lx + 16 * DPR, ly);
 
         lx += ctx.measureText(label).width + 40 * DPR;
@@ -893,7 +958,7 @@ export function getClientScript() {
       });
 
       ctx.save();
-      ctx.fillStyle = "rgba(138,160,198,.92)";
+      ctx.fillStyle = palette.axis;
       ctx.font = axisFont;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
@@ -954,13 +1019,13 @@ export function getClientScript() {
           var bx = maxX < minX ? minX : Math.min(maxX, Math.max(minX, bxTry));
           var by = padT + 12 * DPR;
 
-          ctx.fillStyle = "rgba(9,13,22,.70)";
-          ctx.strokeStyle = "rgba(31,43,61,.85)";
+          ctx.fillStyle = palette.tooltip;
+          ctx.strokeStyle = palette.tooltipBorder;
           roundRect(ctx, bx, by, w, h, 12 * DPR);
           ctx.fill();
           ctx.stroke();
 
-          ctx.fillStyle = "rgba(230,237,247,.95)";
+          ctx.fillStyle = palette.tooltipText;
           ctx.textAlign = "left";
           ctx.textBaseline = "top";
           rows.forEach(function (row, idx) {
@@ -3317,6 +3382,13 @@ export function getClientScript() {
       });
     }
 
+    var themeToggleBtn = $("themeToggleBtn");
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener("click", function () {
+        applyTheme(activeTheme === "dark" ? "light" : "dark", true);
+      });
+    }
+
     var starTechPanel = $("starTechPanel");
     if (starTechPanel) {
       starTechPanel.addEventListener("click", function (e) {
@@ -3558,6 +3630,7 @@ export function getClientScript() {
       handleSearchIconError(target);
     }, true);
 
+    applyTheme(activeTheme, false);
     renderFearGreedLoading();
     renderStarPanel();
     renderSectorPanel();
