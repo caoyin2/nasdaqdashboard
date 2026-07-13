@@ -3091,6 +3091,8 @@ export function getClientScript() {
     }
 
     function applyData(q) {
+      var idxCards = $("idxCards");
+      var previousPositions = captureStarPositions(idxCards);
       var byTicker = new Map((q.items || []).map(function (item) {
         return [item.tickerId, item];
       }));
@@ -3117,9 +3119,12 @@ export function getClientScript() {
         return overviewHeatItem(item, q.period, q.asOfMs);
       }));
       var overviewMaxAbs = sectorMaxAbsChange(overviewItems);
-      $("idxCards").innerHTML = '<div class="idxHeatGrid">' + overviewItems.map(function (item) {
+      idxCards.innerHTML = '<div class="idxHeatGrid">' + overviewItems.map(function (item) {
         return sectorHeatTileHTML(item, overviewMaxAbs);
       }).join("") + '</div>';
+      requestAnimationFrame(function () {
+        animateStarCards(idxCards, previousPositions);
+      });
       var idxLatestTime = $("idxLatestTime");
       if (idxLatestTime) {
         idxLatestTime.textContent = latestDataText(q.asOfMs);

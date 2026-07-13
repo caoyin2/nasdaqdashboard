@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.31",
+  version: "v1.3.32",
   shortSha: "",
   fullSha: "",
-  message: "Sort technology index cards",
+  message: "Animate technology index cards",
 };
