@@ -3113,7 +3113,9 @@ export function getClientScript() {
 
       state.items = items;
       rebuildTimes();
-      var overviewItems = items.map(function (item) { return overviewHeatItem(item, q.period, q.asOfMs); });
+      var overviewItems = sortStarItems(items.map(function (item) {
+        return overviewHeatItem(item, q.period, q.asOfMs);
+      }));
       var overviewMaxAbs = sectorMaxAbsChange(overviewItems);
       $("idxCards").innerHTML = '<div class="idxHeatGrid">' + overviewItems.map(function (item) {
         return sectorHeatTileHTML(item, overviewMaxAbs);

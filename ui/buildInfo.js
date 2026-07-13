@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.30",
+  version: "v1.3.31",
   shortSha: "",
   fullSha: "",
-  message: "Refine Shenzhen exchange branding",
+  message: "Sort technology index cards",
 };
