@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.32",
+  version: "v1.3.33",
   shortSha: "",
   fullSha: "",
-  message: "Animate technology index cards",
+  message: "Fix Google Finance quote mapping",
 };

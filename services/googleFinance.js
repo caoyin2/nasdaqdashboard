@@ -176,7 +176,15 @@ async function fetchQuotePageMapping(symbol, exchange, options = {}) {
   const entries = extractDataServiceRequests(html);
   const entity = [[null, [symbol, exchange]]];
   const chartEntry = entries.get("ds:10") || entries.get("ds:12");
-  const quoteEntry = entries.get("ds:14") || entries.get("ds:2") || entries.get("ds:8");
+  // Google Finance added a different ds:14 payload in July 2026. It has a
+  // quote-like request shape, but does not return the quote node this parser
+  // consumes. Prefer gCvqoe, the page's standard live quote RPC, then retain
+  // the prior fallbacks for older page layouts.
+  const quoteEntry =
+    Array.from(entries.values()).find((entry) => entry?.id === "gCvqoe" && Array.isArray(entry.request)) ||
+    entries.get("ds:14") ||
+    entries.get("ds:2") ||
+    entries.get("ds:8");
   const value = {
     symbol,
     exchange,
