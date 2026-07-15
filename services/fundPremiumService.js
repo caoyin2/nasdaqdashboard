@@ -27,7 +27,7 @@ const TENCENT_FUND_PRICE_ZONE_URL = "https://web.ifzq.gtimg.cn/fund/newfund/fund
 const CHINA_MONEY_USD_CNY_URL = "https://www.chinamoney.com.cn/ags/ms/cm-u-bk-ccpr/CcprHisNew";
 const LOF_SP500_TECH_CODE = "161128";
 const SP500_TECH_INDEX_SYMBOL = "SP500-45";
-const LOF_INDEX_DATA_SOURCE = "google";
+const LOF_INDEX_DATA_SOURCE = "yahoo";
 
 function toMarketSymbol(code) {
   const value = String(code || "").trim();
