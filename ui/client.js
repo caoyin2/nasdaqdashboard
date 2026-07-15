@@ -526,18 +526,29 @@ export function getClientScript() {
 
     function overviewSourceHealthTitle(source, health) {
       var label = indexSourceConfig(source).label;
-      var mark = overviewSourceHealthMark(health.status);
-      if (health.status === "ok") return label + "数据获取正常";
+      if (health.status === "ok") {
+        return label + "数据获取正常" + (health.message ? "；" + health.message : "");
+      }
       if (health.status === "failed") return label + "数据获取失败：" + (health.message || "未知错误");
       if (health.status === "unsupported") return label + "当前时间区间不可用";
       return label + "数据验证中";
     }
 
-    function overviewPayloadIncompleteSymbols(payload) {
-      var items = payload && Array.isArray(payload.items) ? payload.items : [];
-      if (items.length !== META.length) return ["index list"];
+    function isExpectedOverviewDataGap(source, symbol) {
+      return normalizeIndexSource(source) === "yahoo" && String(symbol || "").toUpperCase() === "NDXTMC";
+    }
 
-      return items.filter(function (item) {
+    function overviewPayloadHealth(payload, source) {
+      var items = payload && Array.isArray(payload.items) ? payload.items : [];
+      if (items.length !== META.length) {
+        return {
+          blockingSymbols: ["index list"],
+          expectedGapSymbols: [],
+          message: ""
+        };
+      }
+
+      var incompleteSymbols = items.filter(function (item) {
         var validPoints = Array.isArray(item && item.line)
           ? item.line.filter(function (point) {
             return Number.isFinite(point && point.t) && Number.isFinite(point && point.close);
@@ -547,6 +558,21 @@ export function getClientScript() {
       }).map(function (item) {
         return item && item.symbol ? item.symbol : "unknown";
       });
+
+      var expectedGapSymbols = incompleteSymbols.filter(function (symbol) {
+        return isExpectedOverviewDataGap(source, symbol);
+      });
+      var blockingSymbols = incompleteSymbols.filter(function (symbol) {
+        return !isExpectedOverviewDataGap(source, symbol);
+      });
+
+      return {
+        blockingSymbols: blockingSymbols,
+        expectedGapSymbols: expectedGapSymbols,
+        message: expectedGapSymbols.length
+          ? expectedGapSymbols.join("、") + " 当前时间区间无历史数据，已保留其余指数数据"
+          : ""
+      };
     }
 
     function syncOverviewSourceControls() {
@@ -596,7 +622,12 @@ export function getClientScript() {
         var cached = periodCache.get(overviewCacheKey(state.period, nextSource));
         if (cached) {
           applyData(cached.q);
-          setStatus("已切换到" + indexSourceConfig(nextSource).label + "缓存数据", "ok");
+          var cachedHealth = getOverviewSourceHealth(nextSource, state.period);
+          setStatus(
+            "已切换到" + indexSourceConfig(nextSource).label + "缓存数据" +
+              (cachedHealth.message ? "；" + cachedHealth.message : ""),
+            "ok"
+          );
         } else {
           clearOverviewPanelData({
             keepFearGreed: true,
@@ -3233,12 +3264,12 @@ export function getClientScript() {
         if (!res.ok) throw new Error("HTTP " + res.status);
         var q = await res.json();
         if (!q.ok) throw new Error(q.error || "API error");
-        var incompleteSymbols = overviewPayloadIncompleteSymbols(q);
-        if (incompleteSymbols.length) {
-          throw new Error("Index data incomplete: " + incompleteSymbols.join(", "));
+        var payloadHealth = overviewPayloadHealth(q, source);
+        if (payloadHealth.blockingSymbols.length) {
+          throw new Error("Index data incomplete: " + payloadHealth.blockingSymbols.join(", "));
         }
         periodCache.set(overviewCacheKey(period, source), { q: q, savedAt: Date.now() });
-        setOverviewSourceHealth(source, period, "ok");
+        setOverviewSourceHealth(source, period, "ok", payloadHealth.message);
         return q;
       } catch (error) {
         if (controller.signal.aborted && !timedOut) {
@@ -3264,8 +3295,10 @@ export function getClientScript() {
       var source = normalizeIndexSource(opts.source || state.indexSource);
       var key = overviewCacheKey(period, source);
       if (!opts.force && periodCache.has(key)) {
-        setOverviewSourceHealth(source, period, "ok");
-        return { q: periodCache.get(key).q, fromCache: true };
+        var cached = periodCache.get(key).q;
+        var cachedHealth = overviewPayloadHealth(cached, source);
+        setOverviewSourceHealth(source, period, "ok", cachedHealth.message);
+        return { q: cached, fromCache: true };
       }
       var q = await fetchPeriod(period, Object.assign({}, opts, { source: source }));
       return q ? { q: q, fromCache: false } : null;
@@ -3275,7 +3308,8 @@ export function getClientScript() {
       var normalized = normalizeIndexSource(source);
       var key = overviewCacheKey(period, normalized);
       if (periodCache.has(key)) {
-        setOverviewSourceHealth(normalized, period, "ok");
+        var cachedHealth = overviewPayloadHealth(periodCache.get(key).q, normalized);
+        setOverviewSourceHealth(normalized, period, "ok", cachedHealth.message);
         return;
       }
 
@@ -3371,7 +3405,12 @@ export function getClientScript() {
         if (opts.primeAlternate !== false) primeAlternateIndexSource(period, source);
         if (period !== state.period || source !== state.indexSource) return;
         applyData(result.q);
-        setStatus(result.fromCache ? "\u5df2\u4f7f\u7528\u7f13\u5b58\u6570\u636e" : "\u5df2\u7f13\u5b58\u5f53\u524d\u5468\u671f\u6570\u636e", "ok");
+        var health = getOverviewSourceHealth(source, period);
+        setStatus(
+          (result.fromCache ? "\u5df2\u4f7f\u7528\u7f13\u5b58\u6570\u636e" : "\u5df2\u7f13\u5b58\u5f53\u524d\u5468\u671f\u6570\u636e") +
+            (health.message ? "\uff1b" + health.message : ""),
+          "ok"
+        );
       } catch (error) {
         console.error(error);
         if (opts.primeAlternate !== false) primeAlternateIndexSource(period, source);

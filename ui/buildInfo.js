@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.35",
+  version: "v1.3.36",
   shortSha: "",
   fullSha: "",
-  message: "Add source health and LOF error handling",
+  message: "Allow partial Yahoo NDXTMC history",
 };
