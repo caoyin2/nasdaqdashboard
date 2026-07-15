@@ -385,7 +385,7 @@ export function getClientScript() {
     var INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA = 1;
     var INDEX_WEIGHTS_LOCAL_CACHE_PREFIX = "nasdaqDashboard.indexWeights." + INDEX_WEIGHTS_API_VERSION + ".";
     var SP500_SECTOR_API_VERSION = "20260406a";
-    var FUND_PREMIUM_API_VERSION = "lof-calculation-detail-v3";
+    var FUND_PREMIUM_API_VERSION = "lof-calculation-detail-v4";
     var COMMON_WEIGHTS_CODE = "COMMON";
     var WEIGHTS_INDEX_OPTIONS = [
       { code: COMMON_WEIGHTS_CODE, label: "\\u5171\\u540c\\u6210\\u4efd\\u80a1" },
@@ -426,6 +426,7 @@ export function getClientScript() {
     };
 
     var periodCache = new Map();
+    var overviewSourceHealth = new Map();
     var fearGreedCache = null;
     var starsState = {
       period: "1D",
@@ -501,12 +502,69 @@ export function getClientScript() {
       return normalizeIndexSource(source) + ":" + period;
     }
 
+    function getOverviewSourceHealth(source, period) {
+      var normalized = normalizeIndexSource(source);
+      if (!sourceSupportsPeriod(normalized, period)) {
+        return { status: "unsupported", message: "当前时间区间不支持该来源" };
+      }
+      return overviewSourceHealth.get(overviewCacheKey(period, normalized)) || { status: "pending", message: "" };
+    }
+
+    function setOverviewSourceHealth(source, period, status, message) {
+      overviewSourceHealth.set(overviewCacheKey(period, source), {
+        status: status,
+        message: message || ""
+      });
+      syncOverviewSourceControls();
+    }
+
+    function overviewSourceHealthMark(status) {
+      if (status === "ok") return "√";
+      if (status === "failed" || status === "unsupported") return "×";
+      return "…";
+    }
+
+    function overviewSourceHealthTitle(source, health) {
+      var label = indexSourceConfig(source).label;
+      var mark = overviewSourceHealthMark(health.status);
+      if (health.status === "ok") return label + "数据获取正常";
+      if (health.status === "failed") return label + "数据获取失败：" + (health.message || "未知错误");
+      if (health.status === "unsupported") return label + "当前时间区间不可用";
+      return label + "数据验证中";
+    }
+
+    function overviewPayloadIncompleteSymbols(payload) {
+      var items = payload && Array.isArray(payload.items) ? payload.items : [];
+      if (items.length !== META.length) return ["index list"];
+
+      return items.filter(function (item) {
+        var validPoints = Array.isArray(item && item.line)
+          ? item.line.filter(function (point) {
+            return Number.isFinite(point && point.t) && Number.isFinite(point && point.close);
+          }).length
+          : 0;
+        return validPoints < 2;
+      }).map(function (item) {
+        return item && item.symbol ? item.symbol : "unknown";
+      });
+    }
+
     function syncOverviewSourceControls() {
       var source = normalizeIndexSource(state.indexSource);
       var sourceSeg = $("indexSourceSeg");
       if (sourceSeg) {
         sourceSeg.querySelectorAll("button[data-index-source]").forEach(function (button) {
-          button.classList.toggle("active", button.getAttribute("data-index-source") === source);
+          var buttonSource = normalizeIndexSource(button.getAttribute("data-index-source"));
+          var health = getOverviewSourceHealth(buttonSource, state.period);
+          var isAvailable = health.status === "ok";
+          var mark = button.querySelector("[data-index-source-health]");
+          button.classList.toggle("active", buttonSource === source);
+          button.classList.toggle("sourcePending", health.status === "pending");
+          button.classList.toggle("sourceUnavailable", !isAvailable);
+          button.disabled = !isAvailable;
+          button.setAttribute("aria-disabled", isAvailable ? "false" : "true");
+          button.title = overviewSourceHealthTitle(buttonSource, health);
+          if (mark) mark.textContent = overviewSourceHealthMark(health.status);
         });
       }
 
@@ -524,6 +582,8 @@ export function getClientScript() {
     function switchIndexSource(source) {
       var nextSource = normalizeIndexSource(source);
       if (nextSource === state.indexSource) return;
+      if (!sourceSupportsPeriod(nextSource, state.period)) return;
+      if (getOverviewSourceHealth(nextSource, state.period).status !== "ok") return;
 
       state.indexSource = nextSource;
       if (!sourceSupportsPeriod(nextSource, state.period)) {
@@ -1668,7 +1728,7 @@ export function getClientScript() {
 
     function openFundPremiumDetail(symbol) {
       var item = getFundPremiumDetailItem(symbol);
-      if (!item || String(item.code || "") !== "161128") return;
+      if (!item || item.lofPremiumError || String(item.code || "") !== "161128") return;
       fundPremiumState.detailSymbol = item.symbol || "sz161128";
       renderFundPremiumPanel();
     }
@@ -1970,9 +2030,13 @@ export function getClientScript() {
       var glow = fundPremiumTint(premiumValue, 0.16 + intensity * 0.24);
       var tone = fundPremiumToneClass(premiumValue);
       var premiumClass = fundPremiumRateClass(item.premiumPct);
-      var isLofDetail = String(item && item.code || "") === "161128";
+      var lofPremiumError = item && item.lofPremiumError ? String(item.lofPremiumError) : "";
+      var isLofDetail = String(item && item.code || "") === "161128" && !lofPremiumError;
       var detailAttr = isLofDetail ? ' data-fund-lof-detail="1" aria-label="161128 \u957f\u6309 3 \u79d2\u67e5\u770b\u6298\u6ea2\u4ef7\u8ba1\u7b97\u8be6\u60c5"' : "";
       var detailHint = isLofDetail ? '<div class="fundPremiumHoldHint">\u957f\u6309 3 \u79d2\u67e5\u770b\u8ba1\u7b97\u8be6\u60c5</div>' : "";
+      var errorHint = lofPremiumError
+        ? '<div class="fundPremiumError" title="' + esc(lofPremiumError) + '">161128 \u8ba1\u7b97\u5931\u8d25</div>'
+        : "";
 
       return [
         '<article class="sectorHeatTile fundPremiumTile ' + tone + '" data-symbol="' + esc(item.symbol) + '"' + detailAttr + ' style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
@@ -1999,6 +2063,7 @@ export function getClientScript() {
             '</div>',
           '</div>',
           '<div class="sectorHeatLatest">' + esc(fundTradeDateText(item.tradeDate)) + '</div>',
+          errorHint,
           detailHint,
         '</article>'
       ].join("");
@@ -2898,8 +2963,14 @@ export function getClientScript() {
         var payload = await fetchFundPremiums(opts);
         if (!payload) return;
         fundPremiumState.cache = payload;
-        fundPremiumState.statusText = "\u5df2\u7f13\u5b58\u6700\u65b0\u57fa\u91d1\u884c\u60c5";
-        fundPremiumState.statusType = "ok";
+        var warnings = Array.isArray(payload.warnings) ? payload.warnings : [];
+        var warningText = warnings.map(function (warning) {
+          return warning && warning.message ? String(warning.message) : "";
+        }).filter(Boolean).join("\uff1b");
+        fundPremiumState.statusText = warningText
+          ? warningText + "\uff1b\u5176\u4ed6\u57fa\u91d1\u884c\u60c5\u5df2\u66f4\u65b0"
+          : "\u5df2\u7f13\u5b58\u6700\u65b0\u57fa\u91d1\u884c\u60c5";
+        fundPremiumState.statusType = warningText ? "err" : "ok";
         renderFundPremiumPanel();
       } catch (error) {
         console.error("fund premium load failed:", error);
@@ -2962,6 +3033,8 @@ export function getClientScript() {
         if (currentPage === "overview") {
           setStatus("已清空其他指数缓存，正在刷新当前来源和时间区间数据...", "ok");
           periodCache.clear();
+          overviewSourceHealth.clear();
+          syncOverviewSourceControls();
           clearOverviewPanelData();
           await Promise.allSettled([
             loadFearGreed({ force: true }),
@@ -3142,28 +3215,41 @@ export function getClientScript() {
 
       if (activeFetchCtrl) activeFetchCtrl.abort();
       activeFetchCtrl = controller;
+      setOverviewSourceHealth(source, period, "pending");
 
       var timer = setTimeout(function () {
         timedOut = true;
         controller.abort();
       }, OVERVIEW_API_TIMEOUT_MS);
 
-      var res;
       try {
-        res = await fetch(
+        var res = await fetch(
           "/api/quote?p=" + encodeURIComponent(period) + "&source=" + encodeURIComponent(source),
           {
-          cache: "no-store",
-          signal: controller.signal
+            cache: "no-store",
+            signal: controller.signal
           }
         );
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        var q = await res.json();
+        if (!q.ok) throw new Error(q.error || "API error");
+        var incompleteSymbols = overviewPayloadIncompleteSymbols(q);
+        if (incompleteSymbols.length) {
+          throw new Error("Index data incomplete: " + incompleteSymbols.join(", "));
+        }
+        periodCache.set(overviewCacheKey(period, source), { q: q, savedAt: Date.now() });
+        setOverviewSourceHealth(source, period, "ok");
+        return q;
       } catch (error) {
         if (controller.signal.aborted && !timedOut) {
           return null;
         }
         if (timedOut) {
-          throw new Error("\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f\u8bf7\u6c42\u8d85\u65f6\uff08" + (OVERVIEW_API_TIMEOUT_MS / 1000) + "\u79d2\uff09");
+          var timeoutError = new Error("\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f\u8bf7\u6c42\u8d85\u65f6\uff08" + (OVERVIEW_API_TIMEOUT_MS / 1000) + "\u79d2\uff09");
+          setOverviewSourceHealth(source, period, "failed", timeoutError.message);
+          throw timeoutError;
         }
+        setOverviewSourceHealth(source, period, "failed", error && error.message ? error.message : "数据请求失败");
         throw error;
       } finally {
         clearTimeout(timer);
@@ -3171,12 +3257,6 @@ export function getClientScript() {
           activeFetchCtrl = null;
         }
       }
-
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      var q = await res.json();
-      if (!q.ok) throw new Error(q.error || "API error");
-      periodCache.set(overviewCacheKey(period, source), { q: q, savedAt: Date.now() });
-      return q;
     }
 
     async function ensureData(period, options) {
@@ -3184,6 +3264,7 @@ export function getClientScript() {
       var source = normalizeIndexSource(opts.source || state.indexSource);
       var key = overviewCacheKey(period, source);
       if (!opts.force && periodCache.has(key)) {
+        setOverviewSourceHealth(source, period, "ok");
         return { q: periodCache.get(key).q, fromCache: true };
       }
       var q = await fetchPeriod(period, Object.assign({}, opts, { source: source }));
@@ -3193,16 +3274,25 @@ export function getClientScript() {
     function primeOverviewSourcePeriod(period, source) {
       var normalized = normalizeIndexSource(source);
       var key = overviewCacheKey(period, normalized);
-      if (periodCache.has(key)) return;
+      if (periodCache.has(key)) {
+        setOverviewSourceHealth(normalized, period, "ok");
+        return;
+      }
 
       ensureData(period, { source: normalized }).then(function (result) {
-        if (!result || period !== state.period || normalized !== state.indexSource) return;
-        applyData(result.q);
-        setStatus("已切换到" + indexSourceConfig(normalized).label + "缓存数据", "ok");
-      }).catch(function (error) {
-        if (period === state.period && normalized === state.indexSource) {
-          setStatus(error && error.message ? error.message : "数据准备失败", "err");
+        if (!result || period !== state.period) return;
+        var currentHealth = getOverviewSourceHealth(state.indexSource, state.period);
+        if (normalized !== state.indexSource && currentHealth.status === "failed") {
+          var failedSource = state.indexSource;
+          switchIndexSource(normalized);
+          setStatus(indexSourceConfig(failedSource).label + "数据获取失败，已切换到" + indexSourceConfig(normalized).label + "缓存数据", "ok");
+          return;
         }
+        if (normalized === state.indexSource) {
+          applyData(result.q);
+          setStatus("已切换到" + indexSourceConfig(normalized).label + "缓存数据", "ok");
+        }
+      }).catch(function () {
       });
     }
 
@@ -3284,6 +3374,7 @@ export function getClientScript() {
         setStatus(result.fromCache ? "\u5df2\u4f7f\u7528\u7f13\u5b58\u6570\u636e" : "\u5df2\u7f13\u5b58\u5f53\u524d\u5468\u671f\u6570\u636e", "ok");
       } catch (error) {
         console.error(error);
+        if (opts.primeAlternate !== false) primeAlternateIndexSource(period, source);
         setStatus(error && error.message ? error.message : "\u52a0\u8f7d\u5931\u8d25", "err");
       }
     }

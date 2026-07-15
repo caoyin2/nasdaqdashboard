@@ -27,7 +27,7 @@ const TENCENT_FUND_PRICE_ZONE_URL = "https://web.ifzq.gtimg.cn/fund/newfund/fund
 const CHINA_MONEY_USD_CNY_URL = "https://www.chinamoney.com.cn/ags/ms/cm-u-bk-ccpr/CcprHisNew";
 const LOF_SP500_TECH_CODE = "161128";
 const SP500_TECH_INDEX_SYMBOL = "SP500-45";
-const LOF_INDEX_DATA_SOURCE = "yahoo";
+const LOF_INDEX_DATA_SOURCE = "google";
 
 function toMarketSymbol(code) {
   const value = String(code || "").trim();
@@ -330,21 +330,26 @@ async function buildLofPremiumContext(fund, fields) {
 }
 
 function buildFundItem(fund, fields, context) {
-  const lastClose = toFiniteNumber(fields[3]);
-  const baseClose = toFiniteNumber(fields[4]);
-  const latestT = parseTencentBeijingTime(fields[30]);
-  const tradeDate = parseTencentBeijingDateKey(fields[30]);
-  const change = toFiniteNumber(fields[31]);
-  const changePct = toFiniteNumber(fields[32]);
-  const premiumPctFromTencent = toFiniteNumber(fields[77]);
-  const premiumReferenceNav = toFiniteNumber(fields[78]);
-  const lofPremium = fund.code === LOF_SP500_TECH_CODE ? context?.lofPremium : null;
-  const premiumPct = Number.isFinite(lofPremium?.premiumPct) ? lofPremium.premiumPct : premiumPctFromTencent;
+  const rawFields = Array.isArray(fields) ? fields : [];
+  const isLof = fund.code === LOF_SP500_TECH_CODE;
+  const lastClose = toFiniteNumber(rawFields[3]);
+  const baseClose = toFiniteNumber(rawFields[4]);
+  const latestT = parseTencentBeijingTime(rawFields[30]);
+  const tradeDate = parseTencentBeijingDateKey(rawFields[30]);
+  const change = toFiniteNumber(rawFields[31]);
+  const changePct = toFiniteNumber(rawFields[32]);
+  const premiumPctFromTencent = toFiniteNumber(rawFields[77]);
+  const premiumReferenceNav = toFiniteNumber(rawFields[78]);
+  const lofPremium = isLof ? context?.lofPremium : null;
+  const lofPremiumError = isLof ? context?.lofPremiumError || null : null;
+  const premiumPct = lofPremiumError
+    ? null
+    : (Number.isFinite(lofPremium?.premiumPct) ? lofPremium.premiumPct : premiumPctFromTencent);
 
   return {
     symbol: fund.marketSymbol,
     code: fund.code,
-    nameCN: cleanName(fields[1], fund.fallbackName),
+    nameCN: cleanName(rawFields[1], fund.fallbackName),
     icon: fund.icon || null,
     latestT,
     tradeDate,
@@ -358,6 +363,7 @@ function buildFundItem(fund, fields, context) {
     premiumRawPct: premiumPctFromTencent,
     premiumReferenceNav: Number.isFinite(lofPremium?.estimatedNav) ? lofPremium.estimatedNav : premiumReferenceNav,
     lofPremium,
+    lofPremiumError,
   };
 }
 
@@ -405,16 +411,34 @@ export async function buildFundPremiumPayload() {
 
   const lofFund = funds.find((fund) => fund.code === LOF_SP500_TECH_CODE);
   const lofFields = lofFund ? variableMap.get(lofFund.marketSymbol) : null;
-  const lofPremium = lofFund && lofFields ? await buildLofPremiumContext(lofFund, lofFields) : null;
+  let lofPremium = null;
+  let lofPremiumError = null;
+
+  if (!lofFields || lofFields.length <= 77) {
+    lofPremiumError = `Tencent fund quote missing or incomplete for ${lofFund?.marketSymbol || LOF_SP500_TECH_CODE}`;
+  } else {
+    try {
+      lofPremium = await buildLofPremiumContext(lofFund, lofFields);
+    } catch (error) {
+      lofPremiumError = error?.message || String(error);
+    }
+  }
 
   const items = funds.map((fund) => {
     const fields = variableMap.get(fund.marketSymbol);
     if (!fields || fields.length <= 77) {
+      if (fund.code === LOF_SP500_TECH_CODE) {
+        return buildFundItem(fund, fields, {
+          lofPremium: null,
+          lofPremiumError,
+        });
+      }
       throw new Error(`Tencent fund quote missing or incomplete for ${fund.marketSymbol}`);
     }
 
     return buildFundItem(fund, fields, {
       lofPremium: fund.code === LOF_SP500_TECH_CODE ? lofPremium : null,
+      lofPremiumError: fund.code === LOF_SP500_TECH_CODE ? lofPremiumError : null,
     });
   });
 
@@ -433,6 +457,9 @@ export async function buildFundPremiumPayload() {
     indexSourceLabel: indexDataSourceLabel(LOF_INDEX_DATA_SOURCE),
     asOfMs: maxLatestTime(items),
     tradeDate: latestTradeDate(items),
+    warnings: lofPremiumError
+      ? [{ code: LOF_SP500_TECH_CODE, message: `161128 折溢价计算失败：${lofPremiumError}` }]
+      : [],
     items,
   };
 }

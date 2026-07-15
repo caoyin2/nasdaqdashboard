@@ -133,13 +133,13 @@ export function getHtml() {
               <div id="fearGreedCard"></div>
 
               <div class="indexSourceSeg" id="indexSourceSeg" aria-label="指数数据来源">
-                <button data-index-source="yahoo" class="active" type="button" title="雅虎台湾">
+                <button data-index-source="yahoo" class="active" type="button" title="雅虎台湾数据验证中">
                   ${YAHOO_TAIWAN_SOURCE_ICON_SVG}
-                  <span>雅虎台湾</span>
+                  <span>雅虎台湾（<b class="indexSourceHealth" data-index-source-health="yahoo">…</b>）</span>
                 </button>
-                <button data-index-source="google" type="button" title="谷歌财经">
+                <button data-index-source="google" type="button" title="谷歌财经数据验证中">
                   ${GOOGLE_FINANCE_SOURCE_ICON_SVG}
-                  <span>谷歌财经</span>
+                  <span>谷歌财经（<b class="indexSourceHealth" data-index-source-health="google">…</b>）</span>
                 </button>
               </div>
 

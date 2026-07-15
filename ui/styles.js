@@ -258,6 +258,31 @@ export function getStyles() {
       background: rgba(0,174,239,.14);
     }
 
+    .indexSourceSeg button.sourceUnavailable,
+    .indexSourceSeg button:disabled{
+      color: rgba(148,163,184,.60);
+      border-color: rgba(148,163,184,.14);
+      background: rgba(148,163,184,.07);
+      cursor:not-allowed;
+      opacity: 1;
+    }
+
+    .indexSourceSeg button.sourceUnavailable.active{
+      color: rgba(148,163,184,.72);
+      border-color: rgba(148,163,184,.18);
+      background: rgba(148,163,184,.10);
+    }
+
+    .indexSourceHealth{
+      color: rgba(0,224,255,.96);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .indexSourceSeg button.sourceUnavailable .indexSourceHealth{
+      color: rgba(148,163,184,.72);
+    }
+
     .indexSourceIcon{
       display:block;
       width: 18px;
@@ -1774,6 +1799,19 @@ export function getStyles() {
       font-family: var(--mono);
       font-size: 10px;
       color: rgba(200,214,236,.62);
+      white-space: nowrap;
+    }
+
+    .fundPremiumError{
+      justify-self: end;
+      margin-top: -6px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: rgba(255,145,154,.96);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 800;
       white-space: nowrap;
     }
 

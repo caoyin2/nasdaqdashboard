@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.34",
+  version: "v1.3.35",
   shortSha: "",
   fullSha: "",
-  message: "Use Yahoo Taiwan for LOF index data",
+  message: "Add source health and LOF error handling",
 };
