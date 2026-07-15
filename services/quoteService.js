@@ -154,19 +154,32 @@ export async function buildQuotePayload(period, env, source) {
     allowFetch: true,
   });
 
-  const indexJobs = INDEXES.map((idx, i) =>
-    buildIndexItemFromSource(idx, i, period, searchMetaMap, normalizedSource)
+  const indexResults = await Promise.allSettled(
+    INDEXES.map((idx, i) =>
+      buildIndexItemFromSource(idx, i, period, searchMetaMap, normalizedSource)
+    )
   );
 
-  let items;
-  try {
-    items = await Promise.all(indexJobs);
-  } catch (error) {
-    throw new Error(`Index upstream request failed: ${error?.message || String(error)}`);
-  }
+  const items = [];
+  const failedIndexes = [];
 
-  if (items.length !== INDEXES.length) {
-    throw new Error(`Index upstream request incomplete: expected ${INDEXES.length}, got ${items.length}`);
+  indexResults.forEach((result, i) => {
+    if (result.status === "fulfilled") {
+      items.push(result.value);
+      return;
+    }
+
+    failedIndexes.push({
+      symbol: INDEXES[i].symbol,
+      error: result.reason?.message || String(result.reason),
+    });
+  });
+
+  if (!items.length) {
+    const details = failedIndexes
+      .map((item) => `${item.symbol}: ${item.error}`)
+      .join("; ");
+    throw new Error(`Index upstream request failed: ${details || "no index data returned"}`);
   }
 
   const asOfMs = maxLatestTime(items);
@@ -180,5 +193,6 @@ export async function buildQuotePayload(period, env, source) {
     asOfMs: Number.isFinite(asOfMs) ? asOfMs : null,
     asOfUTC,
     items,
+    failedIndexes,
   };
 }

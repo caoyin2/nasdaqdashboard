@@ -534,43 +534,37 @@ export function getClientScript() {
       return label + "数据验证中";
     }
 
-    function isExpectedOverviewDataGap(source, symbol) {
-      return normalizeIndexSource(source) === "yahoo" && String(symbol || "").toUpperCase() === "NDXTMC";
-    }
-
     function overviewPayloadHealth(payload, source) {
       var items = payload && Array.isArray(payload.items) ? payload.items : [];
-      if (items.length !== META.length) {
-        return {
-          blockingSymbols: ["index list"],
-          expectedGapSymbols: [],
-          message: ""
-        };
-      }
-
-      var incompleteSymbols = items.filter(function (item) {
+      var validItems = items.filter(function (item) {
         var validPoints = Array.isArray(item && item.line)
           ? item.line.filter(function (point) {
             return Number.isFinite(point && point.t) && Number.isFinite(point && point.close);
           }).length
           : 0;
-        return validPoints < 2;
+        return validPoints >= 2;
+      });
+      var itemSymbols = new Set(items.map(function (item) {
+        return String(item && item.symbol || "").toUpperCase();
+      }).filter(Boolean));
+      var invalidSymbols = items.filter(function (item) {
+        return validItems.indexOf(item) === -1;
       }).map(function (item) {
-        return item && item.symbol ? item.symbol : "unknown";
+        return String(item && item.symbol || "unknown").toUpperCase();
       });
-
-      var expectedGapSymbols = incompleteSymbols.filter(function (symbol) {
-        return isExpectedOverviewDataGap(source, symbol);
+      var missingSymbols = META.filter(function (meta) {
+        return !itemSymbols.has(String(meta && meta.symbol || "").toUpperCase());
+      }).map(function (meta) {
+        return String(meta && meta.symbol || "unknown").toUpperCase();
       });
-      var blockingSymbols = incompleteSymbols.filter(function (symbol) {
-        return !isExpectedOverviewDataGap(source, symbol);
-      });
+      var unavailableSymbols = Array.from(new Set(missingSymbols.concat(invalidSymbols)));
 
       return {
-        blockingSymbols: blockingSymbols,
-        expectedGapSymbols: expectedGapSymbols,
-        message: expectedGapSymbols.length
-          ? expectedGapSymbols.join("、") + " 当前时间区间无历史数据，已保留其余指数数据"
+        blockingSymbols: validItems.length ? [] : (unavailableSymbols.length ? unavailableSymbols : ["index list"]),
+        validSymbols: validItems.map(function (item) { return item.symbol; }),
+        unavailableSymbols: unavailableSymbols,
+        message: unavailableSymbols.length
+          ? unavailableSymbols.join("、") + " 当前时间区间无可用历史数据，已保留其余指数数据"
           : ""
       };
     }
@@ -3197,12 +3191,20 @@ export function getClientScript() {
     function applyData(q) {
       var idxCards = $("idxCards");
       var previousPositions = captureStarPositions(idxCards);
-      var byTicker = new Map((q.items || []).map(function (item) {
+      var payloadHealth = overviewPayloadHealth(q, state.indexSource);
+      var validSymbols = new Set(payloadHealth.validSymbols.map(function (symbol) {
+        return String(symbol || "").toUpperCase();
+      }));
+      var byTicker = new Map((q.items || []).filter(function (item) {
+        return validSymbols.has(String(item && item.symbol || "").toUpperCase());
+      }).map(function (item) {
         return [item.tickerId, item];
       }));
 
-      var items = META.map(function (meta) {
-        var item = byTicker.get(meta.tickerId) || {};
+      var items = META.filter(function (meta) {
+        return byTicker.has(meta.tickerId);
+      }).map(function (meta) {
+        var item = byTicker.get(meta.tickerId);
         var line = item.line || [];
         return Object.assign({}, meta, {
           line: line,
