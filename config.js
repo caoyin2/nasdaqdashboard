@@ -57,7 +57,7 @@ export const INDEXES = [
     symbol: "SP500",
     googleSymbol: ".INX",
     googleExchange: "INDEXSP",
-    yahooSymbol: "^SPX",
+    yahooSymbol: "^GSPC",
     nameCN: "\u6807\u666e500\uff08SP500\uff09",
     iconSymbol: "SPGI",
   },
