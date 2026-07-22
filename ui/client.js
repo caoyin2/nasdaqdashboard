@@ -489,6 +489,7 @@ export function getClientScript() {
       exportFeedbackTimer: null
     };
     var activeFetchCtrl = null;
+    var overviewRequestGeneration = 0;
     var switchTimer = null;
     var refreshTimer = null;
     var weightsCacheCountdownTimer = null;
@@ -3264,9 +3265,11 @@ export function getClientScript() {
       try {
         if (currentPage === "overview") {
           setStatus("已清空其他指数缓存，正在刷新当前来源和时间区间数据...", "ok");
+          overviewRequestGeneration += 1;
+          if (activeFetchCtrl) activeFetchCtrl.abort();
+          activeFetchCtrl = null;
           periodCache.clear();
-          overviewSourceHealth.clear();
-          syncOverviewSourceControls();
+          setOverviewSourceHealth(state.indexSource, state.period, "pending");
           clearOverviewPanelData();
           await Promise.allSettled([
             loadFearGreed({ force: true }),
@@ -3452,6 +3455,7 @@ export function getClientScript() {
       var source = normalizeIndexSource(opts.source || state.indexSource);
       var controller = new AbortController();
       var timedOut = false;
+      var requestGeneration = overviewRequestGeneration;
 
       if (activeFetchCtrl) activeFetchCtrl.abort();
       activeFetchCtrl = controller;
@@ -3473,6 +3477,7 @@ export function getClientScript() {
         if (!res.ok) throw new Error("HTTP " + res.status);
         var q = await res.json();
         if (!q.ok) throw new Error(q.error || "API error");
+        if (requestGeneration !== overviewRequestGeneration) return null;
         var payloadHealth = overviewPayloadHealth(q, source);
         if (payloadHealth.blockingSymbols.length) {
           throw new Error("Index data incomplete: " + payloadHealth.blockingSymbols.join(", "));
@@ -3481,6 +3486,7 @@ export function getClientScript() {
         setOverviewSourceHealth(source, period, "ok", payloadHealth.message);
         return q;
       } catch (error) {
+        if (requestGeneration !== overviewRequestGeneration) return null;
         if (controller.signal.aborted && !timedOut) {
           return null;
         }
