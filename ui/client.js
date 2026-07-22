@@ -482,7 +482,11 @@ export function getClientScript() {
       statusType: "ok",
       commonStatusText: "\u8fdb\u5165\u9762\u677f\u540e\u52a0\u8f7d\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u4efd\u80a1",
       commonStatusType: "ok",
-      touched: false
+      touched: false,
+      exporting: false,
+      exportFeedback: "",
+      exportFeedbackType: "ok",
+      exportFeedbackTimer: null
     };
     var activeFetchCtrl = null;
     var switchTimer = null;
@@ -2269,6 +2273,203 @@ export function getClientScript() {
       return "\u8ddd\u79bb\u4e0b\u6b21\u5237\u65b0\uff1a" + formatWeightCacheDuration(remaining);
     }
 
+    function weightExportSourceLabel(indexCode) {
+      return indexCode === "NDXTMC"
+        ? "深圳证券交易所（159509 ETF 申赎篮子）"
+        : "iShares ETF Holdings";
+    }
+
+    function isDetailedWeightPayload(payload) {
+      return !!(payload && Array.isArray(payload.items) && payload.items.length > 0);
+    }
+
+    function orderedDetailedWeightPayloads(payloads) {
+      var byCode = new Map((payloads || []).filter(isDetailedWeightPayload).map(function (payload) {
+        return [payload.indexCode, payload];
+      }));
+      var ordered = COMMON_WEIGHT_INDEX_OPTIONS.map(function (option) {
+        return byCode.get(option.code) || null;
+      });
+      return ordered.every(isDetailedWeightPayload) ? ordered : null;
+    }
+
+    function detailedWeightPayloadsFromCommon(payload) {
+      return orderedDetailedWeightPayloads(payload && payload.indexes);
+    }
+
+    function cachedDetailedWeightPayloads() {
+      var commonPayloads = detailedWeightPayloadsFromCommon(weightsState.commonCache);
+      if (commonPayloads && isWeightCacheFresh(weightsState.commonCache)) return commonPayloads;
+
+      var localCommon = readWeightLocalCache(COMMON_WEIGHTS_CODE);
+      commonPayloads = detailedWeightPayloadsFromCommon(localCommon);
+      if (commonPayloads) {
+        weightsState.commonCache = localCommon;
+        hydrateIndexWeightCacheFromCommon(localCommon);
+        return commonPayloads;
+      }
+
+      var individualPayloads = COMMON_WEIGHT_INDEX_OPTIONS.map(function (option) {
+        var cached = weightsState.cache.get(option.code);
+        if (isDetailedWeightPayload(cached) && isWeightCacheFresh(cached)) return cached;
+        return readWeightLocalCache(option.code);
+      });
+      return orderedDetailedWeightPayloads(individualPayloads);
+    }
+
+    async function detailedWeightPayloadsForExport() {
+      var cached = cachedDetailedWeightPayloads();
+      if (cached) return cached;
+
+      var payload = await fetchCommonIndexWeights();
+      if (!payload) throw new Error("未能获取三张指数权重表");
+
+      payload = writeCommonWeightLocalCache(payload);
+      weightsState.commonCache = payload;
+      hydrateIndexWeightCacheFromCommon(payload);
+
+      var fetched = detailedWeightPayloadsFromCommon(payload);
+      if (!fetched) throw new Error("三张指数权重表数据不完整");
+      return fetched;
+    }
+
+    function markdownWeightCell(value) {
+      return String(value == null ? "" : value)
+        .split("|").join("&#124;")
+        .split(String.fromCharCode(10)).join(" ");
+    }
+
+    function formatDetailedWeightPct(value) {
+      var number = Number(value);
+      return Number.isFinite(number) ? number.toFixed(4) + "%" : "--";
+    }
+
+    function detailedWeightsMarkdown(payloads) {
+      var lines = [
+        "# 科技类指数详细权重表",
+        "",
+        "说明：以下为三个指数各自的完整成分股权重，权重为单一指数内占比，并已按权重从高到低排序。",
+        "数据可用于比较指数重合度、集中度、单只股票在不同指数中的权重差异等分析。",
+        ""
+      ];
+
+      payloads.forEach(function (payload, index) {
+        var indexCode = String(payload.indexCode || "").toUpperCase();
+        var items = (payload.items || []).slice().sort(function (a, b) {
+          var aWeight = Number.isFinite(+a.weightPct) ? +a.weightPct : -Infinity;
+          var bWeight = Number.isFinite(+b.weightPct) ? +b.weightPct : -Infinity;
+          if (Math.abs(bWeight - aWeight) > 1e-9) return bWeight - aWeight;
+          return String(a.symbol || "").localeCompare(String(b.symbol || ""));
+        });
+
+        lines.push("## " + (index + 1) + ". " + markdownWeightCell(payload.title || weightIndexLabel(indexCode)) + "（" + indexCode + "）");
+        lines.push("- 数据来源：" + weightExportSourceLabel(indexCode));
+        lines.push("- 清单日期：" + formatBasketDate(payload.basketDate));
+        lines.push("- 成分股数量：" + items.length);
+        lines.push("| 排名 | 股票代码 | 公司名称 | 指数内权重 |");
+        lines.push("| ---: | --- | --- | ---: |");
+        items.forEach(function (item, rank) {
+          lines.push(
+            "| " + (rank + 1) +
+              " | " + markdownWeightCell(item.symbol) +
+              " | " + markdownWeightCell(item.nameEn || item.symbol) +
+              " | " + formatDetailedWeightPct(item.weightPct) +
+              " |"
+          );
+        });
+        lines.push("");
+      });
+
+      return lines.join(String.fromCharCode(10));
+    }
+
+    async function copyTextToClipboard(text) {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+
+      var textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      textarea.style.pointerEvents = "none";
+      document.body.appendChild(textarea);
+      textarea.select();
+
+      try {
+        if (!document.execCommand("copy")) throw new Error("浏览器不支持写入剪贴板");
+      } finally {
+        textarea.remove();
+      }
+    }
+
+    function setWeightExportFeedback(message, type) {
+      if (weightsState.exportFeedbackTimer) clearTimeout(weightsState.exportFeedbackTimer);
+      weightsState.exportFeedback = message || "";
+      weightsState.exportFeedbackType = type || "ok";
+
+      if (type !== "err" && message) {
+        weightsState.exportFeedbackTimer = setTimeout(function () {
+          weightsState.exportFeedback = "";
+          weightsState.exportFeedbackType = "ok";
+          weightsState.exportFeedbackTimer = null;
+          renderWeightsPanel();
+        }, 2400);
+      }
+    }
+
+    function setWeightExportError(message) {
+      if (weightsState.activeIndex === COMMON_WEIGHTS_CODE) {
+        weightsState.commonStatusText = message;
+        weightsState.commonStatusType = "err";
+      } else {
+        weightsState.statusText = message;
+        weightsState.statusType = "err";
+      }
+    }
+
+    function weightExportButtonHTML() {
+      var feedback = weightsState.exportFeedback;
+      var isError = weightsState.exportFeedbackType === "err";
+      var label = weightsState.exporting
+        ? "正在准备..."
+        : (feedback ? (isError ? "重试导出" : "已复制") : "导出详细权重");
+      var title = weightsState.exporting
+        ? "正在整理三个指数的完整权重表"
+        : (feedback || "复制三个指数的完整权重表到剪贴板");
+
+      return [
+        '<button class="weightExportButton" type="button" data-weight-export-all="1" title="' + esc(title) + '" aria-label="' + esc(title) + '"' + (weightsState.exporting ? ' disabled aria-busy="true"' : '') + '>',
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15 9V5.8c0-.99-.81-1.8-1.8-1.8H5.8C4.81 4 4 4.81 4 5.8v7.4c0 .99.81 1.8 1.8 1.8H9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+          '<span>' + esc(label) + '</span>',
+        '</button>'
+      ].join("");
+    }
+
+    async function exportDetailedWeights() {
+      if (weightsState.exporting) return;
+
+      weightsState.exporting = true;
+      setWeightExportFeedback("", "ok");
+      renderWeightsPanel();
+
+      try {
+        var payloads = await detailedWeightPayloadsForExport();
+        await copyTextToClipboard(detailedWeightsMarkdown(payloads));
+        setWeightExportFeedback("已复制完整权重表，可直接粘贴到 ChatGPT", "ok");
+      } catch (error) {
+        console.error("detailed weights export failed:", error);
+        var message = error && error.message ? error.message : "导出详细权重表失败";
+        setWeightExportFeedback(message, "err");
+        setWeightExportError(message);
+      } finally {
+        weightsState.exporting = false;
+        renderWeightsPanel();
+      }
+    }
+
     function weightIndexSegHTML(activeIndex) {
       return [
         '<div class="weightsIndexSeg" role="tablist" aria-label="\\u6743\\u91cd\\u6307\\u6570\\u5207\\u6362">',
@@ -2374,11 +2575,14 @@ export function getClientScript() {
               '<span>\u53ea\u4fdd\u7559\u4e09\u4e2a\u6307\u6570\u5171\u540c\u5305\u542b\u7684\u6210\u4efd\u80a1</span>',
               '<strong>\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd\u5bf9\u7167</strong>',
             '</div>',
-            '<div class="weightsMeta">',
-              '<div class="' + statusClass + '">' + esc(weightsState.commonStatusText) + '</div>',
-              weightSourceBadgesHTML(COMMON_WEIGHTS_CODE),
-              payload ? '<div>\u5171\u540c\u6210\u4efd\u80a1\uff1a<strong>' + esc(String(payload.itemCount || 0)) + '</strong></div>' : '',
-              payload ? '<div>' + esc(weightCacheRefreshText(payload)) + '</div>' : '',
+            '<div class="weightsHeadTools">',
+              weightExportButtonHTML(),
+              '<div class="weightsMeta">',
+                '<div class="' + statusClass + '">' + esc(weightsState.commonStatusText) + '</div>',
+                weightSourceBadgesHTML(COMMON_WEIGHTS_CODE),
+                payload ? '<div>\u5171\u540c\u6210\u4efd\u80a1\uff1a<strong>' + esc(String(payload.itemCount || 0)) + '</strong></div>' : '',
+                payload ? '<div>' + esc(weightCacheRefreshText(payload)) + '</div>' : '',
+              '</div>',
             '</div>',
           '</div>',
           weightIndexSegHTML(weightsState.activeIndex),
@@ -2413,14 +2617,17 @@ export function getClientScript() {
               '<span>\u6839\u636e\u6700\u65b0\u6743\u91cd\u6587\u4ef6\u63a8\u5bfc\u6210\u5206\u80a1\u6743\u91cd</span>',
               '<strong>\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd</strong>',
             '</div>',
-            '<div class="weightsMeta">',
-              '<div class="' + statusClass + '">' + esc(weightsState.statusText) + '</div>',
-              weightSourceBadgesHTML(weightsState.activeIndex),
-              '<div>\u6307\u6570\uff1a<strong>' + esc(indexTitle) + '</strong></div>',
-              showDataDate
-                ? '<div>\u6e05\u5355\u65e5\u671f\uff1a<strong>' + esc(formatBasketDate(cached.basketDate)) + '</strong></div>'
-                : '',
-              cached ? '<div>' + esc(weightCacheRefreshText(cached)) + '</div>' : '',
+            '<div class="weightsHeadTools">',
+              weightExportButtonHTML(),
+              '<div class="weightsMeta">',
+                '<div class="' + statusClass + '">' + esc(weightsState.statusText) + '</div>',
+                weightSourceBadgesHTML(weightsState.activeIndex),
+                '<div>\u6307\u6570\uff1a<strong>' + esc(indexTitle) + '</strong></div>',
+                showDataDate
+                  ? '<div>\u6e05\u5355\u65e5\u671f\uff1a<strong>' + esc(formatBasketDate(cached.basketDate)) + '</strong></div>'
+                  : '',
+                cached ? '<div>' + esc(weightCacheRefreshText(cached)) + '</div>' : '',
+              '</div>',
             '</div>',
           '</div>',
           weightIndexSegHTML(weightsState.activeIndex),
@@ -3612,6 +3819,12 @@ export function getClientScript() {
     var indexWeightsPanel = $("indexWeightsPanel");
     if (indexWeightsPanel) {
       indexWeightsPanel.addEventListener("click", function (e) {
+        var exportBtn = e.target && e.target.closest ? e.target.closest("button[data-weight-export-all]") : null;
+        if (exportBtn) {
+          exportDetailedWeights();
+          return;
+        }
+
         var btn = e.target && e.target.closest ? e.target.closest("button[data-weight-index]") : null;
         if (!btn) return;
         var indexCode = btn.getAttribute("data-weight-index");

@@ -2233,6 +2233,54 @@ export function getStyles() {
     .weightsMeta .err{ color: rgba(255,77,109,.90); }
     .weightsMeta .panelSourceBadges{ justify-content: flex-end; }
 
+    .weightsHeadTools{
+      display:grid;
+      justify-items:end;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .weightExportButton{
+      min-height: 34px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap: 7px;
+      padding: 7px 10px;
+      border: 1px solid rgba(105,214,255,.30);
+      border-radius: 7px;
+      background: rgba(0,224,255,.10);
+      color: rgba(211,244,255,.98);
+      cursor:pointer;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1;
+      white-space: nowrap;
+      transition: background .16s ease, border-color .16s ease, color .16s ease;
+    }
+
+    .weightExportButton:hover{
+      background: rgba(0,224,255,.18);
+      border-color: rgba(105,214,255,.56);
+      color: #fff;
+    }
+
+    .weightExportButton:focus-visible{
+      outline: 2px solid rgba(0,224,255,.72);
+      outline-offset: 2px;
+    }
+
+    .weightExportButton:disabled{
+      cursor:wait;
+      opacity:.64;
+    }
+
+    .weightExportButton svg{
+      width: 15px;
+      height: 15px;
+      flex: 0 0 auto;
+    }
+
     .weightsIndexSeg{
       display:inline-flex;
       gap: 6px;
@@ -2921,6 +2969,10 @@ export function getStyles() {
       .weightsHead{
         flex-direction: column;
         align-items: stretch;
+      }
+
+      .weightsHeadTools{
+        justify-items:start;
       }
 
       .weightsTitle strong{
