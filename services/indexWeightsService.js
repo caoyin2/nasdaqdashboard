@@ -3,13 +3,13 @@ import { getSearchMetaBatch } from "./searchMetaStore.js";
 
 const SHENZHEN_TZ = "Asia/Shanghai";
 const ETF_BASKET_LOOKBACK_DAYS = 45;
-const ISHARES_HOLDINGS_LOOKBACK_DAYS = 14;
 const ISHARES_ORIGIN = "https://www.ishares.com";
+const ISHARES_PRODUCT_DATA_API =
+  `${ISHARES_ORIGIN}/varnish-api/uk-retail01-product-data/product-data/api/v2/get-product-data`;
 const ISHARES_NDX_PRODUCT_URL =
   "https://www.ishares.com/uk/individual/en/products/253741/ishares-nasdaq-100-ucits-etf";
 const ISHARES_SP50045_PRODUCT_URL =
   "https://www.ishares.com/uk/individual/en/products/280510/ishares-sp-500-information-technology-sector-ucits-etf";
-const ISHARES_HOLDINGS_AJAX_PATH = "1506575576011.ajax";
 
 const INDEX_WEIGHT_CONFIG = {
   NDXTMC: {
@@ -26,8 +26,8 @@ const INDEX_WEIGHT_CONFIG = {
     title: "\u6807\u666e\u4fe1\u606f\u79d1\u6280",
     showDataDate: true,
     allowLiveSearch: false,
+    productId: "280510",
     productPageUrl: ISHARES_SP50045_PRODUCT_URL,
-    holdingsUrl: `${ISHARES_SP50045_PRODUCT_URL}/${ISHARES_HOLDINGS_AJAX_PATH}`,
   },
   NDX: {
     source: "ishares",
@@ -35,8 +35,8 @@ const INDEX_WEIGHT_CONFIG = {
     title: "\u7eb3\u65af\u8fbe\u514b100",
     showDataDate: true,
     allowLiveSearch: false,
+    productId: "253741",
     productPageUrl: ISHARES_NDX_PRODUCT_URL,
-    holdingsUrl: `${ISHARES_NDX_PRODUCT_URL}/${ISHARES_HOLDINGS_AJAX_PATH}`,
   },
 };
 
@@ -225,69 +225,79 @@ function parseBasketRows(text) {
   };
 }
 
-async function fetchIsharesPageHtml(config) {
-  const res = await fetch(config.productPageUrl, {
-    headers: {
-      "User-Agent": "Mozilla/5.0",
-      "Accept": "text/html,application/xhtml+xml",
-      "Cache-Control": "no-cache",
-      "Pragma": "no-cache",
-      "Referer": ISHARES_ORIGIN + "/",
-    },
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`iShares ${config.indexCode} page failed: HTTP ${res.status} ${text.slice(0, 120)}`);
-  }
-
-  return res.text();
+function normalizeIsharesDate(value) {
+  const normalized = String(value ?? "").trim();
+  return /^\d{8}$/.test(normalized) ? normalized : null;
 }
 
-function decodeHtmlAttribute(value) {
-  return String(value || "")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, "\"")
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+function getIsharesHoldingDataPoints(payload) {
+  return payload?.componentsByNameMap?.holdings?.containersByNameMap?.all?.dataPointsByNameMap || null;
 }
 
-function extractIsharesHoldingsRequest(html) {
-  const blockMatch = String(html || "").match(
-    /<div id="allHoldingsTab"[^>]+data-ajaxUri="([^"]+)"[\s\S]*?<select class="date-dropdown">([\s\S]*?)<\/select>/i
-  );
+function getIsharesDateCandidates(payload) {
+  const dataPoints = getIsharesHoldingDataPoints(payload);
+  const asOfDate = normalizeIsharesDate(dataPoints?.asOfDate?.value);
+  const dateList = Array.isArray(dataPoints?.dateList?.value)
+    ? dataPoints.dateList.value.map(normalizeIsharesDate).filter(Boolean)
+    : [];
+  return Array.from(new Set([asOfDate].concat(dateList).filter(Boolean)));
+}
 
-  if (!blockMatch) {
-    throw new Error("iShares holdings block not found in product page HTML");
+function parseIsharesNumber(value) {
+  if (Number.isFinite(+value)) return +value;
+  if (value && Number.isFinite(+value.raw)) return +value.raw;
+  if (value && typeof value.display === "string") {
+    const parsed = Number(value.display.replace(/,/g, "").trim());
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function parseIsharesRows(payload) {
+  const dataPoints = getIsharesHoldingDataPoints(payload);
+  const symbols = Array.isArray(dataPoints?.ticker?.value) ? dataPoints.ticker.value : [];
+  const assetClasses = Array.isArray(dataPoints?.assetClass?.value) ? dataPoints.assetClass.value : [];
+  const weights = Array.isArray(dataPoints?.holdingPercent?.value) ? dataPoints.holdingPercent.value : [];
+  const rowCount = Math.min(symbols.length, weights.length);
+  const items = [];
+
+  for (let i = 0; i < rowCount; i += 1) {
+    const symbol = String(symbols[i] || "").trim().toUpperCase();
+    const assetClass = String(assetClasses[i] || "").trim().toLowerCase();
+    const weightPct = parseIsharesNumber(weights[i]);
+
+    if (!symbol || assetClass !== "equity" || !Number.isFinite(weightPct)) continue;
+    items.push({ symbol, weightPct });
   }
 
-  const ajaxUri = decodeHtmlAttribute(blockMatch[1]);
-  const optionHtml = blockMatch[2];
-  const asOfDates = Array.from(optionHtml.matchAll(/<option value="(\d{8})"/g)).map((match) => match[1]);
-  const latestAsOfDate = asOfDates[0] || null;
+  return items.sort((a, b) => b.weightPct - a.weightPct);
+}
 
-  return {
-    ajaxUri,
-    latestAsOfDate,
+function buildIsharesProductDataUrl(config, asOfDate = null) {
+  const url = new URL(ISHARES_PRODUCT_DATA_API);
+  const params = {
+    appSubType: "ISHARES",
+    appType: "PRODUCT_PAGE",
+    component: "holdings.all",
+    locale: "en_GB",
+    portfolioId: config.productId,
+    targetSite: "ishares-uk",
+    userType: "individual",
+    excludeContent: "true",
+    asOfDate: asOfDate || "",
+    includeConfig: "true",
   };
-}
 
-function buildIsharesHoldingsUrl(baseUrl, asOfDate = null) {
-  const url = new URL(baseUrl, ISHARES_ORIGIN);
-  url.searchParams.set("tab", "all");
-  url.searchParams.set("fileType", "json");
-  if (asOfDate) {
-    url.searchParams.set("asOfDate", asOfDate);
-  }
+  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
   return url;
 }
 
-async function fetchIsharesHoldingsJson(url, config) {
+async function fetchIsharesHoldingsJson(config, asOfDate = null) {
+  const url = buildIsharesProductDataUrl(config, asOfDate);
   const res = await fetch(url.toString(), {
     headers: {
       "User-Agent": "Mozilla/5.0",
-      "Accept": "application/json,text/plain,*/*",
+      "Accept": "application/json",
       "Cache-Control": "no-cache",
       "Pragma": "no-cache",
       "Referer": config.productPageUrl || `${ISHARES_ORIGIN}/`,
@@ -300,75 +310,36 @@ async function fetchIsharesHoldingsJson(url, config) {
   }
 
   const text = await res.text();
-  return JSON.parse(text.replace(/^\uFEFF/, ""));
-}
-
-async function resolveIsharesHoldingsBaseUrl(config) {
-  if (config.holdingsUrl) {
-    return config.holdingsUrl;
+  try {
+    return JSON.parse(text.replace(/^\uFEFF/, ""));
+  } catch {
+    const responseType = /^\s*</.test(text) ? "HTML" : "invalid JSON";
+    throw new Error(`iShares ${config.indexCode} product data returned ${responseType}`);
   }
-
-  const html = await fetchIsharesPageHtml(config);
-  const holdingsRequest = extractIsharesHoldingsRequest(html);
-  return new URL(holdingsRequest.ajaxUri, ISHARES_ORIGIN).toString();
 }
 
 async function fetchIsharesHoldings(config) {
-  const holdingsBaseUrl = await resolveIsharesHoldingsBaseUrl(config);
+  const latestPayload = await fetchIsharesHoldingsJson(config);
+  const dates = getIsharesDateCandidates(latestPayload);
+  const payloads = [{
+    basketDate: normalizeIsharesDate(
+      getIsharesHoldingDataPoints(latestPayload)?.asOfDate?.value
+    ),
+    payload: latestPayload,
+  }];
 
-  for (let offset = 0; offset < ISHARES_HOLDINGS_LOOKBACK_DAYS; offset += 1) {
-    const asOfDate = fmtDateYmd(getShanghaiDate(-offset));
-    const payload = await fetchIsharesHoldingsJson(buildIsharesHoldingsUrl(holdingsBaseUrl, asOfDate), config);
-    if (parseIsharesRows(payload).length) {
-      return {
-        basketDate: asOfDate,
-        payload,
-      };
-    }
+  if (parseIsharesRows(latestPayload).length) return payloads[0];
+
+  for (const asOfDate of dates) {
+    if (asOfDate === payloads[0].basketDate) continue;
+    const holding = {
+      basketDate: asOfDate,
+      payload: await fetchIsharesHoldingsJson(config, asOfDate),
+    };
+    if (parseIsharesRows(holding.payload).length) return holding;
   }
 
-  const payload = await fetchIsharesHoldingsJson(buildIsharesHoldingsUrl(holdingsBaseUrl), config);
-  return {
-    basketDate: null,
-    payload,
-  };
-}
-
-function parseWeightObject(weightLike) {
-  if (weightLike && Number.isFinite(+weightLike.raw)) {
-    return +weightLike.raw;
-  }
-
-  if (weightLike && typeof weightLike.display === "string") {
-    const parsed = Number(weightLike.display.replace(/,/g, "").trim());
-    if (Number.isFinite(parsed)) {
-      return parsed;
-    }
-  }
-
-  return null;
-}
-
-function parseIsharesRows(payload) {
-  const rows = Array.isArray(payload?.aaData) ? payload.aaData : [];
-
-  return rows
-    .filter((row) => Array.isArray(row) && row[3] === "Equity")
-    .map((row) => {
-      const symbol = String(row[0] || "").trim().toUpperCase();
-      const weightPct = parseWeightObject(row[5]);
-
-      if (!symbol || !Number.isFinite(weightPct)) {
-        return null;
-      }
-
-      return {
-        symbol,
-        weightPct,
-      };
-    })
-    .filter(Boolean)
-    .sort((a, b) => b.weightPct - a.weightPct);
+  throw new Error(`iShares ${config.indexCode} product data contains no equity holdings`);
 }
 
 async function enrichItems(items, env, options = {}) {
