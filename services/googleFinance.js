@@ -175,7 +175,13 @@ async function fetchQuotePageMapping(symbol, exchange, options = {}) {
   const html = await response.text();
   const entries = extractDataServiceRequests(html);
   const entity = [[null, [symbol, exchange]]];
-  const chartEntry = entries.get("ds:10") || entries.get("ds:12");
+  // Google Finance can renumber its page data services. Resolve the chart by
+  // its stable RPC identifier first instead of assuming a particular ds key.
+  const chartEntry =
+    Array.from(entries.values()).find((entry) => entry?.id === "c2u4wc" && Array.isArray(entry.request)) ||
+    entries.get("ds:11") ||
+    entries.get("ds:10") ||
+    entries.get("ds:12");
   // Google Finance added a different ds:14 payload in July 2026. It has a
   // quote-like request shape, but does not return the quote node this parser
   // consumes. Prefer gCvqoe, the page's standard live quote RPC, then retain
