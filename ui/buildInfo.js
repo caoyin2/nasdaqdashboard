@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.48",
+  version: "v1.3.49",
   shortSha: "",
   fullSha: "",
-  message: "Fix Yahoo Finance chart fallback",
+  message: "Use Yahoo Taiwan page fallback",
 };

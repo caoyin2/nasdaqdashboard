@@ -4,6 +4,7 @@ const YAHOO_CHART_ENDPOINTS = [
   "https://query1.finance.yahoo.com/v8/finance/chart",
   "https://query2.finance.yahoo.com/v8/finance/chart",
 ];
+const YAHOO_TAIWAN_QUOTE_PAGE = "https://tw.stock.yahoo.com/quote";
 const YAHOO_TAIWAN_SOURCE = "Yahoo Finance Taiwan";
 const YAHOO_1D_STALE_MS = 15 * 60 * 1000;
 
@@ -198,6 +199,72 @@ function hasNewerQuote(candidate, current) {
   return Number.isFinite(candidateT) && (!Number.isFinite(currentT) || candidateT > currentT);
 }
 
+function extractJsonObject(html, marker) {
+  const markerIndex = html.indexOf(marker);
+  if (markerIndex < 0) {
+    throw new Error(`Yahoo Taiwan page missing ${marker}`);
+  }
+
+  const start = html.indexOf("{", markerIndex + marker.length);
+  if (start < 0) {
+    throw new Error(`Yahoo Taiwan page ${marker} is not an object`);
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = start; index < html.length; index += 1) {
+    const char = html[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+    } else if (char === "{") {
+      depth += 1;
+    } else if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return JSON.parse(html.slice(start, index + 1));
+    }
+  }
+
+  throw new Error(`Yahoo Taiwan page ${marker} is incomplete`);
+}
+
+async function fetchYahooTaiwanPageChartResult(symbol) {
+  const url = new URL(`${YAHOO_TAIWAN_QUOTE_PAGE}/${encodeURIComponent(symbol)}`);
+  url.searchParams.set("cachebust", String(Date.now()));
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      Referer: "https://tw.stock.yahoo.com/",
+      "User-Agent": "Mozilla/5.0 NasdaqDashboard/1.0",
+      "Cache-Control": "no-cache, no-store, max-age=0",
+      Pragma: "no-cache",
+    },
+    cf: {
+      cacheTtl: 0,
+      cacheEverything: false,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Yahoo Taiwan quote page request failed: HTTP ${response.status}`);
+  }
+
+  const store = extractJsonObject(await response.text(), '"MarketChartStore":');
+  const result = store?.libra?.[symbol];
+  if (!result) {
+    throw new Error(`Yahoo Taiwan quote page has no chart data for ${symbol}`);
+  }
+  return { url, result };
+}
+
 export async function fetchYahooFinanceIndexPeriod(period, index) {
   const normalizedPeriod = normalizePeriod(period);
   const options = PERIOD_OPTIONS[normalizedPeriod];
@@ -223,6 +290,19 @@ export async function fetchYahooFinanceIndexPeriod(period, index) {
       }
     } catch {
       // Keep the primary response when Yahoo's alternate CDN is unavailable.
+    }
+  }
+
+  if (normalizedPeriod === "1D" && isStaleOneDayQuote(data.quote)) {
+    try {
+      const pageChart = await fetchYahooTaiwanPageChartResult(symbol);
+      const pageData = parseYahooChartResult(pageChart.result, normalizedPeriod, symbol);
+      if (hasNewerQuote(pageData, data)) {
+        requestUrl = pageChart.url;
+        data = pageData;
+      }
+    } catch {
+      // Keep the chart API response when Yahoo Taiwan's page data changes shape.
     }
   }
 
