@@ -145,7 +145,6 @@ function buildYahooChartUrl(endpoint, symbol, options) {
 
 async function fetchYahooChartResult(url) {
   const response = await fetch(url.toString(), {
-    cache: "no-store",
     headers: {
       Accept: "application/json, text/plain, */*",
       Referer: "https://tw.stock.yahoo.com/",
