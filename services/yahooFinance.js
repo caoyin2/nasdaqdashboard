@@ -1,7 +1,11 @@
 import { getLastBar } from "../lib/time.js";
 
-const YAHOO_CHART_ENDPOINT = "https://query1.finance.yahoo.com/v8/finance/chart";
+const YAHOO_CHART_ENDPOINTS = [
+  "https://query1.finance.yahoo.com/v8/finance/chart",
+  "https://query2.finance.yahoo.com/v8/finance/chart",
+];
 const YAHOO_TAIWAN_SOURCE = "Yahoo Finance Taiwan";
+const YAHOO_1D_STALE_MS = 15 * 60 * 1000;
 
 const PERIOD_OPTIONS = {
   "1D": { range: "1d", interval: "2m" },
@@ -126,11 +130,8 @@ function stabilizeOneDayBars(bars, quote) {
   return output;
 }
 
-export async function fetchYahooFinanceIndexPeriod(period, index) {
-  const normalizedPeriod = normalizePeriod(period);
-  const options = PERIOD_OPTIONS[normalizedPeriod];
-  const symbol = yahooSymbolFor(index);
-  const url = new URL(`${YAHOO_CHART_ENDPOINT}/${encodeURIComponent(symbol)}`);
+function buildYahooChartUrl(endpoint, symbol, options) {
+  const url = new URL(`${endpoint}/${encodeURIComponent(symbol)}`);
   url.searchParams.set("region", "TW");
   url.searchParams.set("lang", "zh-Hant-TW");
   url.searchParams.set("includePrePost", "false");
@@ -138,9 +139,13 @@ export async function fetchYahooFinanceIndexPeriod(period, index) {
   url.searchParams.set("range", options.range);
   url.searchParams.set("corsDomain", "tw.stock.yahoo.com");
   // Yahoo's chart CDN can otherwise reuse an expired intraday response.
-  url.searchParams.set("_", String(Date.now()));
+  url.searchParams.set("cachebust", String(Date.now()));
+  return url;
+}
 
+async function fetchYahooChartResult(url) {
   const response = await fetch(url.toString(), {
+    cache: "no-store",
     headers: {
       Accept: "application/json, text/plain, */*",
       Referer: "https://tw.stock.yahoo.com/",
@@ -168,14 +173,58 @@ export async function fetchYahooFinanceIndexPeriod(period, index) {
   if (!result) {
     throw new Error("Yahoo Finance chart response missing result");
   }
+  return result;
+}
 
+function parseYahooChartResult(result, period, symbol) {
   const parsedBars = parseBars(result);
   const quote = parseQuote(result.meta, getLastBar(parsedBars));
-  const bars = normalizedPeriod === "1D"
+  const bars = period === "1D"
     ? stabilizeOneDayBars(parsedBars, quote)
     : parsedBars;
   if (!bars.length && !Number.isFinite(quote.lastClose)) {
     throw new Error(`Yahoo Finance chart response has no price data for ${symbol}`);
+  }
+  return { bars, quote };
+}
+
+function isStaleOneDayQuote(quote) {
+  const latestT = quote?.latestT;
+  return !Number.isFinite(latestT) || Date.now() - latestT > YAHOO_1D_STALE_MS;
+}
+
+function hasNewerQuote(candidate, current) {
+  const candidateT = candidate?.quote?.latestT;
+  const currentT = current?.quote?.latestT;
+  return Number.isFinite(candidateT) && (!Number.isFinite(currentT) || candidateT > currentT);
+}
+
+export async function fetchYahooFinanceIndexPeriod(period, index) {
+  const normalizedPeriod = normalizePeriod(period);
+  const options = PERIOD_OPTIONS[normalizedPeriod];
+  const symbol = yahooSymbolFor(index);
+  let requestUrl = buildYahooChartUrl(YAHOO_CHART_ENDPOINTS[0], symbol, options);
+  let data = parseYahooChartResult(
+    await fetchYahooChartResult(requestUrl),
+    normalizedPeriod,
+    symbol
+  );
+
+  if (normalizedPeriod === "1D" && isStaleOneDayQuote(data.quote)) {
+    try {
+      const fallbackUrl = buildYahooChartUrl(YAHOO_CHART_ENDPOINTS[1], symbol, options);
+      const fallbackData = parseYahooChartResult(
+        await fetchYahooChartResult(fallbackUrl),
+        normalizedPeriod,
+        symbol
+      );
+      if (hasNewerQuote(fallbackData, data)) {
+        requestUrl = fallbackUrl;
+        data = fallbackData;
+      }
+    } catch {
+      // Keep the primary response when Yahoo's alternate CDN is unavailable.
+    }
   }
 
   return {
@@ -184,9 +233,9 @@ export async function fetchYahooFinanceIndexPeriod(period, index) {
     period: normalizedPeriod,
     range: options.range,
     interval: options.interval,
-    requestUrl: url.toString(),
-    bars,
-    quote,
-    prevClose: quote.prevClose,
+    requestUrl: requestUrl.toString(),
+    bars: data.bars,
+    quote: data.quote,
+    prevClose: data.quote.prevClose,
   };
 }
