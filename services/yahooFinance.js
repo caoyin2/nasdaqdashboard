@@ -64,7 +64,10 @@ function parseBars(result) {
 }
 
 function parseQuote(meta, fallbackBar) {
-  const lastClose = fallbackBar?.close ?? toFinite(meta?.regularMarketPrice) ?? null;
+  const lastClose =
+    toFinite(meta?.regularMarketPrice) ??
+    fallbackBar?.close ??
+    null;
   const prevClose =
     toFinite(meta?.chartPreviousClose) ??
     toFinite(meta?.previousClose) ??
@@ -73,6 +76,49 @@ function parseQuote(meta, fallbackBar) {
   const latestT = unixSecondsToMs(meta?.regularMarketTime) ?? fallbackBar?.t ?? null;
 
   return { lastClose, prevClose, latestT };
+}
+
+function quoteBar(t, close, label) {
+  return {
+    t,
+    open: close,
+    high: close,
+    low: close,
+    close,
+    label,
+  };
+}
+
+function stabilizeOneDayBars(bars, quote) {
+  if (bars.length >= 2) return bars;
+
+  const latestClose = quote?.lastClose;
+  const latestT = quote?.latestT ?? getLastBar(bars)?.t ?? null;
+  if (!Number.isFinite(latestClose) || !Number.isFinite(latestT)) return bars;
+
+  const prevClose = quote?.prevClose;
+  if (Number.isFinite(prevClose)) {
+    // Yahoo can return a valid 1D quote with only one intraday point. Keep the
+    // chart usable by representing the daily move from yesterday's close.
+    return [
+      quoteBar(latestT - 6 * 60 * 60 * 1000, prevClose, "YAHOO_PREVIOUS_CLOSE"),
+      quoteBar(latestT, latestClose, "YAHOO_QUOTE_LAST"),
+    ];
+  }
+
+  const output = bars.slice();
+  const lastBar = getLastBar(output);
+  if (!lastBar || lastBar.t !== latestT) {
+    output.push(quoteBar(latestT, latestClose, "YAHOO_QUOTE_LAST"));
+  } else {
+    output[output.length - 1] = {
+      ...lastBar,
+      close: latestClose,
+      high: Math.max(lastBar.high, latestClose),
+      low: Math.min(lastBar.low, latestClose),
+    };
+  }
+  return output;
 }
 
 export async function fetchYahooFinanceIndexPeriod(period, index) {
@@ -114,8 +160,11 @@ export async function fetchYahooFinanceIndexPeriod(period, index) {
     throw new Error("Yahoo Finance chart response missing result");
   }
 
-  const bars = parseBars(result);
-  const quote = parseQuote(result.meta, getLastBar(bars));
+  const parsedBars = parseBars(result);
+  const quote = parseQuote(result.meta, getLastBar(parsedBars));
+  const bars = normalizedPeriod === "1D"
+    ? stabilizeOneDayBars(parsedBars, quote)
+    : parsedBars;
   if (!bars.length && !Number.isFinite(quote.lastClose)) {
     throw new Error(`Yahoo Finance chart response has no price data for ${symbol}`);
   }

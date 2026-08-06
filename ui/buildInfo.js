@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.42",
+  version: "v1.3.43",
   shortSha: "",
   fullSha: "",
-  message: "Fix Google Finance chart mapping",
+  message: "Stabilize Yahoo Finance 1D chart",
 };

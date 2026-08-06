@@ -539,15 +539,16 @@ export function getClientScript() {
       return label + "数据验证中";
     }
 
-    function overviewPayloadHealth(payload, source) {
+    function overviewPayloadHealth(payload, source, period) {
       var items = payload && Array.isArray(payload.items) ? payload.items : [];
+      var minPointCount = period === "1D" ? 1 : 2;
       var validItems = items.filter(function (item) {
         var validPoints = Array.isArray(item && item.line)
           ? item.line.filter(function (point) {
             return Number.isFinite(point && point.t) && Number.isFinite(point && point.close);
           }).length
           : 0;
-        return validPoints >= 2;
+        return validPoints >= minPointCount;
       });
       var itemSymbols = new Set(items.map(function (item) {
         return String(item && item.symbol || "").toUpperCase();
@@ -3478,7 +3479,7 @@ export function getClientScript() {
         var q = await res.json();
         if (!q.ok) throw new Error(q.error || "API error");
         if (requestGeneration !== overviewRequestGeneration) return null;
-        var payloadHealth = overviewPayloadHealth(q, source);
+        var payloadHealth = overviewPayloadHealth(q, source, period);
         if (payloadHealth.blockingSymbols.length) {
           throw new Error("Index data incomplete: " + payloadHealth.blockingSymbols.join(", "));
         }
@@ -3511,7 +3512,7 @@ export function getClientScript() {
       var key = overviewCacheKey(period, source);
       if (!opts.force && periodCache.has(key)) {
         var cached = periodCache.get(key).q;
-        var cachedHealth = overviewPayloadHealth(cached, source);
+        var cachedHealth = overviewPayloadHealth(cached, source, period);
         setOverviewSourceHealth(source, period, "ok", cachedHealth.message);
         return { q: cached, fromCache: true };
       }
@@ -3523,7 +3524,7 @@ export function getClientScript() {
       var normalized = normalizeIndexSource(source);
       var key = overviewCacheKey(period, normalized);
       if (periodCache.has(key)) {
-        var cachedHealth = overviewPayloadHealth(periodCache.get(key).q, normalized);
+        var cachedHealth = overviewPayloadHealth(periodCache.get(key).q, normalized, period);
         setOverviewSourceHealth(normalized, period, "ok", cachedHealth.message);
         return;
       }
