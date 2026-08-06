@@ -74,8 +74,9 @@ function parseQuote(meta, fallbackBar) {
     toFinite(meta?.regularMarketPreviousClose) ??
     null;
   const latestT = unixSecondsToMs(meta?.regularMarketTime) ?? fallbackBar?.t ?? null;
+  const regularSessionStartT = unixSecondsToMs(meta?.currentTradingPeriod?.regular?.start);
 
-  return { lastClose, prevClose, latestT };
+  return { lastClose, prevClose, latestT, regularSessionStartT };
 }
 
 function quoteBar(t, close, label) {
@@ -99,9 +100,13 @@ function stabilizeOneDayBars(bars, quote) {
   const prevClose = quote?.prevClose;
   if (Number.isFinite(prevClose)) {
     // Yahoo can return a valid 1D quote with only one intraday point. Keep the
-    // chart usable by representing the daily move from yesterday's close.
+    // chart usable by representing the daily move from the regular-session
+    // open, rather than inventing an arbitrary clock time.
+    const startT = Number.isFinite(quote?.regularSessionStartT) && quote.regularSessionStartT < latestT
+      ? quote.regularSessionStartT
+      : latestT - 1;
     return [
-      quoteBar(latestT - 6 * 60 * 60 * 1000, prevClose, "YAHOO_PREVIOUS_CLOSE"),
+      quoteBar(startT, prevClose, "YAHOO_PREVIOUS_CLOSE"),
       quoteBar(latestT, latestClose, "YAHOO_QUOTE_LAST"),
     ];
   }
