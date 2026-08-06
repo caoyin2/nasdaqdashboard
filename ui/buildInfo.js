@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.44",
+  version: "v1.3.45",
   shortSha: "",
   fullSha: "",
-  message: "Correct Yahoo Finance 1D chart time",
+  message: "Refresh Yahoo Finance 1D quotes",
 };

@@ -137,6 +137,8 @@ export async function fetchYahooFinanceIndexPeriod(period, index) {
   url.searchParams.set("interval", options.interval);
   url.searchParams.set("range", options.range);
   url.searchParams.set("corsDomain", "tw.stock.yahoo.com");
+  // Yahoo's chart CDN can otherwise reuse an expired intraday response.
+  url.searchParams.set("_", String(Date.now()));
 
   const response = await fetch(url.toString(), {
     headers: {

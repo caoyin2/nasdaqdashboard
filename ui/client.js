@@ -380,6 +380,7 @@ export function getClientScript() {
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
     var OVERVIEW_API_TIMEOUT_MS = 30000;
+    var OVERVIEW_1D_AUTO_REFRESH_MS = 60 * 1000;
     var INDEX_WEIGHTS_API_VERSION = "weights-ui-4";
     var INDEX_WEIGHTS_LOCAL_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
     var INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA = 1;
@@ -3636,7 +3637,17 @@ export function getClientScript() {
 
     function startAutoRefresh() {
       clearInterval(refreshTimer);
-      refreshTimer = null;
+      refreshTimer = setInterval(function () {
+        if (
+          document.visibilityState === "hidden" ||
+          state.page !== "overview" ||
+          state.period !== "1D" ||
+          activeFetchCtrl
+        ) {
+          return;
+        }
+        renderPeriod("1D", { force: true, primeAlternate: false });
+      }, OVERVIEW_1D_AUTO_REFRESH_MS);
     }
 
     $("seg").addEventListener("click", function (e) {
