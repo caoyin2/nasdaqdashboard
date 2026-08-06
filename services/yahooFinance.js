@@ -145,6 +145,8 @@ export async function fetchYahooFinanceIndexPeriod(period, index) {
       Accept: "application/json, text/plain, */*",
       Referer: "https://tw.stock.yahoo.com/",
       "User-Agent": "Mozilla/5.0 NasdaqDashboard/1.0",
+      "Cache-Control": "no-cache, no-store, max-age=0",
+      Pragma: "no-cache",
     },
     cf: {
       cacheTtl: 0,
