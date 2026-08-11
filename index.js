@@ -11,6 +11,7 @@ import { normalizeIndexDataSource, normalizePeriod } from "./config.js";
 import { corsHeaders, htmlResponse, jsonResponse } from "./lib/http.js";
 import { fetchCnnFearGreedSummary } from "./services/cnnFearGreed.js";
 import { buildFundPremiumPayload } from "./services/fundPremiumService.js";
+import { addFundPremiumFund, getFundPremiumFundList, removeFundPremiumFund } from "./services/fundPremiumListStore.js";
 import { buildCommonIndexWeightsPayload, buildIndexWeightsPayload } from "./services/indexWeightsService.js";
 import { getKvBinding, resolveKvBinding } from "./services/kvBinding.js";
 import { buildQuotePayload } from "./services/quoteService.js";
@@ -218,6 +219,57 @@ async function handleStarTechListRoute(request, url, origin, env) {
   });
 }
 
+async function handleFundPremiumListRoute(request, url, origin, env) {
+  if (request.method === "GET") {
+    try {
+      const items = await getFundPremiumFundList(env);
+      return jsonResponse({ ok: true, items }, origin, 200, { cacheSeconds: 0 });
+    } catch (error) {
+      return jsonResponse(
+        { ok: false, error: error?.message || String(error) },
+        origin,
+        502,
+        { cacheSeconds: 0 }
+      );
+    }
+  }
+
+  if (request.method === "POST") {
+    try {
+      const payload = await request.json();
+      const items = await addFundPremiumFund(env, payload);
+      return jsonResponse({ ok: true, items }, origin, 200, { cacheSeconds: 0 });
+    } catch (error) {
+      return jsonResponse(
+        { ok: false, error: error?.message || String(error) },
+        origin,
+        400,
+        { cacheSeconds: 0 }
+      );
+    }
+  }
+
+  if (request.method === "DELETE") {
+    try {
+      const code = String(url.searchParams.get("code") || "").trim();
+      const items = await removeFundPremiumFund(env, code);
+      return jsonResponse({ ok: true, items }, origin, 200, { cacheSeconds: 0 });
+    } catch (error) {
+      return jsonResponse(
+        { ok: false, error: error?.message || String(error) },
+        origin,
+        400,
+        { cacheSeconds: 0 }
+      );
+    }
+  }
+
+  return new Response("Method Not Allowed", {
+    status: 405,
+    headers: corsHeaders(origin),
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -237,6 +289,10 @@ export default {
 
     if (url.pathname === "/api/star-tech-list") {
       return handleStarTechListRoute(request, url, origin, env);
+    }
+
+    if (url.pathname === "/api/fund-premium-list") {
+      return handleFundPremiumListRoute(request, url, origin, env);
     }
 
     if (request.method !== "GET") {
@@ -336,7 +392,7 @@ export default {
 
     if (url.pathname === "/api/fund-premiums") {
       try {
-        const payload = await buildFundPremiumPayload();
+        const payload = await buildFundPremiumPayload(env);
         return jsonResponse(payload, origin, 200, { cacheSeconds: 0 });
       } catch (error) {
         return jsonResponse(

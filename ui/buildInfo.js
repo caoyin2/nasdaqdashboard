@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.49",
+  version: "v1.3.50",
   shortSha: "",
   fullSha: "",
-  message: "Use Yahoo Taiwan page fallback",
+  message: "Manage fund premium list in KV",
 };

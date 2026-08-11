@@ -98,8 +98,8 @@ export const SP500_SECTOR_ETFS = [
   { symbol: "XLU", nameCN: "\u516c\u7528\u4e8b\u4e1a" },
 ];
 
-// Keep the fund premium list in this root config file so Cloudflare Git
-// watch-path rules can detect and publish fund-panel behavior, logo, or LOF pricing changes reliably.
+// Default seed for the Worker KV fund list. This stays local so first-time
+// deployments and a temporarily unavailable KV binding have a safe fallback.
 function fundLogo(code) {
   return FUND_LOGOS[code];
 }

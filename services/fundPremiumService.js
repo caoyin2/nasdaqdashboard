@@ -1,9 +1,9 @@
 /**
  * Build the payload for the fund premium/discount panel.
  *
- * This panel intentionally does not use KV metadata. The fund list is small,
- * stable, and locally configured in config.js, while live quote data comes
- * from Tencent Finance's classic qt.gtimg.cn endpoint.
+ * The fund list is stored in Worker KV, with config.js providing the initial
+ * seed and fallback. Live quote data comes from Tencent Finance's classic
+ * qt.gtimg.cn endpoint.
  *
  * Tencent qt response format:
  *   v_sz161128="51~name~code~last~prevClose~open~...~time~change~changePct~..."
@@ -18,8 +18,10 @@
  * - 78: reference NAV, kept for diagnostics only
  */
 
-import { FUND_PREMIUM_FUNDS, INDEXES } from "../config.js";
+import { INDEXES } from "../config.js";
+import { FUND_LOGOS } from "../assets/fundLogos.js";
 import { marketDateKey } from "../lib/time.js";
+import { getFundPremiumFundList } from "./fundPremiumListStore.js";
 import { fetchIndexPeriodBySource, indexDataSourceLabel } from "./indexDataSource.js";
 
 const TENCENT_QT_URL = "https://qt.gtimg.cn/";
@@ -32,8 +34,8 @@ const LOF_INDEX_DATA_SOURCE = "google";
 function toMarketSymbol(code) {
   const value = String(code || "").trim();
 
-  if (value.startsWith("51")) return `sh${value}`;
-  if (value.startsWith("15") || value.startsWith("16")) return `sz${value}`;
+  if (/^[569]/.test(value)) return `sh${value}`;
+  if (/^[0123]/.test(value)) return `sz${value}`;
 
   return value;
 }
@@ -375,11 +377,26 @@ function maxLatestTime(items) {
   return values.length ? Math.max(...values) : null;
 }
 
-export async function buildFundPremiumPayload() {
-  const funds = FUND_PREMIUM_FUNDS.map((fund) => ({
+export async function buildFundPremiumPayload(env) {
+  const configuredFunds = await getFundPremiumFundList(env);
+  const funds = configuredFunds.map((fund) => ({
     ...fund,
+    icon: FUND_LOGOS[fund.code] || null,
     marketSymbol: toMarketSymbol(fund.code),
   }));
+
+  if (!funds.length) {
+    return {
+      ok: true,
+      title: "基金折溢价",
+      indexSource: LOF_INDEX_DATA_SOURCE,
+      indexSourceLabel: indexDataSourceLabel(LOF_INDEX_DATA_SOURCE),
+      asOfMs: null,
+      tradeDate: null,
+      warnings: [],
+      items: [],
+    };
+  }
 
   const url = new URL(TENCENT_QT_URL);
   url.searchParams.set("q", funds.map((fund) => fund.marketSymbol).join(","));
@@ -414,13 +431,15 @@ export async function buildFundPremiumPayload() {
   let lofPremium = null;
   let lofPremiumError = null;
 
-  if (!lofFields || lofFields.length <= 77) {
-    lofPremiumError = `Tencent fund quote missing or incomplete for ${lofFund?.marketSymbol || LOF_SP500_TECH_CODE}`;
-  } else {
-    try {
-      lofPremium = await buildLofPremiumContext(lofFund, lofFields);
-    } catch (error) {
-      lofPremiumError = error?.message || String(error);
+  if (lofFund) {
+    if (!lofFields || lofFields.length <= 77) {
+      lofPremiumError = `Tencent fund quote missing or incomplete for ${lofFund.marketSymbol}`;
+    } else {
+      try {
+        lofPremium = await buildLofPremiumContext(lofFund, lofFields);
+      } catch (error) {
+        lofPremiumError = error?.message || String(error);
+      }
     }
   }
 
@@ -457,7 +476,7 @@ export async function buildFundPremiumPayload() {
     indexSourceLabel: indexDataSourceLabel(LOF_INDEX_DATA_SOURCE),
     asOfMs: maxLatestTime(items),
     tradeDate: latestTradeDate(items),
-    warnings: lofPremiumError
+    warnings: lofFund && lofPremiumError
       ? [{ code: LOF_SP500_TECH_CODE, message: `161128 折溢价计算失败：${lofPremiumError}` }]
       : [],
     items,

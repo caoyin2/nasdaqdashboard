@@ -473,6 +473,15 @@ export function getClientScript() {
       touched: false,
       detailSymbol: null
     };
+    var fundListState = {
+      open: false,
+      items: [],
+      loading: false,
+      saving: false,
+      error: "",
+      codeInput: "",
+      nameCNInput: ""
+    };
     var weightsState = {
       activeIndex: COMMON_WEIGHTS_CODE,
       cache: new Map(),
@@ -1908,10 +1917,56 @@ export function getClientScript() {
       var statusClass = fundPremiumState.statusType === "err" ? "err" : "ok";
       var maxAbs = items && items.length ? fundPremiumMaxAbs(items) : 1;
       var detailItem = fundPremiumState.detailSymbol ? getFundPremiumDetailItem(fundPremiumState.detailSymbol) : null;
-      var modalHtml = detailItem ? renderFundPremiumDetailModal(detailItem) : "";
+      var manageStatus = fundListState.loading
+        ? "\u6b63\u5728\u4ece KV \u8bfb\u53d6\u5217\u8868..."
+        : (fundListState.saving
+          ? "\u6b63\u5728\u4fdd\u5b58\u5217\u8868..."
+          : (fundListState.error || ""));
+      var manageStatusClass = fundListState.error ? "err" : "ok";
+      var manageModalHtml = fundListState.open
+        ? [
+            '<div class="starManageOverlay" data-fund-manage-close="overlay">',
+              '<div class="starManageModal" role="dialog" aria-modal="true" aria-label="\u57fa\u91d1\u6298\u6ea2\u4ef7\u5217\u8868\u7ba1\u7406">',
+                '<div class="starManageHead">',
+                  '<div class="starManageTitle">',
+                    '<strong>\u7ba1\u7406\u57fa\u91d1\u6298\u6ea2\u4ef7\u5217\u8868</strong>',
+                    '<span>\u5217\u8868\u4f18\u5148\u5b58\u5728 Worker KV \uff08fund-premium:list\uff09</span>',
+                  '</div>',
+                  '<button class="starManageClose" type="button" data-fund-manage-close="button">\u5173\u95ed</button>',
+                '</div>',
+                '<div class="starManageStatus ' + manageStatusClass + '">' + esc(manageStatus || "\u53ef\u5728\u8fd9\u91cc\u6dfb\u52a0\u6216\u5220\u9664\u57fa\u91d1\u3002") + '</div>',
+                '<form class="starManageForm" id="fundManageForm">',
+                  '<div class="starManageField">',
+                    '<label for="fundManageCode">\u57fa\u91d1\u4ee3\u7801</label>',
+                    '<input id="fundManageCode" name="code" type="text" inputmode="numeric" value="' + esc(fundListState.codeInput) + '" placeholder="\u4f8b\u5982 513100" maxlength="6" />',
+                  '</div>',
+                  '<div class="starManageField">',
+                    '<label for="fundManageNameCN">\u4e2d\u6587\u540d</label>',
+                    '<input id="fundManageNameCN" name="nameCN" type="text" value="' + esc(fundListState.nameCNInput) + '" placeholder="\u4f8b\u5982 \u56fd\u6cf0\u7eb3\u6307ETF" maxlength="32" />',
+                  '</div>',
+                  '<button class="starManageSubmit" type="submit"' + (fundListState.loading || fundListState.saving ? ' disabled' : '') + '>\u6dfb\u52a0</button>',
+                '</form>',
+                '<div class="starManageList">',
+                  (fundListState.items || []).map(function (item) {
+                    return [
+                      '<div class="starManageItem" data-code="' + esc(item.code) + '">',
+                        '<div class="starManageItemMain">',
+                          '<strong>' + esc(item.code) + '</strong>',
+                          '<span>' + esc(item.fallbackName || item.nameCN) + '</span>',
+                        '</div>',
+                        '<button class="starManageDelete" type="button" data-fund-delete="' + esc(item.code) + '"' + (fundListState.loading || fundListState.saving ? ' disabled' : '') + '>\u5220\u9664</button>',
+                      '</div>'
+                    ].join("");
+                  }).join(""),
+                '</div>',
+              '</div>',
+            '</div>'
+          ].join("")
+        : "";
+      var modalHtml = (detailItem ? renderFundPremiumDetailModal(detailItem) : "") + manageModalHtml;
       var gridHtml = items && items.length
         ? '<div class="sectorHeatGrid fundPremiumGrid">' + items.map(function (item) { return fundPremiumTileHTML(item, maxAbs); }).join("") + '</div>'
-        : '<div class="starPanelEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u8bfb\u53d6\u573a\u5185\u57fa\u91d1\u6700\u65b0\u4ef7\u683c\u548c\u6298\u6ea2\u4ef7\u7387\u3002<br />\u8be5\u9762\u677f\u6682\u65f6\u4e0d\u63a5 KV\uff0c\u57fa\u91d1\u5217\u8868\u5728\u4ee3\u7801\u4e2d\u56fa\u5b9a\u3002</div>';
+        : '<div class="starPanelEmpty">\u6682\u65e0\u57fa\u91d1</div>';
 
       root.innerHTML = [
         '<div class="card starPanel fundPremiumPanel">',
@@ -1919,6 +1974,9 @@ export function getClientScript() {
             '<div class="starPanelTitle">',
               '<span>\u4f7f\u7528\u817e\u8baf\u8d22\u7ecf\u5b9e\u65f6\u884c\u60c5\u663e\u793a\u573a\u5185\u57fa\u91d1\u6298\u6ea2\u4ef7</span>',
               '<strong>\u57fa\u91d1\u6298\u6ea2\u4ef7</strong>',
+            '</div>',
+            '<div class="starPanelTools">',
+              '<button class="starManageBtn" type="button" data-fund-manage-open="1">\u7ba1\u7406\u5217\u8868</button>',
             '</div>',
           '</div>',
           '<div class="starPanelMeta">',
@@ -3068,6 +3126,76 @@ export function getClientScript() {
       return payload.items || [];
     }
 
+    async function fetchFundPremiumList() {
+      var res = await fetch("/api/fund-premium-list?_ts=" + Date.now(), {
+        cache: "no-store"
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      var payload = await res.json();
+      if (!payload.ok) throw new Error(payload.error || "Fund premium list API error");
+      return payload.items || [];
+    }
+
+    async function openFundListManager() {
+      fundListState.open = true;
+      fundListState.loading = true;
+      fundListState.error = "";
+      renderFundPremiumPanel();
+      try {
+        fundListState.items = await fetchFundPremiumList();
+      } catch (error) {
+        fundListState.error = error && error.message ? error.message : "\u5217\u8868\u8bfb\u53d6\u5931\u8d25";
+      } finally {
+        fundListState.loading = false;
+        renderFundPremiumPanel();
+      }
+    }
+
+    function closeFundListManager() {
+      if (!fundListState.open) return;
+      fundListState.open = false;
+      fundListState.loading = false;
+      fundListState.saving = false;
+      fundListState.error = "";
+      fundListState.codeInput = "";
+      fundListState.nameCNInput = "";
+      fundListState.items = [];
+      renderFundPremiumPanel();
+    }
+
+    async function refreshFundListAndPanel() {
+      fundListState.items = await fetchFundPremiumList();
+      fundPremiumState.cache = null;
+      fundPremiumState.detailSymbol = null;
+      await loadFundPremiums({ force: true });
+    }
+
+    async function addFundListItem(code, nameCN) {
+      var res = await fetch("/api/fund-premium-list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        cache: "no-store",
+        body: JSON.stringify({ code: code, nameCN: nameCN })
+      });
+      var payload = await res.json();
+      if (!res.ok || !payload.ok) {
+        throw new Error(payload && payload.error ? payload.error : "\u6dfb\u52a0\u5931\u8d25");
+      }
+      return payload.items || [];
+    }
+
+    async function deleteFundListItem(code) {
+      var res = await fetch("/api/fund-premium-list?code=" + encodeURIComponent(code), {
+        method: "DELETE",
+        cache: "no-store"
+      });
+      var payload = await res.json();
+      if (!res.ok || !payload.ok) {
+        throw new Error(payload && payload.error ? payload.error : "\u5220\u9664\u5931\u8d25");
+      }
+      return payload.items || [];
+    }
+
     async function fetchSectorPeriod(period, options) {
       var opts = options || {};
       if (sectorsState.fetchCtrl) {
@@ -3808,16 +3936,90 @@ export function getClientScript() {
       });
 
       fundPremiumPanel.addEventListener("click", function (e) {
+        var openBtn = e.target && e.target.closest ? e.target.closest("button[data-fund-manage-open]") : null;
+        if (openBtn) {
+          openFundListManager();
+          return;
+        }
+
+        var manageCloseBtn = e.target && e.target.closest
+          ? e.target.closest('button[data-fund-manage-close="button"]')
+          : null;
+        var manageCloseOverlay = e.target && e.target.matches
+          ? e.target.matches('[data-fund-manage-close="overlay"]')
+          : false;
+        if (manageCloseBtn || manageCloseOverlay) {
+          closeFundListManager();
+          return;
+        }
+
+        var deleteBtn = e.target && e.target.closest ? e.target.closest("button[data-fund-delete]") : null;
+        if (deleteBtn) {
+          if (fundListState.loading || fundListState.saving) return;
+          var code = deleteBtn.getAttribute("data-fund-delete");
+          if (!code) return;
+          fundListState.saving = true;
+          fundListState.error = "";
+          renderFundPremiumPanel();
+          deleteFundListItem(code)
+            .then(function () {
+              return refreshFundListAndPanel();
+            })
+            .catch(function (error) {
+              console.error("fund premium list delete failed:", error);
+              fundListState.error = error && error.message ? error.message : "\u5220\u9664\u5931\u8d25";
+            })
+            .finally(function () {
+              fundListState.saving = false;
+              renderFundPremiumPanel();
+            });
+          return;
+        }
+
         var closeBtn = e.target && e.target.closest ? e.target.closest('button[data-fund-calc-close="button"]') : null;
         var closeOverlay = e.target && e.target.matches ? e.target.matches('[data-fund-calc-close="overlay"]') : false;
         if (closeBtn || closeOverlay) {
           closeFundPremiumDetail();
         }
       });
+
+      fundPremiumPanel.addEventListener("submit", function (e) {
+        var form = e.target && e.target.closest ? e.target.closest("#fundManageForm") : null;
+        if (!form) return;
+        e.preventDefault();
+        if (fundListState.loading || fundListState.saving) return;
+
+        var formData = new FormData(form);
+        var code = String(formData.get("code") || "").trim();
+        var nameCN = String(formData.get("nameCN") || "").trim();
+        fundListState.codeInput = code;
+        fundListState.nameCNInput = nameCN;
+        fundListState.saving = true;
+        fundListState.error = "";
+        renderFundPremiumPanel();
+
+        addFundListItem(code, nameCN)
+          .then(function () {
+            fundListState.codeInput = "";
+            fundListState.nameCNInput = "";
+            return refreshFundListAndPanel();
+          })
+          .catch(function (error) {
+            console.error("fund premium list add failed:", error);
+            fundListState.error = error && error.message ? error.message : "\u6dfb\u52a0\u5931\u8d25";
+          })
+          .finally(function () {
+            fundListState.saving = false;
+            renderFundPremiumPanel();
+          });
+      });
     }
 
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") closeFundPremiumDetail();
+      if (e.key === "Escape") {
+        closeFundPremiumDetail();
+        closeFundListManager();
+      }
     });
 
     var sp500SectorPanel = $("sp500SectorPanel");
