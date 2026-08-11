@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.51",
+  version: "v1.3.52",
   shortSha: "",
   fullSha: "",
-  message: "Choose fund company icons",
+  message: "Validate Tencent fund quotes",
 };

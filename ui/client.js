@@ -386,7 +386,7 @@ export function getClientScript() {
     var INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA = 1;
     var INDEX_WEIGHTS_LOCAL_CACHE_PREFIX = "nasdaqDashboard.indexWeights." + INDEX_WEIGHTS_API_VERSION + ".";
     var SP500_SECTOR_API_VERSION = "20260406a";
-    var FUND_PREMIUM_API_VERSION = "lof-calculation-detail-v4";
+    var FUND_PREMIUM_API_VERSION = "fund-quote-resilience-v1";
     var COMMON_WEIGHTS_CODE = "COMMON";
     var WEIGHTS_INDEX_OPTIONS = [
       { code: COMMON_WEIGHTS_CODE, label: "\\u5171\\u540c\\u6210\\u4efd\\u80a1" },
@@ -3363,7 +3363,7 @@ export function getClientScript() {
           return warning && warning.message ? String(warning.message) : "";
         }).filter(Boolean).join("\uff1b");
         fundPremiumState.statusText = warningText
-          ? warningText + "\uff1b\u5176\u4ed6\u57fa\u91d1\u884c\u60c5\u5df2\u66f4\u65b0"
+          ? warningText + (Array.isArray(payload.items) && payload.items.length ? "\uff1b\u5176\u4ed6\u57fa\u91d1\u884c\u60c5\u5df2\u66f4\u65b0" : "")
           : "\u5df2\u7f13\u5b58\u6700\u65b0\u57fa\u91d1\u884c\u60c5";
         fundPremiumState.statusType = warningText ? "err" : "ok";
         renderFundPremiumPanel();

@@ -7,6 +7,7 @@
 
 import { FUND_LOGO_OPTIONS, FUND_PREMIUM_FUNDS } from "../config.js";
 import { getKvBinding } from "./kvBinding.js";
+import { fetchTencentFundQuoteFields, hasTencentFundQuote, toTencentFundMarketSymbol } from "./tencentFundQuote.js";
 
 export const FUND_PREMIUM_LIST_KEY = "fund-premium:list";
 const MAX_FUND_COUNT = 50;
@@ -32,6 +33,22 @@ function normalizeFundList(items) {
     list.push(fund);
     return list;
   }, []);
+}
+
+async function validateTencentFundQuote(code) {
+  const marketSymbol = toTencentFundMarketSymbol(code);
+  let fields;
+
+  try {
+    const quotes = await fetchTencentFundQuoteFields([marketSymbol]);
+    fields = quotes.get(marketSymbol);
+  } catch (error) {
+    throw new Error(`\u817e\u8baf\u8d22\u7ecf\u65e0\u6cd5\u9a8c\u8bc1 ${code}\uff1a${error?.message || String(error)}`);
+  }
+
+  if (!hasTencentFundQuote(fields)) {
+    throw new Error(`\u817e\u8baf\u8d22\u7ecf\u672a\u8fd4\u56de ${code} \u7684\u53ef\u7528\u57fa\u91d1\u884c\u60c5\uff0c\u65e0\u6cd5\u6dfb\u52a0`);
+  }
 }
 
 export async function readFundPremiumListFromKv(env) {
@@ -99,6 +116,8 @@ export async function addFundPremiumFund(env, item) {
   if (current.length >= MAX_FUND_COUNT) {
     throw new Error(`Fund list cannot exceed ${MAX_FUND_COUNT} items`);
   }
+
+  await validateTencentFundQuote(fund.code);
 
   const next = current.concat(fund);
   if (!(await writeFundPremiumListToKv(env, next))) {

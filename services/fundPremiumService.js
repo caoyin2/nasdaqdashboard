@@ -23,22 +23,18 @@ import { FUND_LOGOS } from "../assets/fundLogos.js";
 import { marketDateKey } from "../lib/time.js";
 import { getFundPremiumFundList } from "./fundPremiumListStore.js";
 import { fetchIndexPeriodBySource, indexDataSourceLabel } from "./indexDataSource.js";
+import {
+  fetchTencentFundQuoteFields,
+  hasTencentFundQuote,
+  TENCENT_FUND_QUOTE_URL,
+  toTencentFundMarketSymbol,
+} from "./tencentFundQuote.js";
 
-const TENCENT_QT_URL = "https://qt.gtimg.cn/";
 const TENCENT_FUND_PRICE_ZONE_URL = "https://web.ifzq.gtimg.cn/fund/newfund/fundBase/getPriceZone";
 const CHINA_MONEY_USD_CNY_URL = "https://www.chinamoney.com.cn/ags/ms/cm-u-bk-ccpr/CcprHisNew";
 const LOF_SP500_TECH_CODE = "161128";
 const SP500_TECH_INDEX_SYMBOL = "SP500-45";
 const LOF_INDEX_DATA_SOURCE = "google";
-
-function toMarketSymbol(code) {
-  const value = String(code || "").trim();
-
-  if (/^[569]/.test(value)) return `sh${value}`;
-  if (/^[0123]/.test(value)) return `sz${value}`;
-
-  return value;
-}
 
 function toFiniteNumber(value) {
   if (value === null || value === undefined || String(value).trim() === "") return null;
@@ -99,18 +95,6 @@ function addDays(dateKey, days) {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(
     date.getUTCDate()
   ).padStart(2, "0")}`;
-}
-
-function parseQtVariables(text) {
-  const map = new Map();
-  const pattern = /v_([^=]+)="([^"]*)";/g;
-  let match;
-
-  while ((match = pattern.exec(text || ""))) {
-    map.set(match[1], match[2].split("~"));
-  }
-
-  return map;
 }
 
 function pickOnOrBefore(rows, targetDate, dateSelector) {
@@ -307,7 +291,7 @@ async function buildLofPremiumContext(fund, fields) {
     },
     quoteSource: {
       provider: "Tencent Finance qt.gtimg.cn",
-      url: `${TENCENT_QT_URL}?q=${fund.marketSymbol}`,
+      url: `${TENCENT_FUND_QUOTE_URL}?q=${fund.marketSymbol}`,
       marketSymbol: fund.marketSymbol,
       rawTimestamp: fields[30] || null,
       fieldIndexes: {
@@ -377,12 +361,20 @@ function maxLatestTime(items) {
   return values.length ? Math.max(...values) : null;
 }
 
+function unreadableFundWarning(fund) {
+  const name = cleanName(fund.fallbackName, fund.code);
+  return {
+    code: fund.code,
+    message: `${name}\uff08${fund.code}\uff09\u817e\u8baf\u8d22\u7ecf\u884c\u60c5\u65e0\u6cd5\u8bfb\u53d6`,
+  };
+}
+
 export async function buildFundPremiumPayload(env) {
   const configuredFunds = await getFundPremiumFundList(env);
   const funds = configuredFunds.map((fund) => ({
     ...fund,
     icon: FUND_LOGOS[fund.iconCode] || FUND_LOGOS[fund.code] || null,
-    marketSymbol: toMarketSymbol(fund.code),
+    marketSymbol: toTencentFundMarketSymbol(fund.code),
   }));
 
   if (!funds.length) {
@@ -398,63 +390,27 @@ export async function buildFundPremiumPayload(env) {
     };
   }
 
-  const url = new URL(TENCENT_QT_URL);
-  url.searchParams.set("q", funds.map((fund) => fund.marketSymbol).join(","));
-  url.searchParams.set("_", `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const variableMap = await fetchTencentFundQuoteFields(funds.map((fund) => fund.marketSymbol));
+  const readableFunds = funds.filter((fund) => hasTencentFundQuote(variableMap.get(fund.marketSymbol)));
+  const warnings = funds
+    .filter((fund) => !hasTencentFundQuote(variableMap.get(fund.marketSymbol)))
+    .map(unreadableFundWarning);
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      Referer: "https://gu.qq.com/sz161128",
-      "User-Agent": "Mozilla/5.0 NasdaqDashboard/1.0",
-    },
-    cf: {
-      cacheTtl: 0,
-      cacheEverything: false,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Tencent fund quote request failed: HTTP ${response.status}`);
-  }
-
-  const buffer = await response.arrayBuffer();
-  let text;
-  try {
-    text = new TextDecoder("gbk").decode(buffer);
-  } catch {
-    text = new TextDecoder().decode(buffer);
-  }
-  const variableMap = parseQtVariables(text);
-
-  const lofFund = funds.find((fund) => fund.code === LOF_SP500_TECH_CODE);
+  const lofFund = readableFunds.find((fund) => fund.code === LOF_SP500_TECH_CODE);
   const lofFields = lofFund ? variableMap.get(lofFund.marketSymbol) : null;
   let lofPremium = null;
   let lofPremiumError = null;
 
   if (lofFund) {
-    if (!lofFields || lofFields.length <= 77) {
-      lofPremiumError = `Tencent fund quote missing or incomplete for ${lofFund.marketSymbol}`;
-    } else {
-      try {
-        lofPremium = await buildLofPremiumContext(lofFund, lofFields);
-      } catch (error) {
-        lofPremiumError = error?.message || String(error);
-      }
+    try {
+      lofPremium = await buildLofPremiumContext(lofFund, lofFields);
+    } catch (error) {
+      lofPremiumError = error?.message || String(error);
     }
   }
 
-  const items = funds.map((fund) => {
+  const items = readableFunds.map((fund) => {
     const fields = variableMap.get(fund.marketSymbol);
-    if (!fields || fields.length <= 77) {
-      if (fund.code === LOF_SP500_TECH_CODE) {
-        return buildFundItem(fund, fields, {
-          lofPremium: null,
-          lofPremiumError,
-        });
-      }
-      throw new Error(`Tencent fund quote missing or incomplete for ${fund.marketSymbol}`);
-    }
-
     return buildFundItem(fund, fields, {
       lofPremium: fund.code === LOF_SP500_TECH_CODE ? lofPremium : null,
       lofPremiumError: fund.code === LOF_SP500_TECH_CODE ? lofPremiumError : null,
@@ -477,8 +433,8 @@ export async function buildFundPremiumPayload(env) {
     asOfMs: maxLatestTime(items),
     tradeDate: latestTradeDate(items),
     warnings: lofFund && lofPremiumError
-      ? [{ code: LOF_SP500_TECH_CODE, message: `161128 折溢价计算失败：${lofPremiumError}` }]
-      : [],
+      ? warnings.concat({ code: LOF_SP500_TECH_CODE, message: `161128 折溢价计算失败：${lofPremiumError}` })
+      : warnings,
     items,
   };
 }
