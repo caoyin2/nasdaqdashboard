@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.50",
+  version: "v1.3.51",
   shortSha: "",
   fullSha: "",
-  message: "Manage fund premium list in KV",
+  message: "Choose fund company icons",
 };

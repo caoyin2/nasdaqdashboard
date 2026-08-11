@@ -5,18 +5,20 @@
  * to seed a new namespace and to keep the panel usable if KV is unavailable.
  */
 
-import { FUND_PREMIUM_FUNDS } from "../config.js";
+import { FUND_LOGO_OPTIONS, FUND_PREMIUM_FUNDS } from "../config.js";
 import { getKvBinding } from "./kvBinding.js";
 
 export const FUND_PREMIUM_LIST_KEY = "fund-premium:list";
 const MAX_FUND_COUNT = 50;
+const FUND_LOGO_CODES = new Set(FUND_LOGO_OPTIONS.map((option) => option.code));
 
 function normalizeFund(item) {
   const code = String(item?.code || "").trim();
   const fallbackName = String(item?.fallbackName || item?.nameCN || "").trim();
+  const iconCode = String(item?.iconCode || "").trim();
 
-  if (!/^\d{6}$/.test(code) || !fallbackName) return null;
-  return { code, fallbackName };
+  if (!/^\d{6}$/.test(code) || !fallbackName || (iconCode && !FUND_LOGO_CODES.has(iconCode))) return null;
+  return iconCode ? { code, fallbackName, iconCode } : { code, fallbackName };
 }
 
 function normalizeFundList(items) {
@@ -80,6 +82,11 @@ export async function getFundPremiumFundList(env) {
 }
 
 export async function addFundPremiumFund(env, item) {
+  const requestedIconCode = String(item?.iconCode || "").trim();
+  if (!FUND_LOGO_CODES.has(requestedIconCode)) {
+    throw new Error("Select a fund company icon");
+  }
+
   const fund = normalizeFund(item);
   if (!fund) {
     throw new Error("Fund code must be six digits and Chinese name is required");
@@ -98,6 +105,10 @@ export async function addFundPremiumFund(env, item) {
     throw new Error("Worker KV is unavailable; fund list was not saved");
   }
   return next;
+}
+
+export function getFundLogoOptions() {
+  return FUND_LOGO_OPTIONS;
 }
 
 export async function removeFundPremiumFund(env, code) {

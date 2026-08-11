@@ -1450,6 +1450,50 @@ export function getStyles() {
       font-size: 14px;
     }
 
+    .fundLogoPickerField{
+      grid-column: 1 / -1;
+    }
+
+    .fundLogoPicker{
+      display:grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      max-height: 156px;
+      overflow-y:auto;
+      padding: 2px;
+    }
+
+    .fundLogoPickOption{
+      appearance:none;
+      display:grid;
+      place-items:center;
+      width:100%;
+      min-height:48px;
+      padding:5px;
+      border-radius:8px;
+      border:1px solid rgba(31,43,61,.88);
+      background:rgba(255,255,255,.04);
+      cursor:pointer;
+    }
+
+    .fundLogoPickOption img{
+      display:block;
+      width:100%;
+      height:34px;
+      object-fit:contain;
+    }
+
+    .fundLogoPickOption.active{
+      border-color:rgba(0,224,255,.78);
+      background:rgba(0,224,255,.12);
+      box-shadow:0 0 0 1px rgba(0,224,255,.24), 0 0 16px rgba(0,224,255,.10);
+    }
+
+    .fundLogoPickOption[disabled]{
+      opacity:.55;
+      cursor:default;
+    }
+
     .starManageSubmit{
       padding: 11px 16px;
       background: rgba(0,224,255,.12);
@@ -2781,6 +2825,11 @@ export function getStyles() {
 
       .starManageForm{
         grid-template-columns: 1fr;
+      }
+
+      .fundLogoPicker{
+        grid-template-columns:repeat(3, minmax(0, 1fr));
+        max-height:174px;
       }
 
       .starManageClose{

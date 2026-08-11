@@ -381,7 +381,7 @@ export async function buildFundPremiumPayload(env) {
   const configuredFunds = await getFundPremiumFundList(env);
   const funds = configuredFunds.map((fund) => ({
     ...fund,
-    icon: FUND_LOGOS[fund.code] || null,
+    icon: FUND_LOGOS[fund.iconCode] || FUND_LOGOS[fund.code] || null,
     marketSymbol: toMarketSymbol(fund.code),
   }));
 

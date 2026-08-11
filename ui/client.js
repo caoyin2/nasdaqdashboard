@@ -480,7 +480,9 @@ export function getClientScript() {
       saving: false,
       error: "",
       codeInput: "",
-      nameCNInput: ""
+      nameCNInput: "",
+      iconCodeInput: "513100",
+      logoOptions: []
     };
     var weightsState = {
       activeIndex: COMMON_WEIGHTS_CODE,
@@ -1923,6 +1925,25 @@ export function getClientScript() {
           ? "\u6b63\u5728\u4fdd\u5b58\u5217\u8868..."
           : (fundListState.error || ""));
       var manageStatusClass = fundListState.error ? "err" : "ok";
+      var logoOptions = Array.isArray(fundListState.logoOptions) ? fundListState.logoOptions : [];
+      var selectedIconCode = logoOptions.some(function (option) {
+        return option && option.code === fundListState.iconCodeInput;
+      })
+        ? fundListState.iconCodeInput
+        : (logoOptions[0] && logoOptions[0].code) || "";
+      var logoPickerHtml = logoOptions.length
+        ? [
+            '<div class="starManageField fundLogoPickerField">',
+              '<label>\u57fa\u91d1\u516c\u53f8\u56fe\u6807</label>',
+              '<div class="fundLogoPicker" role="radiogroup" aria-label="\u57fa\u91d1\u516c\u53f8\u56fe\u6807">',
+                logoOptions.map(function (option) {
+                  var isSelected = option && option.code === selectedIconCode;
+                  return '<button class="fundLogoPickOption' + (isSelected ? ' active' : '') + '" type="button" data-fund-logo-select="' + esc(option.code) + '" aria-label="\u9009\u62e9' + esc(option.label) + '\u56fe\u6807" title="' + esc(option.label) + '" aria-pressed="' + (isSelected ? 'true' : 'false') + '"' + (fundListState.loading || fundListState.saving ? ' disabled' : '') + '><img src="' + esc(option.icon) + '" alt="" loading="lazy" /></button>';
+                }).join(""),
+              '</div>',
+            '</div>'
+          ].join("")
+        : "";
       var manageModalHtml = fundListState.open
         ? [
             '<div class="starManageOverlay" data-fund-manage-close="overlay">',
@@ -1944,6 +1965,7 @@ export function getClientScript() {
                     '<label for="fundManageNameCN">\u4e2d\u6587\u540d</label>',
                     '<input id="fundManageNameCN" name="nameCN" type="text" value="' + esc(fundListState.nameCNInput) + '" placeholder="\u4f8b\u5982 \u56fd\u6cf0\u7eb3\u6307ETF" maxlength="32" />',
                   '</div>',
+                  logoPickerHtml,
                   '<button class="starManageSubmit" type="submit"' + (fundListState.loading || fundListState.saving ? ' disabled' : '') + '>\u6dfb\u52a0</button>',
                 '</form>',
                 '<div class="starManageList">',
@@ -3127,13 +3149,16 @@ export function getClientScript() {
     }
 
     async function fetchFundPremiumList() {
-      var res = await fetch("/api/fund-premium-list?_ts=" + Date.now(), {
+      var res = await fetch("/api/fund-premium-list?includeLogos=1&_ts=" + Date.now(), {
         cache: "no-store"
       });
       if (!res.ok) throw new Error("HTTP " + res.status);
       var payload = await res.json();
       if (!payload.ok) throw new Error(payload.error || "Fund premium list API error");
-      return payload.items || [];
+      return {
+        items: payload.items || [],
+        logoOptions: payload.logoOptions || []
+      };
     }
 
     async function openFundListManager() {
@@ -3142,7 +3167,12 @@ export function getClientScript() {
       fundListState.error = "";
       renderFundPremiumPanel();
       try {
-        fundListState.items = await fetchFundPremiumList();
+        var listPayload = await fetchFundPremiumList();
+        fundListState.items = listPayload.items;
+        fundListState.logoOptions = listPayload.logoOptions;
+        if (!fundListState.logoOptions.some(function (option) { return option.code === fundListState.iconCodeInput; })) {
+          fundListState.iconCodeInput = fundListState.logoOptions[0] ? fundListState.logoOptions[0].code : "";
+        }
       } catch (error) {
         fundListState.error = error && error.message ? error.message : "\u5217\u8868\u8bfb\u53d6\u5931\u8d25";
       } finally {
@@ -3164,18 +3194,20 @@ export function getClientScript() {
     }
 
     async function refreshFundListAndPanel() {
-      fundListState.items = await fetchFundPremiumList();
+      var listPayload = await fetchFundPremiumList();
+      fundListState.items = listPayload.items;
+      fundListState.logoOptions = listPayload.logoOptions;
       fundPremiumState.cache = null;
       fundPremiumState.detailSymbol = null;
       await loadFundPremiums({ force: true });
     }
 
-    async function addFundListItem(code, nameCN) {
+    async function addFundListItem(code, nameCN, iconCode) {
       var res = await fetch("/api/fund-premium-list", {
         method: "POST",
         headers: { "Content-Type": "application/json; charset=utf-8" },
         cache: "no-store",
-        body: JSON.stringify({ code: code, nameCN: nameCN })
+        body: JSON.stringify({ code: code, nameCN: nameCN, iconCode: iconCode })
       });
       var payload = await res.json();
       if (!res.ok || !payload.ok) {
@@ -3942,6 +3974,20 @@ export function getClientScript() {
           return;
         }
 
+        var logoSelectBtn = e.target && e.target.closest ? e.target.closest("button[data-fund-logo-select]") : null;
+        if (logoSelectBtn) {
+          if (fundListState.loading || fundListState.saving) return;
+          var iconCode = logoSelectBtn.getAttribute("data-fund-logo-select");
+          if (!iconCode || iconCode === fundListState.iconCodeInput) return;
+          var codeInput = fundPremiumPanel.querySelector("#fundManageCode");
+          var nameInput = fundPremiumPanel.querySelector("#fundManageNameCN");
+          fundListState.codeInput = codeInput ? String(codeInput.value || "").trim() : fundListState.codeInput;
+          fundListState.nameCNInput = nameInput ? String(nameInput.value || "").trim() : fundListState.nameCNInput;
+          fundListState.iconCodeInput = iconCode;
+          renderFundPremiumPanel();
+          return;
+        }
+
         var manageCloseBtn = e.target && e.target.closest
           ? e.target.closest('button[data-fund-manage-close="button"]')
           : null;
@@ -3992,13 +4038,14 @@ export function getClientScript() {
         var formData = new FormData(form);
         var code = String(formData.get("code") || "").trim();
         var nameCN = String(formData.get("nameCN") || "").trim();
+        var iconCode = fundListState.iconCodeInput;
         fundListState.codeInput = code;
         fundListState.nameCNInput = nameCN;
         fundListState.saving = true;
         fundListState.error = "";
         renderFundPremiumPanel();
 
-        addFundListItem(code, nameCN)
+        addFundListItem(code, nameCN, iconCode)
           .then(function () {
             fundListState.codeInput = "";
             fundListState.nameCNInput = "";

@@ -11,7 +11,7 @@ import { normalizeIndexDataSource, normalizePeriod } from "./config.js";
 import { corsHeaders, htmlResponse, jsonResponse } from "./lib/http.js";
 import { fetchCnnFearGreedSummary } from "./services/cnnFearGreed.js";
 import { buildFundPremiumPayload } from "./services/fundPremiumService.js";
-import { addFundPremiumFund, getFundPremiumFundList, removeFundPremiumFund } from "./services/fundPremiumListStore.js";
+import { addFundPremiumFund, getFundLogoOptions, getFundPremiumFundList, removeFundPremiumFund } from "./services/fundPremiumListStore.js";
 import { buildCommonIndexWeightsPayload, buildIndexWeightsPayload } from "./services/indexWeightsService.js";
 import { getKvBinding, resolveKvBinding } from "./services/kvBinding.js";
 import { buildQuotePayload } from "./services/quoteService.js";
@@ -223,7 +223,13 @@ async function handleFundPremiumListRoute(request, url, origin, env) {
   if (request.method === "GET") {
     try {
       const items = await getFundPremiumFundList(env);
-      return jsonResponse({ ok: true, items }, origin, 200, { cacheSeconds: 0 });
+      const includeLogos = url.searchParams.get("includeLogos") === "1";
+      return jsonResponse(
+        { ok: true, items, ...(includeLogos ? { logoOptions: getFundLogoOptions() } : {}) },
+        origin,
+        200,
+        { cacheSeconds: 0 }
+      );
     } catch (error) {
       return jsonResponse(
         { ok: false, error: error?.message || String(error) },

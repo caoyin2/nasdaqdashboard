@@ -121,6 +121,24 @@ export const FUND_PREMIUM_FUNDS = [
   { code: "159509", fallbackName: "\u666f\u987a\u957f\u57ce\u7eb3\u6307\u79d1\u6280", icon: fundLogo("159509") },
 ];
 
+// Reusable company-logo choices for funds added from the premium manager.
+// The code points at a vetted local asset, never a user-supplied image URL.
+export const FUND_LOGO_OPTIONS = [
+  { code: "513100", label: "\u56fd\u6cf0\u57fa\u91d1", icon: fundLogo("513100") },
+  { code: "513300", label: "\u534e\u590f\u57fa\u91d1", icon: fundLogo("513300") },
+  { code: "159941", label: "\u5e7f\u53d1\u57fa\u91d1", icon: fundLogo("159941") },
+  { code: "159696", label: "\u6613\u65b9\u8fbe\u57fa\u91d1", icon: fundLogo("159696") },
+  { code: "513390", label: "\u535a\u65f6\u57fa\u91d1", icon: fundLogo("513390") },
+  { code: "159660", label: "\u6c47\u6dfb\u5bcc\u57fa\u91d1", icon: fundLogo("159660") },
+  { code: "159501", label: "\u5609\u5b9e\u57fa\u91d1", icon: fundLogo("159501") },
+  { code: "159513", label: "\u5927\u6210\u57fa\u91d1", icon: fundLogo("159513") },
+  { code: "159632", label: "\u534e\u5b89\u57fa\u91d1", icon: fundLogo("159632") },
+  { code: "513110", label: "\u534e\u6cf0\u67cf\u745e\u57fa\u91d1", icon: fundLogo("513110") },
+  { code: "513870", label: "\u5bcc\u56fd\u57fa\u91d1", icon: fundLogo("513870") },
+  { code: "159659", label: "\u62db\u5546\u57fa\u91d1", icon: fundLogo("159659") },
+  { code: "159509", label: "\u666f\u987a\u957f\u57ce\u57fa\u91d1", icon: fundLogo("159509") },
+];
+
 export const LINE_COLORS = [
   "rgba(0,224,255,.95)",
   "rgba(255,180,0,.95)",
