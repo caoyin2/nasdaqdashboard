@@ -553,6 +553,10 @@ export function getClientScript() {
 
     function overviewPayloadHealth(payload, source, period) {
       var items = payload && Array.isArray(payload.items) ? payload.items : [];
+      var supportedMeta = META.filter(function (meta) {
+        var sources = Array.isArray(meta && meta.dataSources) ? meta.dataSources : null;
+        return !sources || sources.indexOf(normalizeIndexSource(source)) >= 0;
+      });
       var minPointCount = period === "1D" ? 1 : 2;
       var validItems = items.filter(function (item) {
         var validPoints = Array.isArray(item && item.line)
@@ -570,7 +574,7 @@ export function getClientScript() {
       }).map(function (item) {
         return String(item && item.symbol || "unknown").toUpperCase();
       });
-      var missingSymbols = META.filter(function (meta) {
+      var missingSymbols = supportedMeta.filter(function (meta) {
         return !itemSymbols.has(String(meta && meta.symbol || "").toUpperCase());
       }).map(function (meta) {
         return String(meta && meta.symbol || "unknown").toUpperCase();

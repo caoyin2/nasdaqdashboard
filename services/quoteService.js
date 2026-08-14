@@ -16,6 +16,11 @@ import {
 import { fetchIndexPeriodBySource, indexDataSourceLabel } from "./indexDataSource.js";
 import { getSearchMetaBatch } from "./searchMetaStore.js";
 
+function indexSupportsDataSource(index, source) {
+  const sources = Array.isArray(index?.dataSources) ? index.dataSources : null;
+  return !sources || sources.includes(normalizeIndexDataSource(source));
+}
+
 function maxLatestTime(items) {
   const values = (items || [])
     .map((item) => item?.latestT)
@@ -154,8 +159,12 @@ export async function buildQuotePayload(period, env, source) {
     allowFetch: true,
   });
 
+  const supportedIndexes = INDEXES
+    .map((idx, i) => ({ idx, i }))
+    .filter(({ idx }) => indexSupportsDataSource(idx, normalizedSource));
+
   const indexResults = await Promise.allSettled(
-    INDEXES.map((idx, i) =>
+    supportedIndexes.map(({ idx, i }) =>
       buildIndexItemFromSource(idx, i, period, searchMetaMap, normalizedSource)
     )
   );
@@ -170,7 +179,7 @@ export async function buildQuotePayload(period, env, source) {
     }
 
     failedIndexes.push({
-      symbol: INDEXES[i].symbol,
+      symbol: supportedIndexes[i].idx.symbol,
       error: result.reason?.message || String(result.reason),
     });
   });

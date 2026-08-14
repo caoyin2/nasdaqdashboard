@@ -61,6 +61,14 @@ export const INDEXES = [
     nameCN: "\u6807\u666e500\uff08SP500\uff09",
     iconSymbol: "SPGI",
   },
+  {
+    tickerId: 750108,
+    symbol: "MSCIUSA50",
+    yahooSymbol: "^750108-USD-STRD",
+    dataSources: ["yahoo"],
+    nameCN: "MSCI\u7f8e\u56fd50\uff08MSCI USA 50\uff09",
+    iconSymbol: "MSCI",
+  },
 ];
 
 export const STAR_TECH_COMPANIES = [
