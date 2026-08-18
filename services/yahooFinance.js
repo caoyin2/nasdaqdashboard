@@ -10,8 +10,10 @@ const YAHOO_TAIWAN_SOURCE = "Yahoo Finance Taiwan";
 const YAHOO_1D_STALE_MS = 15 * 60 * 1000;
 const US_CASH_SESSION_OPEN_MINUTES = 9 * 60 + 30;
 const US_CASH_SESSION_CLOSE_MINUTES = 16 * 60;
+const US_CASH_SESSION_WEEKDAYS = new Set(["Mon", "Tue", "Wed", "Thu", "Fri"]);
 const MARKET_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
   timeZone: MARKET_TZ,
+  weekday: "short",
   hour: "2-digit",
   minute: "2-digit",
   hourCycle: "h23",
@@ -27,6 +29,7 @@ const PERIOD_OPTIONS = {
   "5Y": { range: "5y", interval: "1wk" },
   MAX: { range: "max", interval: "1mo" },
 };
+const INTRADAY_PERIODS = new Set(["1D", "5D", "1M"]);
 
 function normalizePeriod(period) {
   const value = String(period || "1D").trim().toUpperCase();
@@ -83,11 +86,13 @@ function isUsCashSessionTime(t) {
   const parts = MARKET_TIME_FORMATTER.formatToParts(new Date(t));
   const values = {};
   parts.forEach((part) => {
+    if (part.type === "weekday") values.weekday = part.value;
     if (part.type === "hour" || part.type === "minute") values[part.type] = Number(part.value);
   });
 
   const minutes = values.hour * 60 + values.minute;
-  return Number.isFinite(minutes) &&
+  return US_CASH_SESSION_WEEKDAYS.has(values.weekday) &&
+    Number.isFinite(minutes) &&
     minutes >= US_CASH_SESSION_OPEN_MINUTES &&
     minutes <= US_CASH_SESSION_CLOSE_MINUTES;
 }
@@ -97,6 +102,10 @@ function getLatestUsCashSessionBar(bars) {
     if (isUsCashSessionTime(bars[index]?.t)) return bars[index];
   }
   return null;
+}
+
+function shouldTrimToUsCashSession(index, period) {
+  return index?.yahooUsCashSessionOnly === true && INTRADAY_PERIODS.has(period);
 }
 
 function parseQuote(meta, fallbackBar, timeValidationBar) {
@@ -208,7 +217,7 @@ async function fetchYahooChartResult(url) {
   return result;
 }
 
-function parseYahooChartResult(result, period, symbol) {
+function parseYahooChartResult(result, period, index, symbol) {
   const parsedBars = parseBars(result);
   // MSCI USA 50 is reported by Yahoo with a nearly 24-hour regular session.
   // Use the latest U.S. cash-session bar only when comparing timestamps across
@@ -218,9 +227,13 @@ function parseYahooChartResult(result, period, symbol) {
     getLastBar(parsedBars),
     getLatestUsCashSessionBar(parsedBars)
   );
-  const bars = period === "1D"
-    ? stabilizeOneDayBars(parsedBars, quote)
+  const trimToUsCashSession = shouldTrimToUsCashSession(index, period);
+  const chartBars = trimToUsCashSession
+    ? parsedBars.filter((bar) => isUsCashSessionTime(bar.t))
     : parsedBars;
+  const bars = period === "1D" && !trimToUsCashSession
+    ? stabilizeOneDayBars(chartBars, quote)
+    : chartBars;
   if (!bars.length && !Number.isFinite(quote.lastClose)) {
     throw new Error(`Yahoo Finance chart response has no price data for ${symbol}`);
   }
@@ -312,6 +325,7 @@ export async function fetchYahooFinanceIndexPeriod(period, index) {
   let data = parseYahooChartResult(
     await fetchYahooChartResult(requestUrl),
     normalizedPeriod,
+    index,
     symbol
   );
 
@@ -321,6 +335,7 @@ export async function fetchYahooFinanceIndexPeriod(period, index) {
       const fallbackData = parseYahooChartResult(
         await fetchYahooChartResult(fallbackUrl),
         normalizedPeriod,
+        index,
         symbol
       );
       if (hasNewerQuote(fallbackData, data)) {
@@ -335,7 +350,7 @@ export async function fetchYahooFinanceIndexPeriod(period, index) {
   if (normalizedPeriod === "1D" && isStaleOneDayQuote(data.quote)) {
     try {
       const pageChart = await fetchYahooTaiwanPageChartResult(symbol);
-      const pageData = parseYahooChartResult(pageChart.result, normalizedPeriod, symbol);
+      const pageData = parseYahooChartResult(pageChart.result, normalizedPeriod, index, symbol);
       if (hasNewerQuote(pageData, data)) {
         requestUrl = pageChart.url;
         data = pageData;

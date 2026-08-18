@@ -66,6 +66,7 @@ export const INDEXES = [
     symbol: "MSCIUSA50",
     yahooSymbol: "^750108-USD-STRD",
     dataSources: ["yahoo"],
+    yahooUsCashSessionOnly: true,
     nameCN: "MSCI\u7f8e\u56fd50\uff08MSCI USA 50\uff09",
     iconSymbol: "MSCI",
   },
