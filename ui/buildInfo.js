@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.55",
+  version: "v1.3.56",
   shortSha: "",
   fullSha: "",
-  message: "Trim MSCI USA 50 extended chart hours",
+  message: "Backfill MSCI USA 50 cash-session chart",
 };

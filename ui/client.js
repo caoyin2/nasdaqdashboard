@@ -3569,7 +3569,7 @@ export function getClientScript() {
     function applyData(q) {
       var idxCards = $("idxCards");
       var previousPositions = captureStarPositions(idxCards);
-      var payloadHealth = overviewPayloadHealth(q, state.indexSource);
+      var payloadHealth = overviewPayloadHealth(q, state.indexSource, q.period || state.period);
       var validSymbols = new Set(payloadHealth.validSymbols.map(function (symbol) {
         return String(symbol || "").toUpperCase();
       }));

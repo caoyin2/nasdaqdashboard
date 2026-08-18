@@ -18,6 +18,12 @@ const MARKET_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
   minute: "2-digit",
   hourCycle: "h23",
 });
+const MARKET_DATE_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+  timeZone: MARKET_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 
 const PERIOD_OPTIONS = {
   "1D": { range: "1d", interval: "2m" },
@@ -30,6 +36,7 @@ const PERIOD_OPTIONS = {
   MAX: { range: "max", interval: "1mo" },
 };
 const INTRADAY_PERIODS = new Set(["1D", "5D", "1M"]);
+const ONE_DAY_CASH_SESSION_BACKFILL_OPTIONS = { range: "5d", interval: "2m" };
 
 function normalizePeriod(period) {
   const value = String(period || "1D").trim().toUpperCase();
@@ -102,6 +109,18 @@ function getLatestUsCashSessionBar(bars) {
     if (isUsCashSessionTime(bars[index]?.t)) return bars[index];
   }
   return null;
+}
+
+function marketDateKey(t) {
+  return Number.isFinite(t) ? MARKET_DATE_FORMATTER.format(new Date(t)) : null;
+}
+
+function getLatestUsCashSessionBars(bars) {
+  const latestBar = getLatestUsCashSessionBar(bars);
+  const latestDate = marketDateKey(latestBar?.t);
+  return latestDate
+    ? bars.filter((bar) => marketDateKey(bar.t) === latestDate)
+    : [];
 }
 
 function shouldTrimToUsCashSession(index, period) {
@@ -251,6 +270,26 @@ function hasNewerQuote(candidate, current) {
   return Number.isFinite(candidateT) && (!Number.isFinite(currentT) || candidateT > currentT);
 }
 
+async function fetchLatestUsCashSessionData(index, symbol) {
+  const options = ONE_DAY_CASH_SESSION_BACKFILL_OPTIONS;
+  for (const endpoint of YAHOO_CHART_ENDPOINTS) {
+    try {
+      const url = buildYahooChartUrl(endpoint, symbol, options);
+      const data = parseYahooChartResult(
+        await fetchYahooChartResult(url),
+        "5D",
+        index,
+        symbol
+      );
+      const bars = getLatestUsCashSessionBars(data.bars);
+      if (bars.length) return { bars, quote: data.quote };
+    } catch {
+      // Try the next Yahoo chart endpoint before leaving the current response intact.
+    }
+  }
+  return null;
+}
+
 function extractJsonObject(html, marker) {
   const markerIndex = html.indexOf(marker);
   if (markerIndex < 0) {
@@ -357,6 +396,20 @@ export async function fetchYahooFinanceIndexPeriod(period, index) {
       }
     } catch {
       // Keep the chart API response when Yahoo Taiwan's page data changes shape.
+    }
+  }
+
+  if (normalizedPeriod === "1D" && shouldTrimToUsCashSession(index, normalizedPeriod) && !data.bars.length) {
+    const lastSessionData = await fetchLatestUsCashSessionData(index, symbol);
+    if (lastSessionData) {
+      data = {
+        ...data,
+        bars: lastSessionData.bars,
+        quote: {
+          ...data.quote,
+          timeValidationT: lastSessionData.quote.timeValidationT,
+        },
+      };
     }
   }
 
