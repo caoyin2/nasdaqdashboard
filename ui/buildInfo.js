@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.53",
+  version: "v1.3.54",
   shortSha: "",
   fullSha: "",
-  message: "Add MSCI USA 50 index",
+  message: "Normalize MSCI USA 50 validation time",
 };

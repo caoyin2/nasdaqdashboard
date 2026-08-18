@@ -291,14 +291,15 @@ export function getClientScript() {
 
     var CARD_TIME_ANOMALY_MS = 5 * 60 * 60 * 1000;
 
-    function isCardLatestTimeAnomaly(ms, referenceMs) {
-      return Number.isFinite(ms) &&
+    function isCardLatestTimeAnomaly(ms, referenceMs, timeValidationMs) {
+      var comparableMs = Number.isFinite(timeValidationMs) ? timeValidationMs : ms;
+      return Number.isFinite(comparableMs) &&
         Number.isFinite(referenceMs) &&
-        Math.abs(ms - referenceMs) >= CARD_TIME_ANOMALY_MS;
+        Math.abs(comparableMs - referenceMs) >= CARD_TIME_ANOMALY_MS;
     }
 
-    function cardLatestTimeText(ms, referenceMs) {
-      var label = isCardLatestTimeAnomaly(ms, referenceMs) ? "\u5f02\u5e38\u65f6\u95f4" : "\u6700\u65b0\u65f6\u95f4";
+    function cardLatestTimeText(ms, referenceMs, timeValidationMs) {
+      var label = isCardLatestTimeAnomaly(ms, referenceMs, timeValidationMs) ? "\u5f02\u5e38\u65f6\u95f4" : "\u6700\u65b0\u65f6\u95f4";
       return Number.isFinite(ms) ? (label + " " + fmtBJSeconds(ms)) : (label + " --");
     }
 
@@ -322,8 +323,8 @@ export function getClientScript() {
       return Number.isFinite(ms) ? fmtBJSeconds(ms) : "--";
     }
 
-    function cardLatestTimeClass(ms, referenceMs) {
-      return isCardLatestTimeAnomaly(ms, referenceMs) ? " cardTimeAnomaly" : "";
+    function cardLatestTimeClass(ms, referenceMs, timeValidationMs) {
+      return isCardLatestTimeAnomaly(ms, referenceMs, timeValidationMs) ? " cardTimeAnomaly" : "";
     }
 
     function getSparklineValues(item) {
@@ -1173,6 +1174,7 @@ export function getClientScript() {
         icon: item.iconLight || "",
         nameCN: item.nameCN,
         latestT: item.latestT,
+        timeValidationT: item.timeValidationT,
         referenceLatestT: referenceLatestT,
         lastClose: item.lastClose,
         baseClose: item.cardBaseClose,
@@ -2065,16 +2067,16 @@ export function getClientScript() {
       var metaClass = 'sectorHeatMeta'
         + (hasValuationMetrics ? ' sectorHeatMetaStar' : '')
         + (hasSparkline && !hasValuationMetrics ? ' sectorHeatMetaWithLatest' : '');
-      var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT);
-      var latestTimeInlineHtml = '<span class="sectorHeatExtraLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</span>';
+      var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT, item.timeValidationT);
+      var latestTimeInlineHtml = '<span class="sectorHeatExtraLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)) + '</span>';
       var metaRightHtml = hasSparkline
         ? (hasTargetPrice
           ? targetHtml
-          : (hasValuationMetrics ? "" : '<span class="sectorHeatMetaLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</span>'))
+          : (hasValuationMetrics ? "" : '<span class="sectorHeatMetaLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)) + '</span>'))
         : (hasTargetPrice ? targetHtml : '<strong>' + signPrice(item.change) + '</strong>');
       var footerHtml = hasSparkline
         ? ""
-        : (hasValuationMetrics ? "" : '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT)) + '</div>');
+        : (hasValuationMetrics ? "" : '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)) + '</div>');
       var extraHtml = hasValuationMetrics
         ? '<div class="sectorHeatExtra sectorHeatExtraStar"><span class="sectorHeatExtraLabel sectorHeatExtraForward">\u524d\u77bbPE: ' + fmtPeRatio(item.peRatioFwd, item && item.peRatioFwdLoss) + '</span><span class="sectorHeatExtraLabel sectorHeatExtraCurrent">\u5f53\u524dPE: ' + fmtPeRatio(item.peRatioCurrent, item && item.peRatioCurrentLoss) + '</span><span class="sectorHeatExtraLabel sectorHeatExtraMarketCap">\u5f53\u524d\u5e02\u503c: ' + esc(marketCapText) + '</span>' + latestTimeInlineHtml + '</div>'
         : "";
@@ -3588,6 +3590,7 @@ export function getClientScript() {
           iconSymbol: item.iconSymbol || meta.iconSymbol || item.symbol,
           iconLight: item.iconLight || null,
           latestT: item.latestT,
+          timeValidationT: item.timeValidationT,
           lastClose: item.lastClose,
           cardBaseClose: item.cardBaseClose,
           cardChg: item.cardChg,

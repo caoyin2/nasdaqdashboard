@@ -1,4 +1,5 @@
 import { getLastBar } from "../lib/time.js";
+import { MARKET_TZ } from "../config.js";
 
 const YAHOO_CHART_ENDPOINTS = [
   "https://query1.finance.yahoo.com/v8/finance/chart",
@@ -7,6 +8,14 @@ const YAHOO_CHART_ENDPOINTS = [
 const YAHOO_TAIWAN_QUOTE_PAGE = "https://tw.stock.yahoo.com/quote";
 const YAHOO_TAIWAN_SOURCE = "Yahoo Finance Taiwan";
 const YAHOO_1D_STALE_MS = 15 * 60 * 1000;
+const US_CASH_SESSION_OPEN_MINUTES = 9 * 60 + 30;
+const US_CASH_SESSION_CLOSE_MINUTES = 16 * 60;
+const MARKET_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: MARKET_TZ,
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
 
 const PERIOD_OPTIONS = {
   "1D": { range: "1d", interval: "2m" },
@@ -68,7 +77,29 @@ function parseBars(result) {
   return bars;
 }
 
-function parseQuote(meta, fallbackBar) {
+function isUsCashSessionTime(t) {
+  if (!Number.isFinite(t)) return false;
+
+  const parts = MARKET_TIME_FORMATTER.formatToParts(new Date(t));
+  const values = {};
+  parts.forEach((part) => {
+    if (part.type === "hour" || part.type === "minute") values[part.type] = Number(part.value);
+  });
+
+  const minutes = values.hour * 60 + values.minute;
+  return Number.isFinite(minutes) &&
+    minutes >= US_CASH_SESSION_OPEN_MINUTES &&
+    minutes <= US_CASH_SESSION_CLOSE_MINUTES;
+}
+
+function getLatestUsCashSessionBar(bars) {
+  for (let index = bars.length - 1; index >= 0; index -= 1) {
+    if (isUsCashSessionTime(bars[index]?.t)) return bars[index];
+  }
+  return null;
+}
+
+function parseQuote(meta, fallbackBar, timeValidationBar) {
   const lastClose =
     toFinite(meta?.regularMarketPrice) ??
     fallbackBar?.close ??
@@ -80,8 +111,9 @@ function parseQuote(meta, fallbackBar) {
     null;
   const latestT = unixSecondsToMs(meta?.regularMarketTime) ?? fallbackBar?.t ?? null;
   const regularSessionStartT = unixSecondsToMs(meta?.currentTradingPeriod?.regular?.start);
+  const timeValidationT = timeValidationBar?.t ?? latestT;
 
-  return { lastClose, prevClose, latestT, regularSessionStartT };
+  return { lastClose, prevClose, latestT, regularSessionStartT, timeValidationT };
 }
 
 function quoteBar(t, close, label) {
@@ -178,7 +210,14 @@ async function fetchYahooChartResult(url) {
 
 function parseYahooChartResult(result, period, symbol) {
   const parsedBars = parseBars(result);
-  const quote = parseQuote(result.meta, getLastBar(parsedBars));
+  // MSCI USA 50 is reported by Yahoo with a nearly 24-hour regular session.
+  // Use the latest U.S. cash-session bar only when comparing timestamps across
+  // index cards; keep regularMarketTime for the actual quote display.
+  const quote = parseQuote(
+    result.meta,
+    getLastBar(parsedBars),
+    getLatestUsCashSessionBar(parsedBars)
+  );
   const bars = period === "1D"
     ? stabilizeOneDayBars(parsedBars, quote)
     : parsedBars;

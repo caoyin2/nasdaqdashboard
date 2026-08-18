@@ -21,9 +21,9 @@ function indexSupportsDataSource(index, source) {
   return !sources || sources.includes(normalizeIndexDataSource(source));
 }
 
-function maxLatestTime(items) {
+function maxTimeValidation(items) {
   const values = (items || [])
-    .map((item) => item?.latestT)
+    .map((item) => item?.timeValidationT ?? item?.latestT)
     .filter((value) => Number.isFinite(value));
 
   return values.length ? Math.max(...values) : null;
@@ -66,6 +66,9 @@ async function buildIndexItemFromSource(idx, i, period, searchMetaMap, source) {
 
   const latestClose = Number.isFinite(quote?.lastClose) ? quote.lastClose : quoteLastBar?.close;
   const latestT = Number.isFinite(quote?.latestT) ? quote.latestT : quoteLastBar?.t;
+  const timeValidationT = Number.isFinite(quote?.timeValidationT)
+    ? quote.timeValidationT
+    : latestT;
 
   const periodBarsRaw = periodRaw.bars || [];
 
@@ -91,6 +94,7 @@ async function buildIndexItemFromSource(idx, i, period, searchMetaMap, source) {
 
   return buildIndexItem(idx, i, searchMetaMap, source, {
     latestT,
+    timeValidationT,
     lastClose,
     baseClose,
     barsForSeries,
@@ -137,6 +141,7 @@ function buildIndexItem(idx, i, searchMetaMap, source, data) {
       ? (searchMetaMap.get(String(idx.iconSymbol).toUpperCase())?.iconLight || null)
       : null,
     latestT: Number.isFinite(data.latestT) ? data.latestT : null,
+    timeValidationT: Number.isFinite(data.timeValidationT) ? data.timeValidationT : null,
     lastClose: Number.isFinite(lastClose) ? lastClose : null,
     cardBaseClose: Number.isFinite(baseClose) ? baseClose : null,
     cardChg: Number.isFinite(cardChg) ? cardChg : null,
@@ -191,7 +196,7 @@ export async function buildQuotePayload(period, env, source) {
     throw new Error(`Index upstream request failed: ${details || "no index data returned"}`);
   }
 
-  const asOfMs = maxLatestTime(items);
+  const asOfMs = maxTimeValidation(items);
   const asOfUTC = Number.isFinite(asOfMs) ? fmtUTC(asOfMs) : null;
 
   return {
