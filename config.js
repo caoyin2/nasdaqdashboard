@@ -146,6 +146,8 @@ export const FUND_LOGO_OPTIONS = [
   { code: "513870", label: "\u5bcc\u56fd\u57fa\u91d1", icon: fundLogo("513870") },
   { code: "159659", label: "\u62db\u5546\u57fa\u91d1", icon: fundLogo("159659") },
   { code: "159509", label: "\u666f\u987a\u957f\u57ce\u57fa\u91d1", icon: fundLogo("159509") },
+  { code: "penghua", label: "\u9e4f\u534e\u57fa\u91d1", icon: fundLogo("penghua") },
+  { code: "southern", label: "\u5357\u65b9\u57fa\u91d1", icon: fundLogo("southern") },
 ];
 
 export const LINE_COLORS = [

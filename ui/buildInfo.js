@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.56",
+  version: "v1.3.57",
   shortSha: "",
   fullSha: "",
-  message: "Backfill MSCI USA 50 cash-session chart",
+  message: "Add Penghua and Southern fund icons",
 };
