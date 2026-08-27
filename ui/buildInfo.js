@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.59",
+  version: "v1.3.60",
   shortSha: "",
   fullSha: "",
-  message: "Optimize S&P 500 weight loading",
+  message: "Use official Penghua and Southern fund logos",
 };
