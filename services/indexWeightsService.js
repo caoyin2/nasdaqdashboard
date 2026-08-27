@@ -80,7 +80,13 @@ const INDEX_WEIGHT_CONFIG = {
   },
 };
 
-const COMMON_INDEX_CODES = ["NDXTMC", "SP500-45", "NDX", "SP500", "USA50", "DJI"];
+const COMMON_INDEX_CODES = ["NDXTMC", "SP500-45", "NDX", "SP500", "USA50"];
+
+function buildIndexWeightIcon(symbol) {
+  const normalizedSymbol = String(symbol || "").trim().toUpperCase();
+  if (!normalizedSymbol) return null;
+  return `https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_light/${encodeURIComponent(normalizedSymbol)}.svg`;
+}
 
 function fmtDateYmd(date) {
   const y = date.getUTCFullYear();
@@ -506,7 +512,7 @@ async function enrichItems(items, env, options = {}) {
       return {
         symbol: item.symbol,
         nameEn: meta?.nameEn || fallback?.nameEn || item.symbol,
-        iconLight: meta?.iconLight || fallback?.iconLight || null,
+        iconLight: meta?.iconLight || fallback?.iconLight || buildIndexWeightIcon(item.symbol),
         slug: meta?.slug || fallback?.slug || item.symbol.toLowerCase(),
         shares: item.shares ?? null,
         purchaseAmount: item.purchaseAmount ?? null,
@@ -633,7 +639,7 @@ export async function buildCommonIndexWeightsPayload(env) {
     return {
       symbol,
       nameEn: meta?.nameEn || fallback?.nameEn || symbol,
-      iconLight: meta?.iconLight || fallback?.iconLight || null,
+      iconLight: meta?.iconLight || fallback?.iconLight || buildIndexWeightIcon(symbol),
       slug: meta?.slug || fallback?.slug || symbol.toLowerCase(),
       weights,
       totalWeightPct,
