@@ -5,6 +5,7 @@ import { getKvBinding } from "./kvBinding.js";
 const SEARCH_META_PREFIX = "search:";
 const SEARCH_META_BATCH_SIZE = 2;
 const SEARCH_META_BATCH_DELAY_MS = 5000;
+const SEARCH_META_KV_BULK_READ_SIZE = 100;
 const SEARCH_META_MEM_CACHE =
   globalThis.__SEARCH_META_MEM_CACHE__ ?? (globalThis.__SEARCH_META_MEM_CACHE__ = new Map());
 
@@ -105,6 +106,40 @@ export async function readSearchMetaFromKv(env, symbol) {
   }
 }
 
+async function readSearchMetaBatchFromKv(env, symbols) {
+  const kv = getKvBinding(env);
+  const results = new Map();
+  if (!kv || typeof kv.get !== "function" || !symbols.length) {
+    return results;
+  }
+
+  for (let i = 0; i < symbols.length; i += SEARCH_META_KV_BULK_READ_SIZE) {
+    const batch = symbols.slice(i, i + SEARCH_META_KV_BULK_READ_SIZE);
+    const keys = batch.map((symbol) => getSearchMetaKey(symbol));
+
+    try {
+      const values = await kv.get(keys);
+      for (let index = 0; index < batch.length; index += 1) {
+        const symbol = batch[index];
+        const raw = values?.get?.(keys[index]) ?? null;
+        if (raw == null) continue;
+
+        try {
+          const normalized = normalizeStoredMeta(symbol, JSON.parse(raw));
+          SEARCH_META_MEM_CACHE.set(normalized.symbol, normalized);
+          results.set(symbol, normalized);
+        } catch (error) {
+          console.error(`KV bulk value parse failed for search meta ${keys[index]}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error("KV bulk read failed for search meta batch:", error);
+    }
+  }
+
+  return results;
+}
+
 export async function writeSearchMetaToKv(env, meta) {
   const kv = getKvBinding(env);
   if (!kv || typeof kv.put !== "function" || !meta?.symbol) {
@@ -200,17 +235,22 @@ export async function getSearchMetaBatch(symbols, env, options = {}) {
 
   const results = new Map();
   const missing = [];
+  const symbolsWithoutFreshMemoryCache = [];
 
   for (const symbol of uniqueSymbols) {
-    const meta = await getSearchMeta(symbol, env, {
-      allowFetch: false,
-      allowFallback: false,
-    });
-    if (meta) {
-      results.set(symbol, meta);
-    } else {
-      missing.push(symbol);
+    const cached = SEARCH_META_MEM_CACHE.get(symbol) || null;
+    if (cached?.tickerId && cached.source !== "fallback") {
+      results.set(symbol, cached);
+      continue;
     }
+    symbolsWithoutFreshMemoryCache.push(symbol);
+  }
+
+  const kvResults = await readSearchMetaBatchFromKv(env, symbolsWithoutFreshMemoryCache);
+  for (const symbol of symbolsWithoutFreshMemoryCache) {
+    const meta = kvResults.get(symbol) || null;
+    if (meta?.tickerId) results.set(symbol, meta);
+    else missing.push(symbol);
   }
 
   if (options.allowFetch === false || !missing.length) {

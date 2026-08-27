@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.58",
+  version: "v1.3.59",
   shortSha: "",
   fullSha: "",
-  message: "Add S&P 500 iShares weights",
+  message: "Optimize S&P 500 weight loading",
 };
