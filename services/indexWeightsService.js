@@ -12,6 +12,13 @@ const ISHARES_SP50045_PRODUCT_URL =
   "https://www.ishares.com/uk/individual/en/products/280510/ishares-sp-500-information-technology-sector-ucits-etf";
 const ISHARES_SP500_PRODUCT_URL =
   "https://www.ishares.com/us/products/239726/ishares-core-sp-500-etf";
+const SSE_QUERY_API = "https://query.sse.com.cn/commonQuery.do";
+const SSE_USA50_PRODUCT_URL =
+  "https://www.sse.com.cn/disclosure/fund/etflist/detail.shtml?fundid=513850";
+const SSE_USA50_BASIC_SQL_ID =
+  "COMMON_SSE_CP_JJLB_ETFJJGK_GGSGSHQD_JBXX_C";
+const SSE_USA50_COMPONENT_SQL_ID =
+  "COMMON_SSE_CP_JJLB_ETFJJGK_GGSGSHQD_COMPONENT_C";
 
 const INDEX_WEIGHT_CONFIG = {
   NDXTMC: {
@@ -21,6 +28,15 @@ const INDEX_WEIGHT_CONFIG = {
     title: "\u7eb3\u65af\u8fbe\u514b\u79d1\u6280\u5e02\u503c\u52a0\u6743",
     showDataDate: true,
     allowLiveSearch: false,
+  },
+  USA50: {
+    source: "sse",
+    etfCode: "513850",
+    indexCode: "USA50",
+    title: "\u7f8e\u56fd50",
+    showDataDate: true,
+    allowLiveSearch: false,
+    productPageUrl: SSE_USA50_PRODUCT_URL,
   },
   "SP500-45": {
     source: "ishares",
@@ -53,7 +69,7 @@ const INDEX_WEIGHT_CONFIG = {
   },
 };
 
-const COMMON_INDEX_CODES = ["NDXTMC", "SP500-45", "NDX", "SP500"];
+const COMMON_INDEX_CODES = ["NDXTMC", "SP500-45", "NDX", "SP500", "USA50"];
 
 function fmtDateYmd(date) {
   const y = date.getUTCFullYear();
@@ -238,6 +254,115 @@ function parseBasketRows(text) {
   };
 }
 
+function parseSseQueryPayload(text) {
+  const body = String(text || "").replace(/^\uFEFF/, "").trim();
+  const callbackMatch = /^[^(]+\(([\s\S]*)\)\s*;?$/.exec(body);
+
+  try {
+    return JSON.parse(callbackMatch ? callbackMatch[1] : body);
+  } catch {
+    throw new Error("SSE ETF basket returned invalid JSON");
+  }
+}
+
+function parseSseAmount(value) {
+  const normalized = String(value ?? "")
+    .replace(/,/g, "")
+    .replace(/[^\d.+-]/g, "")
+    .trim();
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeSseTicker(value) {
+  return String(value || "").trim().toUpperCase().replace(/\//g, ".");
+}
+
+async function fetchSseQueryJson(config, sqlId) {
+  const url = new URL(SSE_QUERY_API);
+  const params = {
+    isPagination: "false",
+    FUNDID2: config.etfCode,
+    sqlId,
+    jsonCallBack: "jsonCallback",
+  };
+  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+
+  const res = await fetch(url.toString(), {
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      "Accept": "application/json, text/javascript, */*; q=0.01",
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache",
+      "Referer": config.productPageUrl || "https://www.sse.com.cn/",
+      "Origin": "https://www.sse.com.cn",
+    },
+  });
+
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`SSE ${config.indexCode} basket failed: HTTP ${res.status} ${text.slice(0, 120)}`);
+  }
+
+  return parseSseQueryPayload(text);
+}
+
+function parseSseBasketRows(basicPayload, componentPayload) {
+  const basic = Array.isArray(basicPayload?.result) ? basicPayload.result[0] : null;
+  const basketDate = String(basic?.TRADING_DAY || "").replace(/\D/g, "");
+  if (!/^\d{8}$/.test(basketDate)) {
+    throw new Error("SSE ETF basket missing trading date");
+  }
+
+  const components = Array.isArray(componentPayload?.result) ? componentPayload.result : [];
+  const rows = components
+    .map((row) => ({
+      symbol: normalizeSseTicker(row?.INSTRUMENT_ID),
+      shares: parseShares(row?.QUANTITY),
+      purchaseAmount: parseSseAmount(row?.SUBSTITUTION_CASH_AMOUNT),
+    }))
+    .filter((row) => row.symbol && Number.isFinite(row.purchaseAmount) && row.purchaseAmount > 0);
+
+  if (!rows.length) {
+    throw new Error("SSE ETF basket contains no valid components");
+  }
+
+  const componentAmount = rows.reduce((total, row) => total + row.purchaseAmount, 0);
+  const navPerCreationUnit = parseSseAmount(basic?.NAVPERCU);
+  const preCashComponent = parseSseAmount(basic?.PRE_CASH_COMPONENT);
+  const expectedComponentAmount =
+    Number.isFinite(navPerCreationUnit) && Number.isFinite(preCashComponent)
+      ? navPerCreationUnit - preCashComponent
+      : null;
+
+  if (
+    Number.isFinite(expectedComponentAmount) &&
+    expectedComponentAmount > 0 &&
+    Math.abs(componentAmount - expectedComponentAmount) > Math.max(100, expectedComponentAmount * 0.01)
+  ) {
+    throw new Error("SSE ETF basket component amount does not match NAV less cash component");
+  }
+
+  return {
+    basketDate,
+    cashAmount: componentAmount,
+    items: rows
+      .map((row) => ({
+        ...row,
+        weightPct: (row.purchaseAmount / componentAmount) * 100,
+      }))
+      .sort((a, b) => b.weightPct - a.weightPct),
+  };
+}
+
+async function fetchSseBasket(config) {
+  const [basicPayload, componentPayload] = await Promise.all([
+    fetchSseQueryJson(config, SSE_USA50_BASIC_SQL_ID),
+    fetchSseQueryJson(config, SSE_USA50_COMPONENT_SQL_ID),
+  ]);
+  return parseSseBasketRows(basicPayload, componentPayload);
+}
+
 function normalizeIsharesDate(value) {
   const normalized = String(value ?? "").trim();
   return /^\d{8}$/.test(normalized) ? normalized : null;
@@ -399,6 +524,21 @@ async function fetchRawIndexWeights(indexCode) {
       showDataDate: config.showDataDate,
       cashAmount: parsed.cashAmount,
       items: parsed.items,
+    };
+  }
+
+  if (config.source === "sse") {
+    const basket = await fetchSseBasket(config);
+
+    return {
+      config,
+      indexCode: config.indexCode,
+      title: config.title,
+      etfCode: config.etfCode,
+      basketDate: basket.basketDate,
+      showDataDate: config.showDataDate,
+      cashAmount: basket.cashAmount,
+      items: basket.items,
     };
   }
 
