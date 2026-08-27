@@ -1140,6 +1140,22 @@ export function getStyles() {
       border-radius: 2px;
     }
 
+    .panelSourceSseIcon{
+      display:block;
+      width:16px;
+      height:16px;
+      flex:0 0 16px;
+      overflow:hidden;
+      border-radius:50%;
+    }
+
+    .panelSourceSseIcon img{
+      display:block;
+      width:auto;
+      max-width:none;
+      height:16px;
+    }
+
     .starGrid{
       display:grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));

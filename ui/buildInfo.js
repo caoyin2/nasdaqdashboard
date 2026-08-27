@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.65",
+  version: "v1.3.66",
   shortSha: "",
   fullSha: "",
-  message: "Persist index weight metadata",
+  message: "Add SSE source icon",
 };
