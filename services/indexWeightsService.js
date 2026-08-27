@@ -10,6 +10,8 @@ const ISHARES_NDX_PRODUCT_URL =
   "https://www.ishares.com/uk/individual/en/products/253741/ishares-nasdaq-100-ucits-etf";
 const ISHARES_SP50045_PRODUCT_URL =
   "https://www.ishares.com/uk/individual/en/products/280510/ishares-sp-500-information-technology-sector-ucits-etf";
+const ISHARES_SP500_PRODUCT_URL =
+  "https://www.ishares.com/us/products/239726/ishares-core-sp-500-etf";
 
 const INDEX_WEIGHT_CONFIG = {
   NDXTMC: {
@@ -29,6 +31,17 @@ const INDEX_WEIGHT_CONFIG = {
     productId: "280510",
     productPageUrl: ISHARES_SP50045_PRODUCT_URL,
   },
+  SP500: {
+    source: "ishares",
+    indexCode: "SP500",
+    title: "\u6807\u666e500",
+    showDataDate: true,
+    allowLiveSearch: false,
+    productId: "239726",
+    productPageUrl: ISHARES_SP500_PRODUCT_URL,
+    isharesLocale: "en_US",
+    isharesTargetSite: "ishares-us",
+  },
   NDX: {
     source: "ishares",
     indexCode: "NDX",
@@ -40,7 +53,7 @@ const INDEX_WEIGHT_CONFIG = {
   },
 };
 
-const COMMON_INDEX_CODES = ["NDXTMC", "SP500-45", "NDX"];
+const COMMON_INDEX_CODES = ["NDXTMC", "SP500-45", "NDX", "SP500"];
 
 function fmtDateYmd(date) {
   const y = date.getUTCFullYear();
@@ -279,9 +292,9 @@ function buildIsharesProductDataUrl(config, asOfDate = null) {
     appSubType: "ISHARES",
     appType: "PRODUCT_PAGE",
     component: "holdings.all",
-    locale: "en_GB",
+    locale: config.isharesLocale || "en_GB",
     portfolioId: config.productId,
-    targetSite: "ishares-uk",
+    targetSite: config.isharesTargetSite || "ishares-uk",
     userType: "individual",
     excludeContent: "true",
     asOfDate: asOfDate || "",
@@ -491,7 +504,7 @@ export async function buildCommonIndexWeightsPayload(env) {
 
   return {
     ok: true,
-    title: "\u4e09\u5927\u79d1\u6280\u7c7b\u6307\u6570\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd",
+    title: "\u6307\u6570\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd",
     indexCodes: COMMON_INDEX_CODES,
     indexes: indexPayloads,
     itemCount: items.length,

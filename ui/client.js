@@ -382,7 +382,7 @@ export function getClientScript() {
     var API_TIMEOUT_MS = 15000;
     var OVERVIEW_API_TIMEOUT_MS = 30000;
     var OVERVIEW_1D_AUTO_REFRESH_MS = 60 * 1000;
-    var INDEX_WEIGHTS_API_VERSION = "weights-ui-4";
+    var INDEX_WEIGHTS_API_VERSION = "weights-ui-5";
     var INDEX_WEIGHTS_LOCAL_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
     var INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA = 1;
     var INDEX_WEIGHTS_LOCAL_CACHE_PREFIX = "nasdaqDashboard.indexWeights." + INDEX_WEIGHTS_API_VERSION + ".";
@@ -393,7 +393,8 @@ export function getClientScript() {
       { code: COMMON_WEIGHTS_CODE, label: "\\u5171\\u540c\\u6210\\u4efd\\u80a1" },
       { code: "NDXTMC", label: "\\u7eb3\\u6307\\u79d1\\u6280\\u52a0\\u6743" },
       { code: "SP500-45", label: "\\u6807\\u666e\\u4fe1\\u606f\\u79d1\\u6280" },
-      { code: "NDX", label: "\\u7eb3\\u65af\\u8fbe\\u514b100" }
+      { code: "NDX", label: "\\u7eb3\\u65af\\u8fbe\\u514b100" },
+      { code: "SP500", label: "\\u6807\\u666e500" }
     ];
     var COMMON_WEIGHT_INDEX_OPTIONS = WEIGHTS_INDEX_OPTIONS.filter(function (option) {
       return option.code !== COMMON_WEIGHTS_CODE;
@@ -493,7 +494,7 @@ export function getClientScript() {
       commonFetchCtrl: null,
       statusText: "\u8fdb\u5165\u9762\u677f\u540e\u52a0\u8f7d\u6700\u65b0\u6743\u91cd\u6587\u4ef6",
       statusType: "ok",
-      commonStatusText: "\u8fdb\u5165\u9762\u677f\u540e\u52a0\u8f7d\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u4efd\u80a1",
+      commonStatusText: "\u8fdb\u5165\u9762\u677f\u540e\u52a0\u8f7d\u5404\u6307\u6570\u7684\u5171\u540c\u6210\u4efd\u80a1",
       commonStatusType: "ok",
       touched: false,
       exporting: false,
@@ -2411,14 +2412,14 @@ export function getClientScript() {
       if (cached) return cached;
 
       var payload = await fetchCommonIndexWeights();
-      if (!payload) throw new Error("未能获取三张指数权重表");
+      if (!payload) throw new Error("未能获取完整指数权重表");
 
       payload = writeCommonWeightLocalCache(payload);
       weightsState.commonCache = payload;
       hydrateIndexWeightCacheFromCommon(payload);
 
       var fetched = detailedWeightPayloadsFromCommon(payload);
-      if (!fetched) throw new Error("三张指数权重表数据不完整");
+      if (!fetched) throw new Error("指数权重表数据不完整");
       return fetched;
     }
 
@@ -2437,7 +2438,7 @@ export function getClientScript() {
       var lines = [
         "# 科技类指数详细权重表",
         "",
-        "说明：以下为三个指数各自的完整成分股权重，权重为单一指数内占比，并已按权重从高到低排序。",
+        "说明：以下为" + payloads.length + "个指数各自的完整成分股权重，权重为单一指数内占比，并已按权重从高到低排序。",
         "数据可用于比较指数重合度、集中度、单只股票在不同指数中的权重差异等分析。",
         ""
       ];
@@ -2526,8 +2527,8 @@ export function getClientScript() {
         ? "正在准备..."
         : (feedback ? (isError ? "重试导出" : "已复制") : "导出详细权重");
       var title = weightsState.exporting
-        ? "正在整理三个指数的完整权重表"
-        : (feedback || "复制三个指数的完整权重表到剪贴板");
+        ? "正在整理所有指数的完整权重表"
+        : (feedback || "复制所有指数的完整权重表到剪贴板");
 
       return [
         '<button class="weightExportButton" type="button" data-weight-export-all="1" title="' + esc(title) + '" aria-label="' + esc(title) + '"' + (weightsState.exporting ? ' disabled aria-busy="true"' : '') + '>',
@@ -2655,13 +2656,13 @@ export function getClientScript() {
       var statusClass = weightsState.commonStatusType === "err" ? "err" : "ok";
       var listHtml = items && items.length
         ? '<div class="commonWeightList">' + items.map(function (item, index) { return commonWeightRowHTML(item, index + 1, maxTotal, maxCellWeight); }).join("") + '</div>'
-        : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u4e00\u6b21\u6027\u6bd4\u5bf9 ' + esc(commonIndexLabelsText()) + '\uff0c\u53ea\u663e\u793a\u4e09\u4e2a\u6307\u6570\u90fd\u5305\u542b\u7684\u6210\u4efd\u80a1\u3002</div>';
+        : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u4e00\u6b21\u6027\u6bd4\u5bf9 ' + esc(commonIndexLabelsText()) + '\uff0c\u53ea\u663e\u793a\u6240\u6709\u6307\u6570\u90fd\u5305\u542b\u7684\u6210\u4efd\u80a1\u3002</div>';
 
       return [
         '<div class="card weightsPanel commonWeightsPanel">',
           '<div class="weightsHead">',
             '<div class="weightsTitle">',
-              '<span>\u53ea\u4fdd\u7559\u4e09\u4e2a\u6307\u6570\u5171\u540c\u5305\u542b\u7684\u6210\u4efd\u80a1</span>',
+              '<span>\u53ea\u4fdd\u7559\u6240\u6709\u6307\u6570\u5171\u540c\u5305\u542b\u7684\u6210\u4efd\u80a1</span>',
               '<strong>\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd\u5bf9\u7167</strong>',
             '</div>',
             '<div class="weightsHeadTools">',
@@ -2914,7 +2915,7 @@ export function getClientScript() {
         payload = writeCommonWeightLocalCache(payload);
         weightsState.commonCache = payload;
         hydrateIndexWeightCacheFromCommon(payload);
-        weightsState.commonStatusText = "\u5df2\u751f\u6210\u4e09\u4e2a\u6307\u6570\u7684\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd\uff0c\u5e76\u5728\u672c\u5730\u7f13\u5b5824\u5c0f\u65f6";
+        weightsState.commonStatusText = "\u5df2\u751f\u6210\u5404\u6307\u6570\u7684\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd\uff0c\u5e76\u5728\u672c\u5730\u7f13\u5b5824\u5c0f\u65f6";
         weightsState.commonStatusType = "ok";
         renderWeightsPanel();
       } catch (error) {

@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.57",
+  version: "v1.3.58",
   shortSha: "",
   fullSha: "",
-  message: "Add Penghua and Southern fund icons",
+  message: "Add S&P 500 iShares weights",
 };
