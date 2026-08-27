@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.64",
+  version: "v1.3.65",
   shortSha: "",
   fullSha: "",
-  message: "Refresh index weight icons",
+  message: "Persist index weight metadata",
 };

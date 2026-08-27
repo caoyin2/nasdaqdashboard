@@ -6,6 +6,11 @@ const SEARCH_META_PREFIX = "search:";
 const SEARCH_META_BATCH_SIZE = 2;
 const SEARCH_META_BATCH_DELAY_MS = 5000;
 const SEARCH_META_KV_BULK_READ_SIZE = 100;
+const SEARCH_META_MAX_FETCH_BATCH_SIZE = 100;
+const SEARCH_META_SLUG_ALIASES = Object.freeze({
+  BRKB: "brk.b",
+  BFB: "bf.b",
+});
 const SEARCH_META_MEM_CACHE =
   globalThis.__SEARCH_META_MEM_CACHE__ ?? (globalThis.__SEARCH_META_MEM_CACHE__ = new Map());
 
@@ -25,6 +30,21 @@ function buildDefaultIconDark(symbol) {
   return `https://static.seekingalpha.com/cdn/s3/company_logos/mark_vector_dark/${encodeURIComponent(symbol)}.svg`;
 }
 
+function hasStoredIcon(value) {
+  return [value?.iconLight, value?.iconDark].some(
+    (icon) => typeof icon === "string" && icon.trim().length > 0
+  );
+}
+
+function getSearchMetaLookupSlug(symbol) {
+  const normalizedSymbol = normalizeSymbol(symbol);
+  return SEARCH_META_SLUG_ALIASES[normalizedSymbol] || normalizedSymbol.toLowerCase();
+}
+
+function normalizeMetaIdentifier(value) {
+  return normalizeSymbol(value).replace(/\//g, ".");
+}
+
 function normalizeStoredMeta(symbol, value) {
   return {
     symbol: normalizeSymbol(value?.symbol || symbol),
@@ -33,6 +53,7 @@ function normalizeStoredMeta(symbol, value) {
     slug: String(value?.slug || normalizeSymbol(symbol)).trim().toLowerCase(),
     iconLight: value?.iconLight || buildDefaultIconLight(symbol),
     iconDark: value?.iconDark || buildDefaultIconDark(symbol),
+    hasStoredIcon: hasStoredIcon(value),
     updatedAt: value?.updatedAt || null,
     source: value?.source || "kv",
   };
@@ -56,8 +77,11 @@ function buildFallbackMeta(symbol) {
 
 function buildMetaFromQuote(symbol, quote, baseMeta = null) {
   const normalizedSymbol = normalizeSymbol(symbol);
-  const quoteSymbol = normalizeSymbol(quote?.symbol || quote?.sa_slug || normalizedSymbol);
-  if (quoteSymbol !== normalizedSymbol) {
+  const expectedSymbol = normalizeMetaIdentifier(normalizedSymbol);
+  const expectedLookupSlug = normalizeMetaIdentifier(getSearchMetaLookupSlug(normalizedSymbol));
+  const quoteSymbol = normalizeMetaIdentifier(quote?.symbol);
+  const quoteSlug = normalizeMetaIdentifier(quote?.sa_slug);
+  if (![quoteSymbol, quoteSlug].includes(expectedSymbol) && ![quoteSymbol, quoteSlug].includes(expectedLookupSlug)) {
     return null;
   }
 
@@ -69,15 +93,31 @@ function buildMetaFromQuote(symbol, quote, baseMeta = null) {
     return null;
   }
 
+  const quoteIconSymbol = normalizeSymbol(quote?.symbol || normalizedSymbol);
+
   return normalizeStoredMeta(normalizedSymbol, {
     symbol: normalizedSymbol,
     tickerId,
     nameEn: baseMeta?.nameEn || normalizedSymbol,
     slug: String(quote?.sa_slug || normalizedSymbol).trim().toLowerCase(),
+    iconLight: buildDefaultIconLight(quoteIconSymbol),
+    iconDark: buildDefaultIconDark(quoteIconSymbol),
+    updatedAt: new Date().toISOString(),
+    source: "live-slug",
+  });
+}
+
+function buildUnresolvedMeta(symbol, baseMeta = null) {
+  const normalizedSymbol = normalizeSymbol(symbol);
+  return normalizeStoredMeta(normalizedSymbol, {
+    symbol: normalizedSymbol,
+    tickerId: baseMeta?.tickerId ?? null,
+    nameEn: baseMeta?.nameEn || normalizedSymbol,
+    slug: baseMeta?.slug || getSearchMetaLookupSlug(normalizedSymbol),
     iconLight: baseMeta?.iconLight || buildDefaultIconLight(normalizedSymbol),
     iconDark: baseMeta?.iconDark || buildDefaultIconDark(normalizedSymbol),
     updatedAt: new Date().toISOString(),
-    source: "live-slug",
+    source: "live-unresolved",
   });
 }
 
@@ -236,10 +276,19 @@ export async function getSearchMetaBatch(symbols, env, options = {}) {
   const results = new Map();
   const missing = [];
   const symbolsWithoutFreshMemoryCache = [];
+  const requireKvIcon = options.requireKvIcon === true;
+  const requestedBatchSize = Number.parseInt(options.fetchBatchSize, 10);
+  const fetchBatchSize = Number.isFinite(requestedBatchSize)
+    ? Math.max(1, Math.min(SEARCH_META_MAX_FETCH_BATCH_SIZE, requestedBatchSize))
+    : SEARCH_META_BATCH_SIZE;
+  const requestedBatchDelayMs = Number.parseInt(options.fetchBatchDelayMs, 10);
+  const fetchBatchDelayMs = Number.isFinite(requestedBatchDelayMs)
+    ? Math.max(0, requestedBatchDelayMs)
+    : SEARCH_META_BATCH_DELAY_MS;
 
   for (const symbol of uniqueSymbols) {
     const cached = SEARCH_META_MEM_CACHE.get(symbol) || null;
-    if (cached?.tickerId && cached.source !== "fallback") {
+    if (!requireKvIcon && cached?.tickerId && cached.source !== "fallback") {
       results.set(symbol, cached);
       continue;
     }
@@ -249,7 +298,8 @@ export async function getSearchMetaBatch(symbols, env, options = {}) {
   const kvResults = await readSearchMetaBatchFromKv(env, symbolsWithoutFreshMemoryCache);
   for (const symbol of symbolsWithoutFreshMemoryCache) {
     const meta = kvResults.get(symbol) || null;
-    if (meta?.tickerId) results.set(symbol, meta);
+    const hasKvMetadata = requireKvIcon ? meta?.hasStoredIcon : meta?.tickerId;
+    if (hasKvMetadata) results.set(symbol, meta);
     else missing.push(symbol);
   }
 
@@ -257,26 +307,42 @@ export async function getSearchMetaBatch(symbols, env, options = {}) {
     return results;
   }
 
-  for (let i = 0; i < missing.length; i += SEARCH_META_BATCH_SIZE) {
-    const batch = missing.slice(i, i + SEARCH_META_BATCH_SIZE);
-    const quotes = await fetchSeekingAlphaRealTimeQuotesBySlugs(batch.map((symbol) => symbol.toLowerCase())).catch((error) => {
+  for (let i = 0; i < missing.length; i += fetchBatchSize) {
+    const batch = missing.slice(i, i + fetchBatchSize);
+    const pendingWrites = [];
+    const quotes = await fetchSeekingAlphaRealTimeQuotesBySlugs(batch.map(getSearchMetaLookupSlug)).catch((error) => {
       console.error(`Batch slug metadata fetch failed for ${batch.join(", ")}:`, error);
       return [];
     });
     const quoteMap = new Map(
       (Array.isArray(quotes) ? quotes : [])
-        .map((quote) => [normalizeSymbol(quote?.symbol || quote?.sa_slug), quote])
+        .flatMap((quote) => [
+          [normalizeMetaIdentifier(quote?.symbol), quote],
+          [normalizeMetaIdentifier(quote?.sa_slug), quote],
+        ])
     );
 
     for (const symbol of batch) {
-      const kvMeta = await readSearchMetaFromKv(env, symbol);
+      const kvMeta = kvResults.get(symbol) || null;
       const cached = SEARCH_META_MEM_CACHE.get(symbol) || null;
       const fallback = buildFallbackMeta(symbol);
-      const meta = buildMetaFromQuote(symbol, quoteMap.get(symbol), kvMeta || cached || fallback || null);
+      const lookupSlug = getSearchMetaLookupSlug(symbol);
+      const meta = buildMetaFromQuote(
+        symbol,
+        quoteMap.get(normalizeMetaIdentifier(symbol)) || quoteMap.get(normalizeMetaIdentifier(lookupSlug)),
+        kvMeta || cached || fallback || null
+      );
 
       if (meta) {
-        await writeSearchMetaToKv(env, meta);
+        pendingWrites.push(writeSearchMetaToKv(env, meta));
         results.set(symbol, meta);
+        continue;
+      }
+
+      if (options.persistUnresolvedIcon === true) {
+        const unresolved = buildUnresolvedMeta(symbol, kvMeta || cached || fallback || null);
+        pendingWrites.push(writeSearchMetaToKv(env, unresolved));
+        results.set(symbol, unresolved);
         continue;
       }
 
@@ -291,8 +357,10 @@ export async function getSearchMetaBatch(symbols, env, options = {}) {
       }
     }
 
-    if (i + SEARCH_META_BATCH_SIZE < missing.length) {
-      await sleep(SEARCH_META_BATCH_DELAY_MS);
+    await Promise.all(pendingWrites);
+
+    if (fetchBatchDelayMs > 0 && i + fetchBatchSize < missing.length) {
+      await sleep(fetchBatchDelayMs);
     }
   }
 

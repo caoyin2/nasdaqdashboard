@@ -29,7 +29,6 @@ const INDEX_WEIGHT_CONFIG = {
     indexCode: "NDXTMC",
     title: "\u7eb3\u65af\u8fbe\u514b\u79d1\u6280\u5e02\u503c\u52a0\u6743",
     showDataDate: true,
-    allowLiveSearch: false,
   },
   USA50: {
     source: "sse",
@@ -37,7 +36,6 @@ const INDEX_WEIGHT_CONFIG = {
     indexCode: "USA50",
     title: "\u7f8e\u56fd50",
     showDataDate: true,
-    allowLiveSearch: false,
     productPageUrl: SSE_USA50_PRODUCT_URL,
   },
   DJI: {
@@ -46,7 +44,6 @@ const INDEX_WEIGHT_CONFIG = {
     indexCode: "DJI",
     title: "\u9053\u743c\u65af\u6307\u6570",
     showDataDate: true,
-    allowLiveSearch: false,
     productPageUrl: SSE_DOW_PRODUCT_URL,
   },
   "SP500-45": {
@@ -54,7 +51,6 @@ const INDEX_WEIGHT_CONFIG = {
     indexCode: "SP500-45",
     title: "\u6807\u666e\u4fe1\u606f\u79d1\u6280",
     showDataDate: true,
-    allowLiveSearch: false,
     productId: "280510",
     productPageUrl: ISHARES_SP50045_PRODUCT_URL,
   },
@@ -63,7 +59,6 @@ const INDEX_WEIGHT_CONFIG = {
     indexCode: "SP500",
     title: "\u6807\u666e500",
     showDataDate: true,
-    allowLiveSearch: false,
     productId: "239726",
     productPageUrl: ISHARES_SP500_PRODUCT_URL,
     isharesLocale: "en_US",
@@ -74,13 +69,19 @@ const INDEX_WEIGHT_CONFIG = {
     indexCode: "NDX",
     title: "\u7eb3\u65af\u8fbe\u514b100",
     showDataDate: true,
-    allowLiveSearch: false,
     productId: "253741",
     productPageUrl: ISHARES_NDX_PRODUCT_URL,
   },
 };
 
 const COMMON_INDEX_CODES = ["NDXTMC", "SP500-45", "NDX", "SP500", "USA50"];
+const INDEX_WEIGHT_META_OPTIONS = Object.freeze({
+  allowFetch: true,
+  requireKvIcon: true,
+  persistUnresolvedIcon: true,
+  fetchBatchSize: 100,
+  fetchBatchDelayMs: 0,
+});
 
 function buildIndexWeightIcon(symbol) {
   const normalizedSymbol = String(symbol || "").trim().toUpperCase();
@@ -498,10 +499,10 @@ async function fetchIsharesHoldings(config) {
 }
 
 async function enrichItems(items, env, options = {}) {
-  const metaMap = await getSearchMetaBatch(
+  const metaMap = options.metaMap || await getSearchMetaBatch(
     items.map((item) => item.symbol),
     env,
-    { allowFetch: options.allowFetch !== false }
+    INDEX_WEIGHT_META_OPTIONS
   );
 
   return items
@@ -582,9 +583,9 @@ export async function getLatestIndexWeightSymbols(indexCode = "NDXTMC") {
   };
 }
 
-async function buildEnrichedIndexWeightsPayload(raw, env) {
+async function buildEnrichedIndexWeightsPayload(raw, env, metaMap = null) {
   const enrichedItems = await enrichItems(raw.items, env, {
-    allowFetch: raw.config.allowLiveSearch,
+    metaMap,
   });
 
   return {
@@ -606,8 +607,13 @@ export async function buildIndexWeightsPayload(indexCode = "NDXTMC", env) {
 
 export async function buildCommonIndexWeightsPayload(env) {
   const rawIndexes = await Promise.all(COMMON_INDEX_CODES.map((indexCode) => fetchRawIndexWeights(indexCode)));
+  const metaMap = await getSearchMetaBatch(
+    Array.from(new Set(rawIndexes.flatMap((raw) => raw.items.map((item) => item.symbol)))),
+    env,
+    INDEX_WEIGHT_META_OPTIONS
+  );
   const indexPayloads = await Promise.all(
-    rawIndexes.map((raw) => buildEnrichedIndexWeightsPayload(raw, env))
+    rawIndexes.map((raw) => buildEnrichedIndexWeightsPayload(raw, env, metaMap))
   );
   const itemMaps = new Map(
     rawIndexes.map((raw) => [
@@ -620,8 +626,6 @@ export async function buildCommonIndexWeightsPayload(env) {
   const commonSymbols = firstIndex.items
     .map((item) => item.symbol)
     .filter((symbol) => rawIndexes.every((raw) => itemMaps.get(raw.indexCode)?.has(symbol)));
-
-  const metaMap = await getSearchMetaBatch(commonSymbols, env, { allowFetch: false });
 
   const items = commonSymbols.map((symbol) => {
     const fallback = INDEX_WEIGHTS_FALLBACK_META[symbol];

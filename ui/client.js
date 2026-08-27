@@ -386,7 +386,7 @@ export function getClientScript() {
     var OVERVIEW_API_TIMEOUT_MS = 30000;
     var COMMON_INDEX_WEIGHTS_TIMEOUT_MS = 45000;
     var OVERVIEW_1D_AUTO_REFRESH_MS = 60 * 1000;
-    var INDEX_WEIGHTS_API_VERSION = "weights-ui-8";
+    var INDEX_WEIGHTS_API_VERSION = "weights-ui-9";
     var INDEX_WEIGHTS_LOCAL_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
     var INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA = 1;
     var INDEX_WEIGHTS_LOCAL_CACHE_PREFIX = "nasdaqDashboard.indexWeights." + INDEX_WEIGHTS_API_VERSION + ".";
