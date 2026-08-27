@@ -243,7 +243,7 @@ export function getClientScript() {
       return panelSourceBadgesHTML([
         indexCode === "NDXTMC"
           ? { key: "szse", label: "深圳证券交易所" }
-          : indexCode === "USA50"
+          : indexCode === "USA50" || indexCode === "DJI"
             ? { key: "sse", label: "上海证券交易所" }
           : { key: "ishares", label: "iShares" }
       ]);
@@ -386,7 +386,7 @@ export function getClientScript() {
     var OVERVIEW_API_TIMEOUT_MS = 30000;
     var COMMON_INDEX_WEIGHTS_TIMEOUT_MS = 45000;
     var OVERVIEW_1D_AUTO_REFRESH_MS = 60 * 1000;
-    var INDEX_WEIGHTS_API_VERSION = "weights-ui-6";
+    var INDEX_WEIGHTS_API_VERSION = "weights-ui-7";
     var INDEX_WEIGHTS_LOCAL_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
     var INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA = 1;
     var INDEX_WEIGHTS_LOCAL_CACHE_PREFIX = "nasdaqDashboard.indexWeights." + INDEX_WEIGHTS_API_VERSION + ".";
@@ -399,7 +399,8 @@ export function getClientScript() {
       { code: "SP500-45", label: "\\u6807\\u666e\\u4fe1\\u606f\\u79d1\\u6280" },
       { code: "NDX", label: "\\u7eb3\\u65af\\u8fbe\\u514b100" },
       { code: "SP500", label: "\\u6807\\u666e500" },
-      { code: "USA50", label: "\\u7f8e\\u56fd50" }
+      { code: "USA50", label: "\\u7f8e\\u56fd50" },
+      { code: "DJI", label: "\\u9053\\u743c\\u65af\\u6307\\u6570" }
     ];
     var COMMON_WEIGHT_INDEX_OPTIONS = WEIGHTS_INDEX_OPTIONS.filter(function (option) {
       return option.code !== COMMON_WEIGHTS_CODE;
@@ -2371,6 +2372,7 @@ export function getClientScript() {
     function weightExportSourceLabel(indexCode) {
       if (indexCode === "NDXTMC") return "深圳证券交易所（159509 ETF 申赎篮子）";
       if (indexCode === "USA50") return "上海证券交易所（513850 ETF 申赎清单）";
+      if (indexCode === "DJI") return "上海证券交易所（513400 ETF 申赎清单）";
       return "iShares ETF Holdings";
     }
 

@@ -15,9 +15,11 @@ const ISHARES_SP500_PRODUCT_URL =
 const SSE_QUERY_API = "https://query.sse.com.cn/commonQuery.do";
 const SSE_USA50_PRODUCT_URL =
   "https://www.sse.com.cn/disclosure/fund/etflist/detail.shtml?fundid=513850";
-const SSE_USA50_BASIC_SQL_ID =
+const SSE_DOW_PRODUCT_URL =
+  "https://www.sse.com.cn/disclosure/fund/etflist/detail.shtml?fundid=513400";
+const SSE_BASIC_SQL_ID =
   "COMMON_SSE_CP_JJLB_ETFJJGK_GGSGSHQD_JBXX_C";
-const SSE_USA50_COMPONENT_SQL_ID =
+const SSE_COMPONENT_SQL_ID =
   "COMMON_SSE_CP_JJLB_ETFJJGK_GGSGSHQD_COMPONENT_C";
 
 const INDEX_WEIGHT_CONFIG = {
@@ -37,6 +39,15 @@ const INDEX_WEIGHT_CONFIG = {
     showDataDate: true,
     allowLiveSearch: false,
     productPageUrl: SSE_USA50_PRODUCT_URL,
+  },
+  DJI: {
+    source: "sse",
+    etfCode: "513400",
+    indexCode: "DJI",
+    title: "\u9053\u743c\u65af\u6307\u6570",
+    showDataDate: true,
+    allowLiveSearch: false,
+    productPageUrl: SSE_DOW_PRODUCT_URL,
   },
   "SP500-45": {
     source: "ishares",
@@ -69,7 +80,7 @@ const INDEX_WEIGHT_CONFIG = {
   },
 };
 
-const COMMON_INDEX_CODES = ["NDXTMC", "SP500-45", "NDX", "SP500", "USA50"];
+const COMMON_INDEX_CODES = ["NDXTMC", "SP500-45", "NDX", "SP500", "USA50", "DJI"];
 
 function fmtDateYmd(date) {
   const y = date.getUTCFullYear();
@@ -357,8 +368,8 @@ function parseSseBasketRows(basicPayload, componentPayload) {
 
 async function fetchSseBasket(config) {
   const [basicPayload, componentPayload] = await Promise.all([
-    fetchSseQueryJson(config, SSE_USA50_BASIC_SQL_ID),
-    fetchSseQueryJson(config, SSE_USA50_COMPONENT_SQL_ID),
+    fetchSseQueryJson(config, SSE_BASIC_SQL_ID),
+    fetchSseQueryJson(config, SSE_COMPONENT_SQL_ID),
   ]);
   return parseSseBasketRows(basicPayload, componentPayload);
 }

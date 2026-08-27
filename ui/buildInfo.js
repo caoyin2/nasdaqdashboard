@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.62",
+  version: "v1.3.63",
   shortSha: "",
   fullSha: "",
-  message: "Use official Penghua Fund wordmark",
+  message: "Add Dow Jones SSE weights",
 };
