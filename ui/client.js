@@ -388,6 +388,7 @@ export function getClientScript() {
     var OVERVIEW_API_TIMEOUT_MS = 30000;
     var COMMON_INDEX_WEIGHTS_TIMEOUT_MS = 45000;
     var OVERVIEW_1D_AUTO_REFRESH_MS = 60 * 1000;
+    var LINE_VISIBILITY_STORAGE_KEY = "nasdaqDashboard.overviewLineVisibility.v1";
     var INDEX_WEIGHTS_API_VERSION = "weights-ui-10";
     var INDEX_WEIGHTS_LOCAL_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
     var INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA = 1;
@@ -433,6 +434,17 @@ export function getClientScript() {
       indexSource: "yahoo",
       page: "overview"
     };
+
+    function loadLineVisibilityPreferences() {
+      try {
+        var saved = JSON.parse(localStorage.getItem(LINE_VISIBILITY_STORAGE_KEY) || "{}");
+        return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+      } catch {
+        return {};
+      }
+    }
+
+    var lineVisibilityPreferences = loadLineVisibilityPreferences();
 
     var periodCache = new Map();
     var overviewSourceHealth = new Map();
@@ -673,6 +685,59 @@ export function getClientScript() {
       state.timeIndex = new Map(state.times.map(function (t, i) { return [t, i]; }));
     }
 
+    function lineVisibilityKey(itemOrSymbol) {
+      var symbol = typeof itemOrSymbol === "string" ? itemOrSymbol : itemOrSymbol && itemOrSymbol.symbol;
+      return String(symbol || "").trim().toUpperCase();
+    }
+
+    function isLineVisible(item) {
+      return lineVisibilityPreferences[lineVisibilityKey(item)] !== false;
+    }
+
+    function visibleChartItems() {
+      return state.items.filter(isLineVisible);
+    }
+
+    function saveLineVisibilityPreferences() {
+      try {
+        localStorage.setItem(LINE_VISIBILITY_STORAGE_KEY, JSON.stringify(lineVisibilityPreferences));
+      } catch {
+        // The chart remains usable when browser storage is unavailable.
+      }
+    }
+
+    function renderChartLineControls() {
+      var root = $("chartLineControls");
+      if (!root) return;
+
+      root.hidden = state.items.length === 0;
+      root.innerHTML = [
+        '<span class="chartLineControlsTitle">\u6298\u7ebf</span>',
+        state.items.map(function (item) {
+          var visible = isLineVisible(item);
+          var name = item.nameCN || item.symbol;
+          var title = (visible ? "\u9690\u85cf" : "\u663e\u793a") + name + "\u6298\u7ebf";
+          return [
+            '<label class="chartLineToggle' + (visible ? "" : " is-hidden") + '" style="--line-color:' + esc(item.color) + '" title="' + esc(title) + '">',
+              '<input class="chartLineToggleInput" type="checkbox" data-line-symbol="' + esc(item.symbol) + '"' + (visible ? " checked" : "") + '>',
+              '<span class="chartLineToggleCheck" aria-hidden="true"></span>',
+              '<span class="chartLineToggleSwatch" aria-hidden="true"></span>',
+              '<span class="chartLineToggleName">' + esc(name) + '</span>',
+            '</label>'
+          ].join("");
+        }).join("")
+      ].join("");
+    }
+
+    function setLineVisibility(symbol, visible) {
+      var key = lineVisibilityKey(symbol);
+      if (!key) return;
+      lineVisibilityPreferences[key] = !!visible;
+      saveLineVisibilityPreferences();
+      renderChartLineControls();
+      draw();
+    }
+
     function resizeCanvas() {
       DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
       var rect = canvas.getBoundingClientRect();
@@ -713,11 +778,11 @@ export function getClientScript() {
       return { step: step, ticks: ticks };
     }
 
-    function pctRange() {
+    function pctRange(items) {
       var min = Infinity;
       var max = -Infinity;
 
-      state.items.forEach(function (item) {
+      (items || state.items).forEach(function (item) {
         (item.line || []).forEach(function (point) {
           if (!Number.isFinite(point.pct)) return;
           min = Math.min(min, point.pct);
@@ -755,12 +820,12 @@ export function getClientScript() {
       return spanIsMultiDay() ? (mm + "-" + dd) : (hh + ":" + mi);
     }
 
-    function measureEndLabelMaxWidth(font) {
+    function measureEndLabelMaxWidth(font, items) {
       ctx.save();
       ctx.font = font;
       var maxW = 0;
 
-      state.items.forEach(function (item) {
+      (items || state.items).forEach(function (item) {
         var pct = item.cardChgPct;
         if (!Number.isFinite(pct)) return;
         var text = (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%";
@@ -792,7 +857,7 @@ export function getClientScript() {
 
       var nodes = [];
 
-      state.items.forEach(function (item) {
+      (args.items || state.items).forEach(function (item) {
         var pct = item.cardChgPct;
         if (!Number.isFinite(pct)) return;
 
@@ -882,6 +947,17 @@ export function getClientScript() {
         return;
       }
 
+      var visibleItems = visibleChartItems();
+      if (!visibleItems.length) {
+        ctx.save();
+        ctx.fillStyle = "rgba(230,237,247,.55)";
+        ctx.font = (14 * DPR) + "px ui-monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("\u5df2\u9690\u85cf\u6240\u6709\u6298\u7ebf", W / 2, H / 2);
+        ctx.restore();
+        return;
+      }
+
       var cssW = canvas.getBoundingClientRect().width;
       var isMobile = cssW <= 980;
 
@@ -893,14 +969,14 @@ export function getClientScript() {
       var axisFont = (11 * DPR) + "px " + mono;
       var labelFont = (12 * DPR) + "px " + mono;
 
-      var maxLabelTextW = measureEndLabelMaxWidth(labelFont);
+      var maxLabelTextW = measureEndLabelMaxWidth(labelFont, visibleItems);
       var maxLabelBoxW = Math.max(44 * DPR, maxLabelTextW + 14 * DPR);
       var padR = isMobile ? Math.max(68 * DPR, maxLabelBoxW + 26 * DPR) : 150 * DPR;
 
       var plotW = W - padL - padR;
       var plotH = H - padT - padB;
 
-      var range = pctRange();
+      var range = pctRange(visibleItems);
       var minP = range.min;
       var maxP = range.max;
 
@@ -951,32 +1027,8 @@ export function getClientScript() {
 
       ctx.restore();
 
-      ctx.save();
-      ctx.font = labelFont;
-      ctx.textAlign = "left";
-      ctx.textBaseline = "top";
-
-      var lx = padL;
-      var ly = padT + 6 * DPR;
-
-      state.items.forEach(function (item) {
-        var label = item.nameCN;
-        ctx.fillStyle = item.color;
-        ctx.fillRect(lx, ly + 4 * DPR, 10 * DPR, 10 * DPR);
-        ctx.fillStyle = "rgba(230,237,247,.85)";
-        ctx.fillText(label, lx + 16 * DPR, ly);
-
-        lx += ctx.measureText(label).width + 40 * DPR;
-        if (lx > padL + plotW - 260 * DPR) {
-          lx = padL;
-          ly += 18 * DPR;
-        }
-      });
-
-      ctx.restore();
-
       var lineWidth = isMobile ? 1.35 * DPR : 2 * DPR;
-      state.items.forEach(function (item) {
+      visibleItems.forEach(function (item) {
         var map = item.map;
         if (!map || map.size < 2) return;
 
@@ -1021,7 +1073,15 @@ export function getClientScript() {
 
       ctx.restore();
 
-      drawEndLabels({ padL: padL, padT: padT, plotW: plotW, plotH: plotH, yOf: yOf, font: labelFont });
+      drawEndLabels({
+        padL: padL,
+        padT: padT,
+        plotW: plotW,
+        plotH: plotH,
+        yOf: yOf,
+        font: labelFont,
+        items: visibleItems
+      });
 
       if (state.hoverTime != null) {
         var hoverIndex = state.timeIndex.get(state.hoverTime);
@@ -1039,7 +1099,7 @@ export function getClientScript() {
           var rows = [];
           rows.push("\u65f6\u95f4\uff1a " + fmtBJ(state.hoverTime));
 
-          state.items.forEach(function (item) {
+          visibleItems.forEach(function (item) {
             var p = item.map && item.map.get(state.hoverTime);
             if (!p) return;
 
@@ -1101,7 +1161,7 @@ export function getClientScript() {
 
       var mono = getComputedStyle(document.documentElement).getPropertyValue("--mono").trim();
       var labelFont = (12 * DPR) + "px " + mono;
-      var maxLabelTextW = measureEndLabelMaxWidth(labelFont);
+      var maxLabelTextW = measureEndLabelMaxWidth(labelFont, visibleChartItems());
       var maxLabelBoxW = Math.max(44 * DPR, maxLabelTextW + 14 * DPR);
       var padR = isMobile ? Math.max(68 * DPR, maxLabelBoxW + 26 * DPR) : 150 * DPR;
 
@@ -1136,6 +1196,15 @@ export function getClientScript() {
         draw();
       }
     });
+
+    var chartLineControls = $("chartLineControls");
+    if (chartLineControls) {
+      chartLineControls.addEventListener("change", function (evt) {
+        var input = evt.target && evt.target.closest ? evt.target.closest("input[data-line-symbol]") : null;
+        if (!input) return;
+        setLineVisibility(input.getAttribute("data-line-symbol"), input.checked);
+      });
+    }
 
     function tileHTML(item, period) {
       var is1D = period === "1D";
@@ -3416,6 +3485,7 @@ export function getClientScript() {
       state.times = [];
       state.timeIndex = new Map();
       state.hoverTime = null;
+      renderChartLineControls();
 
       var idxCards = $("idxCards");
       if (idxCards) {
@@ -3606,6 +3676,7 @@ export function getClientScript() {
 
       state.items = items;
       rebuildTimes();
+      renderChartLineControls();
       var overviewItems = sortStarItems(items.map(function (item) {
         return overviewHeatItem(item, q.period, q.asOfMs);
       }));

@@ -119,6 +119,8 @@ export function getHtml() {
               </svg>
             </button>
 
+            <div class="chartLineControls" id="chartLineControls" aria-label="\u6307\u6570\u6298\u7ebf\u663e\u793a\u63a7\u5236" hidden></div>
+
             <div class="chartWrap">
               <canvas id="c"></canvas>
             </div>

@@ -405,6 +405,109 @@ export function getStyles() {
       position:relative;
     }
 
+    .chartLineControls{
+      display:flex;
+      align-items:center;
+      flex-wrap:wrap;
+      gap: 7px 8px;
+      min-height: 48px;
+      padding: 9px 14px;
+      border-bottom: 1px solid rgba(31,43,61,.78);
+      background: rgba(9,13,22,.30);
+      font-family: var(--mono);
+    }
+
+    .chartLineControls[hidden]{ display:none; }
+
+    .chartLineControlsTitle{
+      color: rgba(138,160,198,.88);
+      font-size: 11px;
+      margin-right: 2px;
+      white-space: nowrap;
+    }
+
+    .chartLineToggle{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      min-height: 28px;
+      gap: 7px;
+      padding: 5px 8px;
+      border: 1px solid rgba(70,88,118,.74);
+      border-radius: 6px;
+      color: rgba(230,237,247,.90);
+      background: rgba(255,255,255,.035);
+      cursor:pointer;
+      font-size: 11px;
+      line-height: 1;
+      white-space:nowrap;
+      transition: border-color .16s ease, background .16s ease, opacity .16s ease, color .16s ease;
+    }
+
+    .chartLineToggle:hover{
+      border-color: var(--line-color);
+      background: rgba(255,255,255,.07);
+    }
+
+    .chartLineToggleInput{
+      position:absolute;
+      width:1px;
+      height:1px;
+      opacity:0;
+      pointer-events:none;
+    }
+
+    .chartLineToggleCheck{
+      position:relative;
+      width:14px;
+      height:14px;
+      flex:0 0 14px;
+      border: 1px solid rgba(138,160,198,.75);
+      border-radius: 3px;
+      background: rgba(9,13,22,.58);
+      transition: background .16s ease, border-color .16s ease;
+    }
+
+    .chartLineToggleInput:checked + .chartLineToggleCheck{
+      border-color: var(--line-color);
+      background: var(--line-color);
+    }
+
+    .chartLineToggleInput:checked + .chartLineToggleCheck::after{
+      content:"";
+      position:absolute;
+      left:4px;
+      top:1px;
+      width:4px;
+      height:7px;
+      border: solid rgba(9,13,22,.94);
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    .chartLineToggleInput:focus-visible + .chartLineToggleCheck{
+      outline: 2px solid rgba(255,255,255,.94);
+      outline-offset: 2px;
+    }
+
+    .chartLineToggleSwatch{
+      width:16px;
+      height:3px;
+      flex:0 0 16px;
+      border-radius: 99px;
+      background: var(--line-color);
+    }
+
+    .chartLineToggle.is-hidden{
+      opacity:.55;
+      color: rgba(138,160,198,.88);
+    }
+
+    .chartLineToggle.is-hidden .chartLineToggleName{
+      text-decoration: line-through;
+      text-decoration-color: rgba(138,160,198,.62);
+    }
+
     canvas{
       width:100%;
       height:100%;
@@ -470,6 +573,19 @@ export function getStyles() {
     .chartCard.isFS .chartWrap{ height: 100vh !important; }
     .chartCard.isFS .footer{ display:none; }
     .chartCard.isFS .fsBtn{ top: 12px; right: 12px; }
+    .chartCard.isFS .chartLineControls{
+      position:absolute;
+      top:10px;
+      left:10px;
+      right:56px;
+      z-index:6;
+      padding: 7px 9px;
+      border: 1px solid rgba(31,43,61,.86);
+      border-radius: 8px;
+      background: rgba(9,13,22,.76);
+      box-shadow: 0 10px 30px rgba(0,0,0,.28);
+      backdrop-filter: blur(10px);
+    }
 
     .fsHint{
       position: absolute;
@@ -490,7 +606,11 @@ export function getStyles() {
       line-height: 1.35;
     }
 
-    .chartCard.isFS .fsHint{ display:block; }
+    .chartCard.isFS .fsHint{
+      display:block;
+      top:auto;
+      bottom:12px;
+    }
 
     .tile{
       background: rgba(13,20,32,.72);
