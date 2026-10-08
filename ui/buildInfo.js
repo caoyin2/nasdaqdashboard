@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.66",
+  version: "v1.3.67",
   shortSha: "",
   fullSha: "",
-  message: "Add SSE source icon",
+  message: "Repair Google Finance quote RPC",
 };
