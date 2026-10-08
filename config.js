@@ -151,10 +151,11 @@ export const FUND_LOGO_OPTIONS = [
 ];
 
 export const LINE_COLORS = [
-  "rgba(0,224,255,.95)",
-  "rgba(255,180,0,.95)",
-  "rgba(167,139,250,.95)",
-  "rgba(45,212,191,.95)",
+  "rgba(0, 202, 255, .98)",
+  "rgba(255, 184, 0, .98)",
+  "rgba(255, 77, 166, .98)",
+  "rgba(83, 232, 112, .98)",
+  "rgba(176, 118, 255, .98)",
 ];
 
 export const UP_COLOR = "rgba(255,77,109,.95)";
