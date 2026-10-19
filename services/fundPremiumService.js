@@ -32,6 +32,8 @@ import {
 
 const TENCENT_FUND_PRICE_ZONE_URL = "https://web.ifzq.gtimg.cn/fund/newfund/fundBase/getPriceZone";
 const CHINA_MONEY_USD_CNY_URL = "https://www.chinamoney.com.cn/ags/ms/cm-u-bk-ccpr/CcprHisNew";
+const FX_REQUEST_TIMEOUT_MS = 4000;
+const FX_REQUEST_ATTEMPTS = 2;
 const LOF_SP500_TECH_CODE = "161128";
 const SP500_TECH_INDEX_SYMBOL = "SP500-45";
 const LOF_INDEX_DATA_SOURCE = "google";
@@ -156,7 +158,7 @@ async function fetchSp500TechDailyContext(navDate, tradeDate) {
   };
 }
 
-async function fetchUsdCnyContext(navDate, tradeDate) {
+export async function fetchUsdCnyContext(navDate, tradeDate) {
   const startDate = addDays(navDate, -14) || navDate;
   const url = new URL(CHINA_MONEY_USD_CNY_URL);
   url.searchParams.set("startDate", startDate);
@@ -165,50 +167,90 @@ async function fetchUsdCnyContext(navDate, tradeDate) {
   url.searchParams.set("pageNum", "1");
   url.searchParams.set("pageSize", "30");
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      Accept: "application/json, text/plain, */*",
-      Referer: "https://www.chinamoney.com.cn/",
-      "User-Agent": "Mozilla/5.0 NasdaqDashboard/1.0",
-    },
-    cf: {
-      cacheTtl: 0,
-      cacheEverything: false,
-    },
-  });
+  let lastError;
+  for (let attempt = 0; attempt < FX_REQUEST_ATTEMPTS; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FX_REQUEST_TIMEOUT_MS);
+    url.searchParams.set("_", `${Date.now()}-${attempt}`);
 
-  if (!response.ok) {
-    throw new Error(`ChinaMoney USD/CNY request failed: HTTP ${response.status}`);
+    try {
+      // The official historical-rate page sends POST with query parameters.
+      const response = await fetch(url.toString(), {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          Accept: "application/json, text/plain, */*",
+          Referer: "https://www.chinamoney.com.cn/chinese/bkccpr/",
+          "User-Agent": "Mozilla/5.0 NasdaqDashboard/1.0",
+          "Cache-Control": "no-cache",
+        },
+        cf: {
+          cacheTtl: 0,
+          cacheEverything: false,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`request failed: HTTP ${response.status}`);
+      }
+
+      let json;
+      try {
+        json = await response.json();
+      } catch {
+        throw new Error("response is not valid JSON");
+      }
+      if ((json?.head?.rep_code != null && String(json.head.rep_code) !== "200") ||
+          json?.data?.flagMessage) {
+        throw new Error("upstream rejected the historical-rate query");
+      }
+
+      const currencies = typeof json?.data?.currency === "string" && json.data.currency.trim()
+        ? json.data.currency.split(",").map((value) => value.trim())
+        : (json?.data?.searchlist || json?.data?.head);
+      const rateColumn = Array.isArray(currencies) ? currencies.indexOf("USD/CNY") : 0;
+      if (rateColumn < 0) throw new Error("response does not contain USD/CNY");
+
+      const rows = Array.isArray(json?.records)
+        ? json.records
+            .map((record) => ({
+              date: normalizeDateKey(record?.date),
+              rate: toFiniteNumber(record?.values?.[rateColumn]),
+            }))
+            .filter((record) => record.date && record.date >= startDate && record.date <= tradeDate)
+        : [];
+      if (rows.some((record) => !Number.isFinite(record.rate) || record.rate <= 0)) {
+        throw new Error("response contains an invalid USD/CNY rate");
+      }
+      const navRate = pickOnOrBefore(rows, navDate, (row) => row.date);
+      const tradeRate = pickOnOrBefore(rows, tradeDate, (row) => row.date);
+
+      if (!navRate || !tradeRate) {
+        throw new Error(`central parity unavailable for ${navDate} to ${tradeDate}`);
+      }
+
+      return {
+        source: "ChinaMoney USD/CNY central parity",
+        requestUrl: url.toString(),
+        requestedStartDate: startDate,
+        requestedNavDate: navDate,
+        requestedTradeDate: tradeDate,
+        navDate: navRate.date,
+        navRate: navRate.row.rate,
+        tradeDate: tradeRate.date,
+        tradeRate: tradeRate.row.rate,
+        changePct: (tradeRate.row.rate / navRate.row.rate - 1) * 100,
+      };
+    } catch (error) {
+      lastError = controller.signal.aborted
+        ? new Error(`request timed out after ${FX_REQUEST_TIMEOUT_MS}ms`)
+        : error;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
-  const json = await response.json();
-  const rows = Array.isArray(json?.records)
-    ? json.records
-        .map((record) => ({
-          date: normalizeDateKey(record?.date),
-          rate: toFiniteNumber(record?.values?.[0]),
-        }))
-        .filter((record) => record.date && Number.isFinite(record.rate))
-    : [];
-  const navRate = pickOnOrBefore(rows, navDate, (row) => row.date);
-  const tradeRate = pickOnOrBefore(rows, tradeDate, (row) => row.date);
-
-  if (!navRate || !tradeRate) {
-    throw new Error(`USD/CNY central parity unavailable for ${navDate} to ${tradeDate}`);
-  }
-
-  return {
-    source: "ChinaMoney USD/CNY central parity",
-    requestUrl: url.toString(),
-    requestedStartDate: startDate,
-    requestedNavDate: navDate,
-    requestedTradeDate: tradeDate,
-    navDate: navRate.date,
-    navRate: navRate.row.rate,
-    tradeDate: tradeRate.date,
-    tradeRate: tradeRate.row.rate,
-    changePct: (tradeRate.row.rate / navRate.row.rate - 1) * 100,
-  };
+  throw new Error(`ChinaMoney USD/CNY unavailable after ${FX_REQUEST_ATTEMPTS} attempts: ${lastError?.message || "unknown error"}`);
 }
 
 async function fetchLofBaseInfo(marketSymbol) {

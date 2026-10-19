@@ -386,6 +386,7 @@ export function getClientScript() {
     var DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     var API_TIMEOUT_MS = 15000;
     var OVERVIEW_API_TIMEOUT_MS = 30000;
+    var FUND_PREMIUM_API_TIMEOUT_MS = 30000;
     var COMMON_INDEX_WEIGHTS_TIMEOUT_MS = 45000;
     var OVERVIEW_1D_AUTO_REFRESH_MS = 60 * 1000;
     var LINE_VISIBILITY_STORAGE_KEY = "nasdaqDashboard.overviewLineVisibility.v1";
@@ -394,7 +395,7 @@ export function getClientScript() {
     var INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA = 1;
     var INDEX_WEIGHTS_LOCAL_CACHE_PREFIX = "nasdaqDashboard.indexWeights." + INDEX_WEIGHTS_API_VERSION + ".";
     var SP500_SECTOR_API_VERSION = "20260406a";
-    var FUND_PREMIUM_API_VERSION = "fund-quote-resilience-v1";
+    var FUND_PREMIUM_API_VERSION = "fund-fx-resilience-v2";
     var COMMON_WEIGHTS_CODE = "COMMON";
     var WEIGHTS_INDEX_OPTIONS = [
       { code: COMMON_WEIGHTS_CODE, label: "\\u5171\\u540c\\u6210\\u4efd\\u80a1" },
@@ -3393,7 +3394,7 @@ export function getClientScript() {
       var timer = setTimeout(function () {
         timedOut = true;
         controller.abort();
-      }, API_TIMEOUT_MS);
+      }, FUND_PREMIUM_API_TIMEOUT_MS);
 
       try {
         var res = await fetch("/api/fund-premiums?v=" + encodeURIComponent(FUND_PREMIUM_API_VERSION), {
@@ -3409,7 +3410,7 @@ export function getClientScript() {
           return null;
         }
         if (timedOut) {
-          throw new Error("\u57fa\u91d1\u6298\u6ea2\u4ef7\u9762\u677f\u8bf7\u6c42\u8d85\u65f6\uff0815\u79d2\uff09");
+          throw new Error("\u57fa\u91d1\u6298\u6ea2\u4ef7\u9762\u677f\u8bf7\u6c42\u8d85\u65f6\uff0830\u79d2\uff09");
         }
         throw error;
       } finally {

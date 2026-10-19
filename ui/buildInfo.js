@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.69",
+  version: "v1.3.70",
   shortSha: "",
   fullSha: "",
-  message: "Add index line visibility controls",
+  message: "Repair LOF historical exchange rate requests",
 };
