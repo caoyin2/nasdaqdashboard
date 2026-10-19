@@ -724,6 +724,7 @@ export function getClientScript() {
               '<span class="chartLineToggleCheck" aria-hidden="true"></span>',
               '<span class="chartLineToggleSwatch" aria-hidden="true"></span>',
               '<span class="chartLineToggleName">' + esc(name) + '</span>',
+              '<span class="chartLineToggleSymbol">' + esc(item.symbol) + '</span>',
             '</label>'
           ].join("");
         }).join("")
@@ -835,6 +836,59 @@ export function getClientScript() {
 
       ctx.restore();
       return maxW;
+    }
+
+    function chartLayout(items) {
+      var W = canvas.width;
+      var H = canvas.height;
+      var mono = getComputedStyle(document.documentElement).getPropertyValue("--mono").trim();
+      var axisFont = (11 * DPR) + "px " + mono;
+      var labelFont = (12 * DPR) + "px " + mono;
+      var isMobile = canvas.getBoundingClientRect().width <= 980;
+      var range = pctRange(items);
+      var ticks = niceTicks(range.min, range.max, 7).ticks.filter(function (tick) {
+        return tick >= range.min && tick <= range.max;
+      });
+
+      ctx.save();
+      ctx.font = axisFont;
+      var timeLabelW = [state.times[0], state.times[state.times.length - 1]].reduce(function (maxW, time) {
+        return Math.max(maxW, ctx.measureText(axisLabelForTime(time)).width);
+      }, 0);
+      var axisLabelW = ticks.reduce(function (maxW, tick) {
+        return Math.max(maxW, ctx.measureText(tick.toFixed(2) + "%").width);
+      }, 0);
+      ctx.restore();
+
+      var labelBoxW = Math.max(44 * DPR, measureEndLabelMaxWidth(labelFont, items) + 14 * DPR);
+      var padL = Math.max(axisLabelW + 12 * DPR, timeLabelW / 2 + 4 * DPR);
+      var padR = Math.max(isMobile ? 68 * DPR : 150 * DPR, labelBoxW + 26 * DPR);
+      var padT = 14 * DPR;
+      var padB = 30 * DPR;
+      var plotW = Math.max(DPR, W - padL - padR);
+      var plotH = Math.max(DPR, H - padT - padB);
+      var timeIntervals = Math.max(1, Math.min(6, state.times.length - 1, Math.floor(plotW / (timeLabelW + 12 * DPR))));
+      return {
+        padL: padL, padR: padR, padT: padT, padB: padB,
+        plotW: plotW, plotH: plotH, range: range, ticks: ticks,
+        axisFont: axisFont, labelFont: labelFont, isMobile: isMobile,
+        timeIntervals: timeIntervals
+      };
+    }
+
+    function wrapChartText(text, maxWidth) {
+      var lines = [];
+      var line = "";
+      Array.from(text).forEach(function (char) {
+        if (line && ctx.measureText(line + char).width > maxWidth) {
+          lines.push(line);
+          line = char;
+        } else {
+          line += char;
+        }
+      });
+      if (line) lines.push(line);
+      return lines;
     }
 
     function drawEndLabels(args) {
@@ -959,25 +1013,15 @@ export function getClientScript() {
         return;
       }
 
-      var cssW = canvas.getBoundingClientRect().width;
-      var isMobile = cssW <= 980;
-
-      var padL = 14 * DPR;
-      var padT = 14 * DPR;
-      var padB = 30 * DPR;
-
-      var mono = getComputedStyle(document.documentElement).getPropertyValue("--mono").trim();
-      var axisFont = (11 * DPR) + "px " + mono;
-      var labelFont = (12 * DPR) + "px " + mono;
-
-      var maxLabelTextW = measureEndLabelMaxWidth(labelFont, visibleItems);
-      var maxLabelBoxW = Math.max(44 * DPR, maxLabelTextW + 14 * DPR);
-      var padR = isMobile ? Math.max(68 * DPR, maxLabelBoxW + 26 * DPR) : 150 * DPR;
-
-      var plotW = W - padL - padR;
-      var plotH = H - padT - padB;
-
-      var range = pctRange(visibleItems);
+      var layout = chartLayout(visibleItems);
+      var isMobile = layout.isMobile;
+      var padL = layout.padL;
+      var padT = layout.padT;
+      var plotW = layout.plotW;
+      var plotH = layout.plotH;
+      var axisFont = layout.axisFont;
+      var labelFont = layout.labelFont;
+      var range = layout.range;
       var minP = range.min;
       var maxP = range.max;
 
@@ -995,17 +1039,16 @@ export function getClientScript() {
       ctx.lineWidth = 1 * DPR;
       ctx.font = axisFont;
       ctx.fillStyle = "rgba(138,160,198,.92)";
-      ctx.textAlign = "left";
+      ctx.textAlign = "right";
       ctx.textBaseline = "middle";
 
-      niceTicks(minP, maxP, 7).ticks.forEach(function (tick) {
-        if (tick < minP || tick > maxP) return;
+      layout.ticks.forEach(function (tick) {
         var y = yOf(tick);
         ctx.beginPath();
         ctx.moveTo(padL, y);
         ctx.lineTo(padL + plotW, y);
         ctx.stroke();
-        ctx.fillText(tick.toFixed(2) + "%", padL + plotW + 8 * DPR, y);
+        ctx.fillText(tick.toFixed(2) + "%", padL - 8 * DPR, y);
       });
 
       var y0 = yOf(0);
@@ -1018,8 +1061,8 @@ export function getClientScript() {
       ctx.stroke();
       ctx.restore();
 
-      for (var k = 0; k <= 6; k++) {
-        var x = padL + plotW * k / 6;
+      for (var k = 0; k <= layout.timeIntervals; k++) {
+        var x = padL + plotW * k / layout.timeIntervals;
         ctx.beginPath();
         ctx.moveTo(x, padT);
         ctx.lineTo(x, padT + plotH);
@@ -1066,8 +1109,8 @@ export function getClientScript() {
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
 
-      for (var labelIndex = 0; labelIndex <= 6; labelIndex++) {
-        var i2 = Math.floor((state.times.length - 1) * (labelIndex / 6));
+      for (var labelIndex = 0; labelIndex <= layout.timeIntervals; labelIndex++) {
+        var i2 = Math.round((state.times.length - 1) * (labelIndex / layout.timeIntervals));
         var x2 = xOf(i2);
         ctx.fillText(axisLabelForTime(state.times[i2]), x2, padT + plotH + 6 * DPR);
       }
@@ -1117,18 +1160,22 @@ export function getClientScript() {
 
           ctx.font = labelFont;
           var pad = 10 * DPR;
-          var w = Math.max.apply(null, rows.map(function (s) { return ctx.measureText(s).width; })) + pad * 2;
+          var maxTooltipW = W - 16 * DPR;
+          rows = rows.reduce(function (lines, row) {
+            return lines.concat(wrapChartText(row, maxTooltipW - pad * 2));
+          }, []);
+          var w = Math.min(maxTooltipW, Math.max.apply(null, rows.map(function (s) { return ctx.measureText(s).width; })) + pad * 2);
           var h = rows.length * 16 * DPR + pad * 2;
 
-          var minX = padL;
-          var maxX = padL + plotW - w;
+          var minX = 8 * DPR;
+          var maxX = W - 8 * DPR - w;
           var bxTry = hoverX + 12 * DPR;
           if (bxTry + w > padL + plotW) {
             bxTry = hoverX - 12 * DPR - w;
           }
 
           var bx = maxX < minX ? minX : Math.min(maxX, Math.max(minX, bxTry));
-          var by = padT + 12 * DPR;
+          var by = Math.max(4 * DPR, Math.min(padT + 12 * DPR, H - h - 4 * DPR));
 
           ctx.fillStyle = "rgba(9,13,22,.70)";
           ctx.strokeStyle = "rgba(31,43,61,.85)";
@@ -1149,25 +1196,15 @@ export function getClientScript() {
     }
 
     function hitTestTime(evt) {
+      if (state.times.length < 2) return null;
       var rect = canvas.getBoundingClientRect();
       var x = (evt.clientX - rect.left) * DPR;
       var y = (evt.clientY - rect.top) * DPR;
-      var W = canvas.width;
-      var cssW = rect.width;
-      var isMobile = cssW <= 980;
-
-      var padL = 14 * DPR;
-      var padT = 14 * DPR;
-      var padB = 30 * DPR;
-
-      var mono = getComputedStyle(document.documentElement).getPropertyValue("--mono").trim();
-      var labelFont = (12 * DPR) + "px " + mono;
-      var maxLabelTextW = measureEndLabelMaxWidth(labelFont, visibleChartItems());
-      var maxLabelBoxW = Math.max(44 * DPR, maxLabelTextW + 14 * DPR);
-      var padR = isMobile ? Math.max(68 * DPR, maxLabelBoxW + 26 * DPR) : 150 * DPR;
-
-      var plotW = W - padL - padR;
-      var plotH = canvas.height - padT - padB;
+      var layout = chartLayout(visibleChartItems());
+      var padL = layout.padL;
+      var padT = layout.padT;
+      var plotW = layout.plotW;
+      var plotH = layout.plotH;
 
       if (x < padL || x > padL + plotW || y < padT || y > padT + plotH) return null;
 

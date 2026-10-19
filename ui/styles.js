@@ -304,7 +304,7 @@ export function getStyles() {
     .grid{
       display:grid;
       gap: 12px;
-      grid-template-columns: 1fr 520px;
+      grid-template-columns: minmax(0, 1fr) 520px;
       align-items: stretch;
     }
 
@@ -402,8 +402,12 @@ export function getStyles() {
 
     .chartWrap{
       height: 660px;
+      min-width: 0;
+      min-height: 0;
       position:relative;
     }
+
+    .chartCard{ min-width: 0; }
 
     .chartLineControls{
       display:flex;
@@ -418,6 +422,8 @@ export function getStyles() {
     }
 
     .chartLineControls[hidden]{ display:none; }
+
+    .chartLineToggleSymbol{ display:none; }
 
     .chartLineControlsTitle{
       color: rgba(138,160,198,.88);
@@ -559,32 +565,40 @@ export function getStyles() {
 
     .fsBtn:active{ transform: scale(.98); }
 
-    .chartCard.isFS{
+    .chartCard.isFS,
+    .chartCard:fullscreen{
+      display:flex;
+      flex-direction:column;
       position: fixed !important;
       inset: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
+      height: 100dvh !important;
       border-radius: 0 !important;
       border: 0 !important;
       margin: 0 !important;
       z-index: 9999 !important;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
 
-    .chartCard.isFS .chartWrap{ height: 100vh !important; }
-    .chartCard.isFS .footer{ display:none; }
-    .chartCard.isFS .fsBtn{ top: 12px; right: 12px; }
-    .chartCard.isFS .chartLineControls{
-      position:absolute;
-      top:10px;
-      left:10px;
-      right:56px;
-      z-index:6;
-      padding: 7px 9px;
-      border: 1px solid rgba(31,43,61,.86);
-      border-radius: 8px;
-      background: rgba(9,13,22,.76);
-      box-shadow: 0 10px 30px rgba(0,0,0,.28);
-      backdrop-filter: blur(10px);
+    .chartCard.isFS .chartWrap,
+    .chartCard:fullscreen .chartWrap{
+      flex: 1 1 0;
+      height: auto !important;
+    }
+    .chartCard.isFS .footer,
+    .chartCard:fullscreen .footer{ display:none; }
+    .chartCard.isFS .fsBtn,
+    .chartCard:fullscreen .fsBtn{
+      display:flex;
+      top: calc(10px + env(safe-area-inset-top));
+      right: calc(10px + env(safe-area-inset-right));
+    }
+    .chartCard.isFS .chartLineControls,
+    .chartCard:fullscreen .chartLineControls{
+      flex: 0 0 auto;
+      min-height: 56px;
+      padding-right: 56px;
     }
 
     .fsHint{
@@ -604,12 +618,6 @@ export function getStyles() {
       font-size: 12px;
       color: rgba(230,237,247,.88);
       line-height: 1.35;
-    }
-
-    .chartCard.isFS .fsHint{
-      display:block;
-      top:auto;
-      bottom:12px;
     }
 
     .tile{
@@ -2857,6 +2865,9 @@ export function getStyles() {
       .card.chart{ order: 2; }
 
       .chartWrap{ height: 420px; }
+      .chartLineControls{ padding-right: 56px; }
+      .chartLineToggleName{ display:none; }
+      .chartLineToggleSymbol{ display:inline; }
       :root{ --kv-val-w: 124px; }
 
       .fsBtn{ display:flex; }
@@ -3308,8 +3319,5 @@ export function getStyles() {
       }
     }
 
-    @supports (-webkit-touch-callout: none) {
-      .chartCard.isFS .chartWrap{ height: 100vh; }
-    }
   `;
 }
