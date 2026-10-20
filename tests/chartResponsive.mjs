@@ -55,6 +55,19 @@ async function verifyChart(page, label, { fullscreen = false, tooltip = false } 
       bounds: bounds.toJSON(), card: card.toJSON(), controls: controls.toJSON(), coloredPixels,
       text: frame.text, lines: frame.lines,
       clippedText: frame.text.filter((t) => t.left < -0.5 || t.right > canvas.width + 0.5 || t.top < -0.5 || t.bottom > canvas.height + 0.5),
+      legends: Array.from(document.querySelectorAll(".chartLineToggle")).map((el) => {
+        const name = el.querySelector(".chartLineToggleName");
+        const range = document.createRange();
+        range.selectNodeContents(name);
+        const bounds = el.getBoundingClientRect();
+        const style = getComputedStyle(name);
+        return {
+          symbol: el.querySelector("input").dataset.lineSymbol, text: name.textContent,
+          visible: style.display !== "none" && style.visibility !== "hidden" && name.getBoundingClientRect().width > 0,
+          clipped: Array.from(range.getClientRects()).some((r) =>
+            r.left < bounds.left - 1 || r.right > bounds.right + 1 || r.top < bounds.top - 1 || r.bottom > bounds.bottom + 1),
+        };
+      }),
       controlsOverlap: Array.from(document.querySelectorAll(".chartLineToggle")).some((el) => {
         const r = el.getBoundingClientRect();
         return r.left < fs.right && r.right > fs.left && r.top < fs.bottom && r.bottom > fs.top;
@@ -66,6 +79,11 @@ async function verifyChart(page, label, { fullscreen = false, tooltip = false } 
   assert.ok(result.coloredPixels > 150, `${label}: missing chart lines`);
   assert.deepEqual(result.clippedText, [], `${label}: clipped canvas text`);
   assert.equal(result.controlsOverlap, false, `${label}: fullscreen button covers line controls`);
+  for (const legend of result.legends) {
+    assert.equal(legend.text, INDEXES.find((item) => item.symbol === legend.symbol)?.nameCN, `${label}: incomplete Chinese index name`);
+    assert.equal(legend.visible, true, `${label}: Chinese index name is hidden`);
+    assert.equal(legend.clipped, false, `${label}: Chinese index name is clipped`);
+  }
   const timeLabels = result.text.filter((t) => /^\d{2}:\d{2}$|^\d{2}-\d{2}$|^\d{4}$/.test(t.text));
   assert.ok(timeLabels.length >= 2 && timeLabels.length <= 7, `${label}: time ticks missing`);
   for (let i = 1; i < timeLabels.length; i++) {

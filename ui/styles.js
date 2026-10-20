@@ -423,8 +423,6 @@ export function getStyles() {
 
     .chartLineControls[hidden]{ display:none; }
 
-    .chartLineToggleSymbol{ display:none; }
-
     .chartLineControlsTitle{
       color: rgba(138,160,198,.88);
       font-size: 11px;
@@ -2866,8 +2864,16 @@ export function getStyles() {
 
       .chartWrap{ height: 420px; }
       .chartLineControls{ padding-right: 56px; }
-      .chartLineToggleName{ display:none; }
-      .chartLineToggleSymbol{ display:inline; }
+      .chartLineToggle{
+        min-width: 0;
+        max-width: 100%;
+      }
+      .chartLineToggleName{
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.45;
+      }
       :root{ --kv-val-w: 124px; }
 
       .fsBtn{ display:flex; }

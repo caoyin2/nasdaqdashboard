@@ -724,7 +724,6 @@ export function getClientScript() {
               '<span class="chartLineToggleCheck" aria-hidden="true"></span>',
               '<span class="chartLineToggleSwatch" aria-hidden="true"></span>',
               '<span class="chartLineToggleName">' + esc(name) + '</span>',
-              '<span class="chartLineToggleSymbol">' + esc(item.symbol) + '</span>',
             '</label>'
           ].join("");
         }).join("")
