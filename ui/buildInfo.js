@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.74",
+  version: "v1.3.75",
   shortSha: "",
   fullSha: "",
-  message: "Move card warning punctuation after the label",
+  message: "Simplify ETF card suspension warnings",
 };

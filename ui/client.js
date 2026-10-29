@@ -2276,7 +2276,7 @@ export function getClientScript() {
       var premiumClass = fundPremiumRateClass(item.premiumPct);
       var haltRisk = hasFundPremiumHaltRisk(item);
       var haltRiskHint = haltRisk
-        ? '<div class="fundPremiumHaltRisk"><strong>次一交易日停牌预警！</strong><span>溢价≥10% · 以基金公告为准</span></div>'
+        ? '<div class="fundPremiumHaltRisk"><strong>次一交易日停牌预警！</strong></div>'
         : "";
       var lofPremiumError = item && item.lofPremiumError ? String(item.lofPremiumError) : "";
       var isLofDetail = String(item && item.code || "") === "161128" && !lofPremiumError;

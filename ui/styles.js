@@ -1959,7 +1959,6 @@ export function getStyles() {
     }
 
     .fundPremiumHaltRisk strong{ font-size: 13px; }
-    .fundPremiumHaltRisk span{ color: #ffd5cc; font-size: 11px; }
 
     .fundPremiumMetaRight{
       display:grid;
