@@ -63,6 +63,9 @@ try {
     await page.locator('#pageSeg [data-page="fundPremiums"]').click();
     await page.locator(".fundPremiumTile").first().waitFor();
     assert.equal(await page.locator(".hasHaltRisk").count(), expectedRisk);
+    assert.deepEqual(await page.locator(".fundPremiumHaltRisk strong").allTextContents(),
+      Array(expectedRisk).fill("次一交易日停牌预警！"));
+    assert.equal(await page.locator(".fundPremiumRiskIcon").textContent(), "!");
     assert.ok((await page.locator(".fundPremiumRiskBanner").textContent()).includes(expectedRisk + "只ETF"));
     assert.ok((await page.locator(".fundPremiumRiskBanner").textContent()).includes("以基金公告为准"));
     for (const item of cases) {
