@@ -1901,6 +1901,66 @@ export function getStyles() {
       align-items:flex-start;
     }
 
+    .fundPremiumRiskBanner{
+      display:flex;
+      align-items:flex-start;
+      gap: 12px;
+      margin: 0 14px 14px;
+      padding: 16px;
+      border-left: 4px solid #ff655d;
+      background: #461c27;
+      color: #fff1ec;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .fundPremiumRiskIcon{
+      display:grid;
+      place-items:center;
+      flex: 0 0 30px;
+      width: 30px;
+      height: 30px;
+      border: 2px solid #ffb1a5;
+      border-radius: 50%;
+      color: #ffb1a5;
+      font-size: 22px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .fundPremiumRiskBanner strong{
+      display:block;
+      font-size: 17px;
+      line-height: 1.5;
+    }
+
+    .fundPremiumRiskBanner p{
+      margin: 6px 0 0;
+      color: #f5bdb5;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .fundPremiumTile.hasHaltRisk{
+      outline: 2px solid #ff9c8c;
+      outline-offset: -2px;
+    }
+
+    .fundPremiumHaltRisk{
+      display:grid;
+      gap: 4px;
+      min-width: 0;
+      padding: 10px 12px;
+      border-left: 3px solid #ffd189;
+      background: #5b2027;
+      color: #ffe2a8;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .fundPremiumHaltRisk strong{ font-size: 13px; }
+    .fundPremiumHaltRisk span{ color: #ffd5cc; font-size: 11px; }
+
     .fundPremiumMetaRight{
       display:grid;
       justify-items:end;

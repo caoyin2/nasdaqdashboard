@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.72",
+  version: "v1.3.73",
   shortSha: "",
   fullSha: "",
-  message: "Restore Chinese index chart legends on mobile",
+  message: "Highlight high-premium ETF suspension risk",
 };

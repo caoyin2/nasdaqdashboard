@@ -2037,6 +2037,10 @@ export function getClientScript() {
       var latestText = latestTradeDateText(cached && cached.tradeDate);
       var statusClass = fundPremiumState.statusType === "err" ? "err" : "ok";
       var maxAbs = items && items.length ? fundPremiumMaxAbs(items) : 1;
+      var haltRiskItems = (items || []).filter(hasFundPremiumHaltRisk);
+      var haltRiskBanner = haltRiskItems.length
+        ? '<aside class="fundPremiumRiskBanner" role="status"><span class="fundPremiumRiskIcon" aria-hidden="true">!</span><div><strong>' + haltRiskItems.length + '只ETF高溢价：警惕次一交易日停牌</strong><p>溢价率已达到10%。是否停牌、停牌时段以基金公告为准；此提醒不适用于LOF。</p></div></aside>'
+        : "";
       var detailItem = fundPremiumState.detailSymbol ? getFundPremiumDetailItem(fundPremiumState.detailSymbol) : null;
       var manageStatus = fundListState.loading
         ? "\u6b63\u5728\u4ece KV \u8bfb\u53d6\u5217\u8868..."
@@ -2129,6 +2133,7 @@ export function getClientScript() {
             ]),
             '<div class="starPanelMetaText">' + esc(latestText) + '</div>',
           '</div>',
+          haltRiskBanner,
           gridHtml,
           modalHtml,
         '</div>'
@@ -2253,6 +2258,14 @@ export function getClientScript() {
       return "\u5e73\u4ef7 0.00%";
     }
 
+    function hasFundPremiumHaltRisk(item) {
+      if (!item || !Number.isFinite(item.premiumPct) || item.premiumPct < 10 || item.lofPremiumError) return false;
+      var code = String(item.code || item.symbol || "").trim().replace(/^(sh|sz)/i, "");
+      // Identify ETF code families even when a short quote name omits "ETF".
+      if (!/^(159[0-9]{3}|5[1268][0-9]{4})$/.test(code)) return false;
+      return !/LOF/i.test(String(item.nameCN || "")) && !item.lofPremium;
+    }
+
     function fundPremiumTileHTML(item, maxAbs) {
       var premiumValue = Number.isFinite(item && item.premiumPct) ? item.premiumPct : NaN;
       var intensity = clamp(Math.abs(Number.isFinite(premiumValue) ? premiumValue : 0) / (maxAbs || 1), 0, 1);
@@ -2261,6 +2274,10 @@ export function getClientScript() {
       var glow = fundPremiumTint(premiumValue, 0.16 + intensity * 0.24);
       var tone = fundPremiumToneClass(premiumValue);
       var premiumClass = fundPremiumRateClass(item.premiumPct);
+      var haltRisk = hasFundPremiumHaltRisk(item);
+      var haltRiskHint = haltRisk
+        ? '<div class="fundPremiumHaltRisk"><strong>! 次一交易日停牌预警</strong><span>溢价≥10% · 以基金公告为准</span></div>'
+        : "";
       var lofPremiumError = item && item.lofPremiumError ? String(item.lofPremiumError) : "";
       var isLofDetail = String(item && item.code || "") === "161128" && !lofPremiumError;
       var detailAttr = isLofDetail ? ' data-fund-lof-detail="1" aria-label="161128 \u957f\u6309 3 \u79d2\u67e5\u770b\u6298\u6ea2\u4ef7\u8ba1\u7b97\u8be6\u60c5"' : "";
@@ -2270,7 +2287,8 @@ export function getClientScript() {
         : "";
 
       return [
-        '<article class="sectorHeatTile fundPremiumTile ' + tone + '" data-symbol="' + esc(item.symbol) + '"' + detailAttr + ' style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
+        '<article class="sectorHeatTile fundPremiumTile ' + tone + (haltRisk ? ' hasHaltRisk' : '') + '" data-symbol="' + esc(item.symbol) + '"' + detailAttr + ' style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
+          haltRiskHint,
           '<div class="sectorHeatHeader">',
             '<div class="starIdentity">',
               '<div class="starIconWrap fundIconWrap">',
