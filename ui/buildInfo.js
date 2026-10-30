@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.75",
+  version: "v1.3.76",
   shortSha: "",
   fullSha: "",
-  message: "Simplify ETF card suspension warnings",
+  message: "Remove premium banner and S&P 500 weights",
 };

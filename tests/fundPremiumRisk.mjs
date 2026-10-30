@@ -67,16 +67,15 @@ try {
       Array(expectedRisk).fill("次一交易日停牌预警！"));
     assert.deepEqual(await page.locator(".fundPremiumHaltRisk").allTextContents(),
       Array(expectedRisk).fill("次一交易日停牌预警！"));
-    assert.equal(await page.locator(".fundPremiumRiskIcon").textContent(), "!");
-    assert.ok((await page.locator(".fundPremiumRiskBanner").textContent()).includes(expectedRisk + "只ETF"));
-    assert.ok((await page.locator(".fundPremiumRiskBanner").textContent()).includes("以基金公告为准"));
+    assert.equal(await page.locator(".fundPremiumRiskBanner").count(), 0);
+    assert.equal(await page.locator(".fundPremiumRiskIcon").count(), 0);
     for (const item of cases) {
       const symbol = item.symbol || (/^5/.test(item.code) ? "sh" : "sz") + item.code;
       assert.equal(await page.locator(`.fundPremiumTile[data-symbol="${symbol}"] .fundPremiumHaltRisk`).count(), item.risk ? 1 : 0,
         `${viewport.width}: wrong risk result for ${symbol}`);
     }
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "horizontal page overflow");
-    const clipped = await page.locator(".fundPremiumRiskBanner, .fundPremiumHaltRisk").evaluateAll((elements) => elements.some((el) => el.scrollWidth > el.clientWidth + 1));
+    const clipped = await page.locator(".fundPremiumHaltRisk").evaluateAll((elements) => elements.some((el) => el.scrollWidth > el.clientWidth + 1));
     assert.equal(clipped, false, "risk text clipped");
     await page.screenshot({ path: fileURLToPath(new URL(`${viewport.width}.png`, outputDir)) });
 

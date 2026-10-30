@@ -10,8 +10,6 @@ const ISHARES_NDX_PRODUCT_URL =
   "https://www.ishares.com/uk/individual/en/products/253741/ishares-nasdaq-100-ucits-etf";
 const ISHARES_SP50045_PRODUCT_URL =
   "https://www.ishares.com/uk/individual/en/products/280510/ishares-sp-500-information-technology-sector-ucits-etf";
-const ISHARES_SP500_PRODUCT_URL =
-  "https://www.ishares.com/us/products/239726/ishares-core-sp-500-etf";
 
 const INDEX_WEIGHT_CONFIG = {
   NDXTMC: {
@@ -29,16 +27,6 @@ const INDEX_WEIGHT_CONFIG = {
     productId: "280510",
     productPageUrl: ISHARES_SP50045_PRODUCT_URL,
   },
-  SP500: {
-    source: "ishares",
-    indexCode: "SP500",
-    title: "\u6807\u666e500",
-    showDataDate: true,
-    productId: "239726",
-    productPageUrl: ISHARES_SP500_PRODUCT_URL,
-    isharesLocale: "en_US",
-    isharesTargetSite: "ishares-us",
-  },
   NDX: {
     source: "ishares",
     indexCode: "NDX",
@@ -49,7 +37,7 @@ const INDEX_WEIGHT_CONFIG = {
   },
 };
 
-const COMMON_INDEX_CODES = ["NDXTMC", "SP500-45", "NDX", "SP500"];
+const COMMON_INDEX_CODES = ["NDXTMC", "SP500-45", "NDX"];
 const INDEX_WEIGHT_META_OPTIONS = Object.freeze({
   allowFetch: true,
   requireKvIcon: true,

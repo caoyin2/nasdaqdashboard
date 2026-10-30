@@ -390,7 +390,7 @@ export function getClientScript() {
     var COMMON_INDEX_WEIGHTS_TIMEOUT_MS = 45000;
     var OVERVIEW_1D_AUTO_REFRESH_MS = 60 * 1000;
     var LINE_VISIBILITY_STORAGE_KEY = "nasdaqDashboard.overviewLineVisibility.v1";
-    var INDEX_WEIGHTS_API_VERSION = "weights-ui-10";
+    var INDEX_WEIGHTS_API_VERSION = "weights-ui-11";
     var INDEX_WEIGHTS_LOCAL_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
     var INDEX_WEIGHTS_LOCAL_CACHE_SCHEMA = 1;
     var INDEX_WEIGHTS_LOCAL_CACHE_PREFIX = "nasdaqDashboard.indexWeights." + INDEX_WEIGHTS_API_VERSION + ".";
@@ -401,8 +401,7 @@ export function getClientScript() {
       { code: COMMON_WEIGHTS_CODE, label: "\\u5171\\u540c\\u6210\\u4efd\\u80a1" },
       { code: "NDXTMC", label: "\\u7eb3\\u6307\\u79d1\\u6280\\u52a0\\u6743" },
       { code: "SP500-45", label: "\\u6807\\u666e\\u4fe1\\u606f\\u79d1\\u6280" },
-      { code: "NDX", label: "\\u7eb3\\u65af\\u8fbe\\u514b100" },
-      { code: "SP500", label: "\\u6807\\u666e500" }
+      { code: "NDX", label: "\\u7eb3\\u65af\\u8fbe\\u514b100" }
     ];
     var COMMON_WEIGHT_INDEX_OPTIONS = WEIGHTS_INDEX_OPTIONS.filter(function (option) {
       return option.code !== COMMON_WEIGHTS_CODE;
@@ -2037,10 +2036,6 @@ export function getClientScript() {
       var latestText = latestTradeDateText(cached && cached.tradeDate);
       var statusClass = fundPremiumState.statusType === "err" ? "err" : "ok";
       var maxAbs = items && items.length ? fundPremiumMaxAbs(items) : 1;
-      var haltRiskItems = (items || []).filter(hasFundPremiumHaltRisk);
-      var haltRiskBanner = haltRiskItems.length
-        ? '<aside class="fundPremiumRiskBanner" role="status"><span class="fundPremiumRiskIcon" aria-hidden="true">!</span><div><strong>' + haltRiskItems.length + '只ETF高溢价：警惕次一交易日停牌</strong><p>溢价率已达到10%。是否停牌、停牌时段以基金公告为准；此提醒不适用于LOF。</p></div></aside>'
-        : "";
       var detailItem = fundPremiumState.detailSymbol ? getFundPremiumDetailItem(fundPremiumState.detailSymbol) : null;
       var manageStatus = fundListState.loading
         ? "\u6b63\u5728\u4ece KV \u8bfb\u53d6\u5217\u8868..."
@@ -2133,7 +2128,6 @@ export function getClientScript() {
             ]),
             '<div class="starPanelMetaText">' + esc(latestText) + '</div>',
           '</div>',
-          haltRiskBanner,
           gridHtml,
           modalHtml,
         '</div>'
