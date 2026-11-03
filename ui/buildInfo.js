@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.79",
+  version: "v1.3.80",
   shortSha: "",
   fullSha: "",
-  message: "Remove the suspension risk arrow",
+  message: "Expand the fund suspension risk bar",
 };

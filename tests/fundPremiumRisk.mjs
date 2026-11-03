@@ -95,12 +95,19 @@ try {
         const bounds = summary.getBoundingClientRect();
         return { boundary: track.left + fill.width, slashCenter: slash.left + slash.width / 2,
           labelBottom: Math.max(numerator.bottom, slash.bottom, denominator.bottom), trackTop: track.top,
-          labelLeft: numerator.left, labelRight: denominator.right, left: bounds.left, right: bounds.right };
+          labelLeft: numerator.left, labelRight: denominator.right, left: bounds.left, right: bounds.right,
+          trackLeft: track.left, trackRight: track.right };
       });
       assert.ok(Math.abs(geometry.boundary - geometry.slashCenter) < 0.75, `slash does not align with the color boundary: ${JSON.stringify(geometry)}`);
       assert.equal(await page.locator(".fundPremiumRiskArrow").count(), 0, "removed risk arrow must not return");
       assert.ok(geometry.labelBottom <= geometry.trackTop, "numbers overlap the track");
-      assert.ok(geometry.labelLeft >= geometry.left && geometry.labelRight <= geometry.right, "counts overflow at the scale endpoints");
+      assert.ok(geometry.labelLeft >= geometry.left && geometry.labelRight <= geometry.right, `counts overflow at the scale endpoints: ${JSON.stringify(geometry)}`);
+      const leftGap = geometry.trackLeft - geometry.left;
+      const rightGap = geometry.right - geometry.trackRight;
+      assert.ok(leftGap < 0.75 || rightGap < 0.75, "unnecessary gutters on both sides of the track");
+      if (risk / total >= 0.2 && risk / total <= 0.8) {
+        assert.ok(leftGap < 0.75 && rightGap < 0.75, "track must align with panel content when counts fit");
+      }
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "horizontal page overflow");
     }
     async function refreshFunds() {

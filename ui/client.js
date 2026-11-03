@@ -2285,7 +2285,7 @@ export function getClientScript() {
             '<strong>\u4e0b\u4e00\u4ea4\u6613\u65e5\u505c\u724c\u9884\u8b66</strong>',
             '<div class="fundPremiumRiskStats"><b>' + riskPct + '%</b></div>',
           '</div>',
-          '<div class="fundPremiumRiskScale" style="--risk-boundary:' + riskBoundaryPct + '%;--risk-digits:' + String(total).length + '">',
+          '<div class="fundPremiumRiskScale" style="--risk-boundary:' + riskBoundaryPct + '%;--risk-share:' + (riskCount / total) + ';--risk-other-share:' + (1 - riskCount / total) + ';--risk-count-digits:' + String(riskCount).length + ';--risk-digits:' + String(total).length + '">',
             '<strong class="fundPremiumRiskCount"><span class="fundPremiumRiskNumerator">' + riskCount + '</span><span class="fundPremiumRiskSlash">/</span><span class="fundPremiumRiskDenominator">' + total + '\u53ea</span></strong>',
             '<div class="fundPremiumRiskTrack" role="meter" aria-label="\u505c\u724c\u9884\u8b66\u57fa\u91d1\u5360\u6bd4" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + riskCount + '" aria-valuetext="' + esc(valueText) + '">',
               '<span class="fundPremiumRiskFill" aria-hidden="true" style="width:' + riskBoundaryPct + '%"></span>',

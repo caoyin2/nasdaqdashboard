@@ -1903,6 +1903,7 @@ export function getStyles() {
 
     .fundPremiumRiskSummary{
       display:grid;
+      grid-template-columns: minmax(0, 1fr);
       gap: 12px;
       min-width: 0;
       padding: 4px 0 16px;
@@ -1927,10 +1928,14 @@ export function getStyles() {
     .fundPremiumRiskSummary.hasRisk .fundPremiumRiskStats{ color: #ff9c8c; }
 
     .fundPremiumRiskScale{
+      --risk-label-start: calc(var(--risk-count-digits) * .65em + .35em);
+      --risk-label-end: calc(var(--risk-digits) * .35em + 1em);
       position:relative;
       min-width: 0;
       padding-top: 40px;
-      margin-inline: max(32px, calc(var(--risk-digits) * .65em + .5em));
+      /* Reserve label space only when the boundary approaches an edge. */
+      margin-inline-start: max(0px, calc((var(--risk-label-start) - var(--risk-share) * 100%) / max(.0001, var(--risk-other-share))));
+      margin-inline-end: max(0px, calc((var(--risk-label-end) - var(--risk-other-share) * 100%) / max(.0001, var(--risk-share))));
       font-family: var(--mono);
       font-size: 26px;
       font-variant-numeric: tabular-nums;
