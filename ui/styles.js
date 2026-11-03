@@ -1920,16 +1920,71 @@ export function getStyles() {
     }
 
     .fundPremiumRiskStats{
-      display:flex;
-      align-items:baseline;
-      gap: 18px;
       font-variant-numeric: tabular-nums;
     }
 
-    .fundPremiumRiskStats strong{ font-size: 26px; line-height: 1.2; }
-    .fundPremiumRiskStats strong span{ font-size: 13px; font-weight: 500; color: var(--muted); }
     .fundPremiumRiskStats b{ font-size: 20px; }
     .fundPremiumRiskSummary.hasRisk .fundPremiumRiskStats{ color: #ff9c8c; }
+
+    .fundPremiumRiskScale{
+      position:relative;
+      min-width: 0;
+      padding-top: 58px;
+      margin-inline: max(32px, calc(var(--risk-digits) * .65em + .5em));
+      font-family: var(--mono);
+      font-size: 26px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .fundPremiumRiskCount{
+      position:absolute;
+      left: var(--risk-boundary);
+      top: 0;
+      transform: translateX(-50%);
+      font-size: 20px;
+      line-height: 32px;
+      color: rgba(230,237,247,.94);
+      white-space: nowrap;
+    }
+
+    .fundPremiumRiskNumerator{
+      position:absolute;
+      right: 100%;
+      padding-right: 3px;
+      font-size: 26px;
+    }
+
+    .fundPremiumRiskDenominator{
+      position:absolute;
+      left: 100%;
+      padding-left: 3px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .fundPremiumRiskSummary.hasRisk .fundPremiumRiskNumerator{ color: #ff9c8c; }
+
+    .fundPremiumRiskArrow{
+      position:absolute;
+      left: var(--risk-boundary);
+      top: 40px;
+      width: 2px;
+      height: 14px;
+      transform: translateX(-50%);
+      background: #ff786d;
+    }
+
+    .fundPremiumRiskArrow::before{
+      content:"";
+      position:absolute;
+      left: 50%;
+      top: -6px;
+      transform: translateX(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-bottom: 6px solid #ff786d;
+    }
 
     .fundPremiumRiskTrack{
       display:flex;

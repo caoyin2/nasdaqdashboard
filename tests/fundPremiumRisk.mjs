@@ -77,7 +77,8 @@ try {
       assert.equal(await meter.getAttribute("aria-valuenow"), String(risk));
       assert.equal(await meter.getAttribute("aria-valuemax"), String(total));
       assert.equal(await page.locator(".fundPremiumRiskStats b").textContent(), (risk / total * 100).toFixed(1) + "%");
-      assert.equal(await page.locator(".fundPremiumRiskStats strong").textContent(), `${risk}/${total}只`);
+      assert.equal(await page.locator(".fundPremiumRiskCount").textContent(), `${risk}/${total}只`);
+      assert.equal(await page.locator(".fundPremiumRiskHeader > strong").textContent(), "下一交易日停牌预警");
       assert.equal(await page.locator(".fundPremiumRiskLegendOther strong").textContent(), `${total - risk - unavailable}只`);
       assert.equal(await page.locator(".fundPremiumRiskLegendUnavailable").count(), unavailable ? 1 : 0);
       if (unavailable) assert.equal(await page.locator(".fundPremiumRiskLegendUnavailable strong").textContent(), `${unavailable}只`);
@@ -85,6 +86,23 @@ try {
       assert.ok(Math.abs(shares.reduce((sum, share) => sum + share, 0) - 100) < 0.001);
       assert.ok(Math.abs(shares[0] - risk / total * 100) < 0.001);
       assert.ok(Math.abs(shares[2] - unavailable / total * 100) < 0.001);
+      const geometry = await page.locator(".fundPremiumRiskSummary").evaluate((summary) => {
+        const track = summary.querySelector(".fundPremiumRiskTrack").getBoundingClientRect();
+        const fill = summary.querySelector(".fundPremiumRiskFill").getBoundingClientRect();
+        const slash = summary.querySelector(".fundPremiumRiskSlash").getBoundingClientRect();
+        const arrow = summary.querySelector(".fundPremiumRiskArrow").getBoundingClientRect();
+        const numerator = summary.querySelector(".fundPremiumRiskNumerator").getBoundingClientRect();
+        const denominator = summary.querySelector(".fundPremiumRiskDenominator").getBoundingClientRect();
+        const bounds = summary.getBoundingClientRect();
+        return { boundary: track.left + fill.width, slashCenter: slash.left + slash.width / 2,
+          arrowCenter: arrow.left + arrow.width / 2, arrowTop: arrow.top - 6, arrowBottom: arrow.bottom,
+          labelBottom: Math.max(numerator.bottom, slash.bottom, denominator.bottom), trackTop: track.top,
+          labelLeft: numerator.left, labelRight: denominator.right, left: bounds.left, right: bounds.right };
+      });
+      assert.ok(Math.abs(geometry.boundary - geometry.slashCenter) < 0.75, `slash does not align with the color boundary: ${JSON.stringify(geometry)}`);
+      assert.ok(Math.abs(geometry.boundary - geometry.arrowCenter) < 0.75, "arrow does not align with the color boundary");
+      assert.ok(geometry.arrowTop >= geometry.labelBottom && geometry.arrowBottom <= geometry.trackTop, "arrow overlaps the numbers or track");
+      assert.ok(geometry.labelLeft >= geometry.left && geometry.labelRight <= geometry.right, "counts overflow at the scale endpoints");
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "horizontal page overflow");
     }
     async function refreshFunds() {
@@ -96,9 +114,9 @@ try {
     assert.equal(await page.locator(".fundPremiumNav").count(), 1, "ETF must not acquire a LOF NAV row");
     assert.equal(await page.locator(".hasHaltRisk").count(), expectedRisk);
     assert.deepEqual(await page.locator(".fundPremiumHaltRisk strong").allTextContents(),
-      Array(expectedRisk).fill("次一交易日停牌预警！"));
+      Array(expectedRisk).fill("下一交易日停牌预警！"));
     assert.deepEqual(await page.locator(".fundPremiumHaltRisk").allTextContents(),
-      Array(expectedRisk).fill("次一交易日停牌预警！"));
+      Array(expectedRisk).fill("下一交易日停牌预警！"));
     assert.equal(await page.locator(".fundPremiumRiskBanner").count(), 0);
     assert.equal(await page.locator(".fundPremiumRiskIcon").count(), 0);
     for (const item of cases) {
@@ -151,6 +169,14 @@ try {
     premiums = [cases[0]];
     await refreshFunds();
     await assertSummary({ total: 1, risk: 1 });
+    for (const risk of [1, 19]) {
+      premiums = Array.from({ length: 20 }, (_, i) => ({ code: "159" + String(i).padStart(3, "0"), nameCN: "测试ETF", premiumPct: i < risk ? 12 : 5 }));
+      await refreshFunds();
+      await assertSummary({ total: 20, risk });
+      await page.setViewportSize({ width: viewport.width + 17, height: viewport.height });
+      await assertSummary({ total: 20, risk });
+      await page.setViewportSize(viewport);
+    }
     premiums = [cases[6]];
     await refreshFunds();
     await assertSummary({ total: 1, risk: 0, unavailable: 1 });

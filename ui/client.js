@@ -2277,17 +2277,22 @@ export function getClientScript() {
       }).length;
       var otherCount = total - riskCount - unavailableCount;
       var riskPct = (riskCount / total * 100).toFixed(1);
+      var riskBoundaryPct = (riskCount / total * 100).toFixed(4);
       var valueText = "\u5171" + total + "\u53ea\u57fa\u91d1\uff0c" + riskCount + "\u53ea\u89e6\u53d1\u9884\u8b66\uff0c\u5360" + riskPct + "%\uff1b" + unavailableCount + "\u53ea\u6570\u636e\u5f02\u5e38";
       return [
         '<section class="fundPremiumRiskSummary' + (riskCount ? ' hasRisk' : '') + '" aria-label="\u57fa\u91d1\u505c\u724c\u9884\u8b66\u7edf\u8ba1">',
           '<div class="fundPremiumRiskHeader">',
-            '<strong>\u6b21\u4e00\u4ea4\u6613\u65e5\u505c\u724c\u9884\u8b66</strong>',
-            '<div class="fundPremiumRiskStats"><strong>' + riskCount + '<span>/' + total + '\u53ea</span></strong><b>' + riskPct + '%</b></div>',
+            '<strong>\u4e0b\u4e00\u4ea4\u6613\u65e5\u505c\u724c\u9884\u8b66</strong>',
+            '<div class="fundPremiumRiskStats"><b>' + riskPct + '%</b></div>',
           '</div>',
-          '<div class="fundPremiumRiskTrack" role="meter" aria-label="\u505c\u724c\u9884\u8b66\u57fa\u91d1\u5360\u6bd4" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + riskCount + '" aria-valuetext="' + esc(valueText) + '">',
-            '<span class="fundPremiumRiskFill" aria-hidden="true" style="width:' + (riskCount / total * 100).toFixed(4) + '%"></span>',
-            '<span class="fundPremiumRiskOther" aria-hidden="true" style="width:' + (otherCount / total * 100).toFixed(4) + '%"></span>',
-            '<span class="fundPremiumRiskUnavailable" aria-hidden="true" style="width:' + (unavailableCount / total * 100).toFixed(4) + '%"></span>',
+          '<div class="fundPremiumRiskScale" style="--risk-boundary:' + riskBoundaryPct + '%;--risk-digits:' + String(total).length + '">',
+            '<strong class="fundPremiumRiskCount"><span class="fundPremiumRiskNumerator">' + riskCount + '</span><span class="fundPremiumRiskSlash">/</span><span class="fundPremiumRiskDenominator">' + total + '\u53ea</span></strong>',
+            '<span class="fundPremiumRiskArrow" aria-hidden="true"></span>',
+            '<div class="fundPremiumRiskTrack" role="meter" aria-label="\u505c\u724c\u9884\u8b66\u57fa\u91d1\u5360\u6bd4" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + riskCount + '" aria-valuetext="' + esc(valueText) + '">',
+              '<span class="fundPremiumRiskFill" aria-hidden="true" style="width:' + riskBoundaryPct + '%"></span>',
+              '<span class="fundPremiumRiskOther" aria-hidden="true" style="width:' + (otherCount / total * 100).toFixed(4) + '%"></span>',
+              '<span class="fundPremiumRiskUnavailable" aria-hidden="true" style="width:' + (unavailableCount / total * 100).toFixed(4) + '%"></span>',
+            '</div>',
           '</div>',
           '<div class="fundPremiumRiskLegend">',
             '<span class="fundPremiumRiskLegendAlert">\u89e6\u53d1\u9884\u8b66 <strong>' + riskCount + '\u53ea</strong></span>',
@@ -2308,7 +2313,7 @@ export function getClientScript() {
       var premiumClass = fundPremiumRateClass(item.premiumPct);
       var haltRisk = hasFundPremiumHaltRisk(item);
       var haltRiskHint = haltRisk
-        ? '<div class="fundPremiumHaltRisk"><strong>次一交易日停牌预警！</strong></div>'
+        ? '<div class="fundPremiumHaltRisk"><strong>下一交易日停牌预警！</strong></div>'
         : "";
       var lofPremiumError = item && item.lofPremiumError ? String(item.lofPremiumError) : "";
       var isLof = String(item && item.code || "") === "161128";

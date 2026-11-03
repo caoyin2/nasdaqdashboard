@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.77",
+  version: "v1.3.78",
   shortSha: "",
   fullSha: "",
-  message: "Show LOF estimated NAV and fund suspension risk ratio",
+  message: "Align suspension risk counts with the progress boundary",
 };
