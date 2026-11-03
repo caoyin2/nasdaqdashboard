@@ -2128,6 +2128,7 @@ export function getClientScript() {
             ]),
             '<div class="starPanelMetaText">' + esc(latestText) + '</div>',
           '</div>',
+          fundPremiumRiskSummaryHTML(items, cached && cached.warnings),
           gridHtml,
           modalHtml,
         '</div>'
@@ -2260,6 +2261,43 @@ export function getClientScript() {
       return !/LOF/i.test(String(item.nameCN || "")) && !item.lofPremium;
     }
 
+    function fundPremiumRiskSummaryHTML(items, warnings) {
+      if (!Array.isArray(items)) return "";
+      var knownCodes = new Set(items.map(function (item) {
+        return String(item.code || item.symbol || "").trim().replace(/^(sh|sz)/i, "");
+      }));
+      var missingCodes = new Set((Array.isArray(warnings) ? warnings : []).map(function (warning) {
+        return String(warning && warning.code || "").trim();
+      }).filter(function (code) { return /^[0-9]{6}$/.test(code) && !knownCodes.has(code); }));
+      var total = items.length + missingCodes.size;
+      if (!total) return "";
+      var riskCount = items.filter(hasFundPremiumHaltRisk).length;
+      var unavailableCount = missingCodes.size + items.filter(function (item) {
+        return !Number.isFinite(item.premiumPct) || !!item.lofPremiumError;
+      }).length;
+      var otherCount = total - riskCount - unavailableCount;
+      var riskPct = (riskCount / total * 100).toFixed(1);
+      var valueText = "\u5171" + total + "\u53ea\u57fa\u91d1\uff0c" + riskCount + "\u53ea\u89e6\u53d1\u9884\u8b66\uff0c\u5360" + riskPct + "%\uff1b" + unavailableCount + "\u53ea\u6570\u636e\u5f02\u5e38";
+      return [
+        '<section class="fundPremiumRiskSummary' + (riskCount ? ' hasRisk' : '') + '" aria-label="\u57fa\u91d1\u505c\u724c\u9884\u8b66\u7edf\u8ba1">',
+          '<div class="fundPremiumRiskHeader">',
+            '<strong>\u6b21\u4e00\u4ea4\u6613\u65e5\u505c\u724c\u9884\u8b66</strong>',
+            '<div class="fundPremiumRiskStats"><strong>' + riskCount + '<span>/' + total + '\u53ea</span></strong><b>' + riskPct + '%</b></div>',
+          '</div>',
+          '<div class="fundPremiumRiskTrack" role="meter" aria-label="\u505c\u724c\u9884\u8b66\u57fa\u91d1\u5360\u6bd4" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + riskCount + '" aria-valuetext="' + esc(valueText) + '">',
+            '<span class="fundPremiumRiskFill" aria-hidden="true" style="width:' + (riskCount / total * 100).toFixed(4) + '%"></span>',
+            '<span class="fundPremiumRiskOther" aria-hidden="true" style="width:' + (otherCount / total * 100).toFixed(4) + '%"></span>',
+            '<span class="fundPremiumRiskUnavailable" aria-hidden="true" style="width:' + (unavailableCount / total * 100).toFixed(4) + '%"></span>',
+          '</div>',
+          '<div class="fundPremiumRiskLegend">',
+            '<span class="fundPremiumRiskLegendAlert">\u89e6\u53d1\u9884\u8b66 <strong>' + riskCount + '\u53ea</strong></span>',
+            '<span class="fundPremiumRiskLegendOther">\u672a\u89e6\u53d1\u9884\u8b66 <strong>' + otherCount + '\u53ea</strong></span>',
+            unavailableCount ? '<span class="fundPremiumRiskLegendUnavailable">\u6570\u636e\u5f02\u5e38 <strong>' + unavailableCount + '\u53ea</strong></span>' : '',
+          '</div>',
+        '</section>'
+      ].join("");
+    }
+
     function fundPremiumTileHTML(item, maxAbs) {
       var premiumValue = Number.isFinite(item && item.premiumPct) ? item.premiumPct : NaN;
       var intensity = clamp(Math.abs(Number.isFinite(premiumValue) ? premiumValue : 0) / (maxAbs || 1), 0, 1);
@@ -2273,7 +2311,13 @@ export function getClientScript() {
         ? '<div class="fundPremiumHaltRisk"><strong>次一交易日停牌预警！</strong></div>'
         : "";
       var lofPremiumError = item && item.lofPremiumError ? String(item.lofPremiumError) : "";
-      var isLofDetail = String(item && item.code || "") === "161128" && !lofPremiumError;
+      var isLof = String(item && item.code || "") === "161128";
+      var isLofDetail = isLof && !lofPremiumError;
+      var estimatedNav = !lofPremiumError && item.lofPremium && item.lofPremium.estimatedNav;
+      var navText = Number.isFinite(estimatedNav) && estimatedNav > 0 ? estimatedNav.toFixed(6) : "--";
+      var navHtml = isLof
+        ? '<div class="fundPremiumNav"><span>\u4f30\u7b97\u51c0\u503c</span><strong>' + navText + '</strong></div>'
+        : "";
       var detailAttr = isLofDetail ? ' data-fund-lof-detail="1" aria-label="161128 \u957f\u6309 3 \u79d2\u67e5\u770b\u6298\u6ea2\u4ef7\u8ba1\u7b97\u8be6\u60c5"' : "";
       var detailHint = isLofDetail ? '<div class="fundPremiumHoldHint">\u957f\u6309 3 \u79d2\u67e5\u770b\u8ba1\u7b97\u8be6\u60c5</div>' : "";
       var errorHint = lofPremiumError
@@ -2305,6 +2349,7 @@ export function getClientScript() {
               '<span class="fundPremiumRate ' + premiumClass + '">' + esc(fundPremiumRateText(item.premiumPct)) + '</span>',
             '</div>',
           '</div>',
+          navHtml,
           '<div class="sectorHeatLatest">' + esc(fundTradeDateText(item.tradeDate)) + '</div>',
           errorHint,
           detailHint,

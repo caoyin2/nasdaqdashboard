@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.76",
+  version: "v1.3.77",
   shortSha: "",
   fullSha: "",
-  message: "Remove premium banner and S&P 500 weights",
+  message: "Show LOF estimated NAV and fund suspension risk ratio",
 };

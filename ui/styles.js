@@ -1901,6 +1901,80 @@ export function getStyles() {
       align-items:flex-start;
     }
 
+    .fundPremiumRiskSummary{
+      display:grid;
+      gap: 12px;
+      min-width: 0;
+      padding: 4px 0 16px;
+      border-bottom: 1px solid rgba(200,214,236,.16);
+    }
+
+    .fundPremiumRiskHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      color: rgba(230,237,247,.94);
+      font-size: 14px;
+    }
+
+    .fundPremiumRiskStats{
+      display:flex;
+      align-items:baseline;
+      gap: 18px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .fundPremiumRiskStats strong{ font-size: 26px; line-height: 1.2; }
+    .fundPremiumRiskStats strong span{ font-size: 13px; font-weight: 500; color: var(--muted); }
+    .fundPremiumRiskStats b{ font-size: 20px; }
+    .fundPremiumRiskSummary.hasRisk .fundPremiumRiskStats{ color: #ff9c8c; }
+
+    .fundPremiumRiskTrack{
+      display:flex;
+      height: 12px;
+      overflow:hidden;
+      border-radius: 4px;
+      background: rgba(200,214,236,.12);
+    }
+
+    .fundPremiumRiskTrack > span{ flex: 0 0 auto; height: 100%; }
+    .fundPremiumRiskFill, .fundPremiumRiskLegendAlert::before{ background: #ff786d; }
+    .fundPremiumRiskOther, .fundPremiumRiskLegendOther::before{ background: #549b9a; }
+    .fundPremiumRiskUnavailable, .fundPremiumRiskLegendUnavailable::before{ background: #d8ac60; }
+
+    .fundPremiumRiskLegend{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px 20px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .fundPremiumRiskLegend > span{ display:inline-flex; align-items:center; gap: 6px; }
+    .fundPremiumRiskLegend > span::before{ content:""; width: 8px; height: 8px; border-radius: 2px; }
+    .fundPremiumRiskLegend strong{ color: rgba(230,237,247,.94); font-variant-numeric: tabular-nums; }
+
+    .fundPremiumNav{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap: 10px;
+      min-width: 0;
+      padding-top: 10px;
+      border-top: 1px solid rgba(200,214,236,.18);
+      color: rgba(200,214,236,.88);
+      font-size: 12px;
+    }
+
+    .fundPremiumNav strong{
+      font-family: var(--mono);
+      font-size: 16px;
+      color: rgba(244,247,252,.98);
+      font-variant-numeric: tabular-nums;
+    }
+
     .fundPremiumTile.hasHaltRisk{
       outline: 2px solid #ff9c8c;
       outline-offset: -2px;

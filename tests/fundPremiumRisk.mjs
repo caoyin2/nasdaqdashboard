@@ -16,7 +16,7 @@ const cases = [
   { code: "513390", nameCN: "博时纳指ETF", premiumPct: -12 },
   { code: "159660", nameCN: "汇添富纳指ETF", premiumPct: 0 },
   { code: "159501", nameCN: "嘉实纳指ETF", premiumPct: null },
-  { code: "161128", nameCN: "标普信息科技LOF", premiumPct: 30 },
+  { code: "161128", nameCN: "标普信息科技LOF", premiumPct: 30, premiumReferenceNav: 9, lofPremium: { estimatedNav: 2.123456789 } },
   { code: "501225", nameCN: "全球芯片LOF", premiumPct: 35 },
   { code: "161130", nameCN: "纳指ETF联接", premiumPct: 40 },
   { code: "513650", nameCN: "LOF exclusion takes precedence", premiumPct: 20 },
@@ -29,6 +29,11 @@ const cases = [
   { code: "513850", nameCN: "带LOF估值的基金", premiumPct: 15, lofPremium: {} },
 ];
 const expectedRisk = cases.filter((item) => item.risk).length;
+const missingQuoteWarnings = [
+  { code: "159632", message: "Calculation unavailable" },
+  { code: "159870", message: "Quote unavailable" },
+  { code: "159870", message: "Duplicate warning" },
+];
 const browser = await chromium.launch({
   headless: true,
   ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}),
@@ -44,15 +49,18 @@ try {
     const errors = [];
     const requests = [];
     let premiums = cases;
+    let warnings = missingQuoteWarnings;
     let quoteFails = false;
     page.on("pageerror", (error) => errors.push(error.message));
+    await page.route("**/*", (route) => new URL(route.request().url()).origin === new URL(baseUrl).origin
+      ? route.continue() : route.abort());
     await page.route("**/api/**", async (route) => {
       const path = new URL(route.request().url()).pathname;
       requests.push(path);
       if (path !== "/api/fund-premiums") return route.fulfill({ json: { ok: true, items: [] } });
       if (quoteFails) return route.fulfill({ status: 502, json: { ok: false, error: "Quote unavailable" } });
       return route.fulfill({ json: {
-        ok: true, asOfMs: Date.UTC(2026, 9, 29, 7), tradeDate: "2026-10-29", warnings: [],
+        ok: true, asOfMs: Date.UTC(2026, 9, 29, 7), tradeDate: "2026-10-29", warnings,
         items: premiums.map((item) => ({
           ...item, symbol: item.symbol || (/^5/.test(item.code) ? "sh" : "sz") + item.code,
           lastClose: 2.345, baseClose: 2.3, change: 0.045, changePct: 1.96, tradeDate: "2026-10-29",
@@ -62,6 +70,30 @@ try {
     await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
     await page.locator('#pageSeg [data-page="fundPremiums"]').click();
     await page.locator(".fundPremiumTile").first().waitFor();
+    const lofNav = page.locator('.fundPremiumTile[data-symbol="sz161128"] .fundPremiumNav strong');
+    async function assertSummary({ total, risk, unavailable = 0 }) {
+      const meter = page.locator('.fundPremiumRiskTrack[role="meter"]');
+      assert.equal(await meter.count(), 1);
+      assert.equal(await meter.getAttribute("aria-valuenow"), String(risk));
+      assert.equal(await meter.getAttribute("aria-valuemax"), String(total));
+      assert.equal(await page.locator(".fundPremiumRiskStats b").textContent(), (risk / total * 100).toFixed(1) + "%");
+      assert.equal(await page.locator(".fundPremiumRiskStats strong").textContent(), `${risk}/${total}只`);
+      assert.equal(await page.locator(".fundPremiumRiskLegendOther strong").textContent(), `${total - risk - unavailable}只`);
+      assert.equal(await page.locator(".fundPremiumRiskLegendUnavailable").count(), unavailable ? 1 : 0);
+      if (unavailable) assert.equal(await page.locator(".fundPremiumRiskLegendUnavailable strong").textContent(), `${unavailable}只`);
+      const shares = await meter.evaluate((el) => [...el.children].map((child) => parseFloat(child.style.width)));
+      assert.ok(Math.abs(shares.reduce((sum, share) => sum + share, 0) - 100) < 0.001);
+      assert.ok(Math.abs(shares[0] - risk / total * 100) < 0.001);
+      assert.ok(Math.abs(shares[2] - unavailable / total * 100) < 0.001);
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "horizontal page overflow");
+    }
+    async function refreshFunds() {
+      await page.locator("#globalRefreshBtn").click();
+      await page.locator("#globalRefreshBtn:not([disabled])").waitFor();
+    }
+    await assertSummary({ total: 19, risk: expectedRisk, unavailable: 5 });
+    assert.equal(await lofNav.textContent(), "2.123457", "NAV must use the computed value, not Tencent's reference NAV");
+    assert.equal(await page.locator(".fundPremiumNav").count(), 1, "ETF must not acquire a LOF NAV row");
     assert.equal(await page.locator(".hasHaltRisk").count(), expectedRisk);
     assert.deepEqual(await page.locator(".fundPremiumHaltRisk strong").allTextContents(),
       Array(expectedRisk).fill("次一交易日停牌预警！"));
@@ -77,24 +109,60 @@ try {
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "horizontal page overflow");
     const clipped = await page.locator(".fundPremiumHaltRisk").evaluateAll((elements) => elements.some((el) => el.scrollWidth > el.clientWidth + 1));
     assert.equal(clipped, false, "risk text clipped");
-    await page.screenshot({ path: fileURLToPath(new URL(`${viewport.width}.png`, outputDir)) });
+    await page.screenshot({ animations: "disabled", path: fileURLToPath(new URL(`${viewport.width}.png`, outputDir)) });
+    await page.locator('.fundPremiumTile[data-symbol="sz161128"]').screenshot({ animations: "disabled", path: fileURLToPath(new URL(`lof-${viewport.width}.png`, outputDir)) });
 
     // Manual refresh clears the cache; a failed request must not invent warnings.
     quoteFails = true;
-    await page.locator("#globalRefreshBtn").click();
+    await refreshFunds();
     await page.waitForFunction(() => document.querySelector(".fundPremiumPanel .starPanelMetaText.err")?.textContent.includes("502"));
     assert.equal(await page.locator(".hasHaltRisk").count(), 0);
     assert.equal(await page.locator(".fundPremiumRiskBanner").count(), 0);
+    assert.equal(await page.locator(".fundPremiumRiskSummary").count(), 0, "request failure must not imply zero risk");
+    assert.equal(await lofNav.count(), 0, "failed refresh must not show stale NAV");
     quoteFails = false;
-    premiums = cases.map((item) => ({ ...item, premiumPct: /^16|^50/.test(item.code || "") ? 40 : 9.99 }));
+    premiums = cases.map((item) => ({
+      ...item, premiumPct: /^16|^50/.test(item.code || "") ? 40 : 9.99,
+      ...(item.code === "161128" ? { lofPremium: { estimatedNav: 3.456789123 } } : {}),
+    }));
     const requestStart = requests.length;
-    await page.locator("#globalRefreshBtn").click();
+    await refreshFunds();
     await page.waitForFunction((count) => document.querySelectorAll(".fundPremiumTile").length === count, cases.length);
     assert.equal(await page.locator(".hasHaltRisk").count(), 0, "warning did not clear after premium fell");
     assert.equal(await page.locator(".fundPremiumTile").count(), cases.length, "normal fund cards disappeared");
     assert.deepEqual(requests.slice(requestStart), ["/api/fund-premiums"], "refresh requested another panel");
+    await assertSummary({ total: 19, risk: 0, unavailable: 2 });
+    assert.equal(await lofNav.textContent(), "3.456789", "NAV did not update on refresh");
+
+    warnings = [];
+    premiums = cases.map((item) => item.code === "161128"
+      ? { ...item, lofPremiumError: "Index unavailable", premiumPct: null }
+      : item);
+    await refreshFunds();
+    assert.equal(await lofNav.textContent(), "--", "failed LOF valuation must hide the previous computed value");
+    assert.equal(await page.locator(".fundPremiumTile").count(), cases.length);
+    await assertSummary({ total: 18, risk: expectedRisk, unavailable: 5 });
+
+    premiums = [{ ...cases[7], lofPremium: { estimatedNav: null } }];
+    await refreshFunds();
+    assert.equal(await lofNav.textContent(), "--", "missing NAV must not become zero or use an uncorrected reference NAV");
+    await assertSummary({ total: 1, risk: 0 });
+
+    premiums = [cases[0]];
+    await refreshFunds();
+    await assertSummary({ total: 1, risk: 1 });
+    premiums = [cases[6]];
+    await refreshFunds();
+    await assertSummary({ total: 1, risk: 0, unavailable: 1 });
+    premiums = [];
+    warnings = [{ code: "159870", message: "Quote unavailable" }];
+    await refreshFunds();
+    await assertSummary({ total: 1, risk: 0, unavailable: 1 });
+    warnings = [];
+    await refreshFunds();
+    assert.equal(await page.locator(".fundPremiumRiskSummary").count(), 0, "empty list must not produce NaN percentages");
     assert.deepEqual(errors, []);
-    console.log(`PASS ${viewport.width}x${viewport.height}: 18 classification cases, refresh, LOF exclusions, layout`);
+    console.log(`PASS ${viewport.width}x${viewport.height}: classification, risk ratios, missing quotes, NAV, refresh, empty/full/unknown, layout`);
     await context.close();
   }
 } finally {
