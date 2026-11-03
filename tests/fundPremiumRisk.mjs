@@ -90,18 +90,16 @@ try {
         const track = summary.querySelector(".fundPremiumRiskTrack").getBoundingClientRect();
         const fill = summary.querySelector(".fundPremiumRiskFill").getBoundingClientRect();
         const slash = summary.querySelector(".fundPremiumRiskSlash").getBoundingClientRect();
-        const arrow = summary.querySelector(".fundPremiumRiskArrow").getBoundingClientRect();
         const numerator = summary.querySelector(".fundPremiumRiskNumerator").getBoundingClientRect();
         const denominator = summary.querySelector(".fundPremiumRiskDenominator").getBoundingClientRect();
         const bounds = summary.getBoundingClientRect();
         return { boundary: track.left + fill.width, slashCenter: slash.left + slash.width / 2,
-          arrowCenter: arrow.left + arrow.width / 2, arrowTop: arrow.top - 6, arrowBottom: arrow.bottom,
           labelBottom: Math.max(numerator.bottom, slash.bottom, denominator.bottom), trackTop: track.top,
           labelLeft: numerator.left, labelRight: denominator.right, left: bounds.left, right: bounds.right };
       });
       assert.ok(Math.abs(geometry.boundary - geometry.slashCenter) < 0.75, `slash does not align with the color boundary: ${JSON.stringify(geometry)}`);
-      assert.ok(Math.abs(geometry.boundary - geometry.arrowCenter) < 0.75, "arrow does not align with the color boundary");
-      assert.ok(geometry.arrowTop >= geometry.labelBottom && geometry.arrowBottom <= geometry.trackTop, "arrow overlaps the numbers or track");
+      assert.equal(await page.locator(".fundPremiumRiskArrow").count(), 0, "removed risk arrow must not return");
+      assert.ok(geometry.labelBottom <= geometry.trackTop, "numbers overlap the track");
       assert.ok(geometry.labelLeft >= geometry.left && geometry.labelRight <= geometry.right, "counts overflow at the scale endpoints");
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "horizontal page overflow");
     }

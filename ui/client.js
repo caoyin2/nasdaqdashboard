@@ -2287,7 +2287,6 @@ export function getClientScript() {
           '</div>',
           '<div class="fundPremiumRiskScale" style="--risk-boundary:' + riskBoundaryPct + '%;--risk-digits:' + String(total).length + '">',
             '<strong class="fundPremiumRiskCount"><span class="fundPremiumRiskNumerator">' + riskCount + '</span><span class="fundPremiumRiskSlash">/</span><span class="fundPremiumRiskDenominator">' + total + '\u53ea</span></strong>',
-            '<span class="fundPremiumRiskArrow" aria-hidden="true"></span>',
             '<div class="fundPremiumRiskTrack" role="meter" aria-label="\u505c\u724c\u9884\u8b66\u57fa\u91d1\u5360\u6bd4" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + riskCount + '" aria-valuetext="' + esc(valueText) + '">',
               '<span class="fundPremiumRiskFill" aria-hidden="true" style="width:' + riskBoundaryPct + '%"></span>',
               '<span class="fundPremiumRiskOther" aria-hidden="true" style="width:' + (otherCount / total * 100).toFixed(4) + '%"></span>',

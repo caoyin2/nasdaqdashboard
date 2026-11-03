@@ -1929,7 +1929,7 @@ export function getStyles() {
     .fundPremiumRiskScale{
       position:relative;
       min-width: 0;
-      padding-top: 58px;
+      padding-top: 40px;
       margin-inline: max(32px, calc(var(--risk-digits) * .65em + .5em));
       font-family: var(--mono);
       font-size: 26px;
@@ -1964,27 +1964,6 @@ export function getStyles() {
     }
 
     .fundPremiumRiskSummary.hasRisk .fundPremiumRiskNumerator{ color: #ff9c8c; }
-
-    .fundPremiumRiskArrow{
-      position:absolute;
-      left: var(--risk-boundary);
-      top: 40px;
-      width: 2px;
-      height: 14px;
-      transform: translateX(-50%);
-      background: #ff786d;
-    }
-
-    .fundPremiumRiskArrow::before{
-      content:"";
-      position:absolute;
-      left: 50%;
-      top: -6px;
-      transform: translateX(-50%);
-      border-left: 5px solid transparent;
-      border-right: 5px solid transparent;
-      border-bottom: 6px solid #ff786d;
-    }
 
     .fundPremiumRiskTrack{
       display:flex;
