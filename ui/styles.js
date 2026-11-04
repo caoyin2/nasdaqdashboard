@@ -1711,6 +1711,8 @@ export function getStyles() {
     .indexHeatSummary{ display:grid; gap: 8px; min-width: 0; container-type:inline-size; }
     .indexHeatSummary .sectorHeatPct{ font-size: min(36px, calc(100cqw / (var(--index-pct-chars) * .68))); white-space:nowrap; }
     .indexHeatBase{ font-family: var(--mono); font-size: 12px; color: rgba(200,214,236,.88); }
+    .watchlistChange{ min-width:0; container-type:inline-size; }
+    .watchlistChange .sectorHeatPct{ font-size:min(var(--watchlist-pct-size, 36px), calc(100cqw / (var(--watchlist-pct-chars) * .68))); white-space:nowrap; }
     .idxHeatGrid .indexHeatMeta{ flex-direction:row; align-items:baseline; gap: 8px; }
     .idxHeatGrid .indexHeatMeta > strong{ flex: 0 0 auto; font-size: 12px; white-space:nowrap; }
     .idxHeatGrid .indexHeatMeta .sectorHeatExtraLatest{ font-size: 10px; min-width: 0; }
@@ -1912,9 +1914,17 @@ export function getStyles() {
       line-height: 1.2;
     }
 
-    .fundPremiumMeta{
-      align-items:flex-start;
+    .sectorHeatTile.fundPremiumTile{ min-height:0; gap:10px; align-content:start; }
+    .fundPremiumMain{ display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:center; gap:10px; }
+    .fundPremiumChange{ display:grid; gap:6px; min-width:0; container-type:inline-size; }
+    .fundPremiumChange .sectorHeatPct{
+      font-size:min(var(--fund-pct-size, 36px), calc(100cqw / (var(--fund-pct-chars) * .68)));
+      white-space:nowrap;
     }
+    .fundPremiumChange .fundPremiumDelta{ font-family:var(--mono); font-size:12px; white-space:nowrap; }
+    .fundPremiumTile .fundPremiumMeta{ flex-direction:row; align-items:baseline; gap:8px; }
+    .fundPremiumMeta > span{ white-space:nowrap; }
+    .fundPremiumMeta .sectorHeatLatest{ font-size:10px; }
 
     .fundPremiumRiskSummary{
       display:grid;
@@ -2016,15 +2026,13 @@ export function getStyles() {
       justify-content:space-between;
       gap: 10px;
       min-width: 0;
-      padding-top: 10px;
-      border-top: 1px solid rgba(200,214,236,.18);
       color: rgba(200,214,236,.88);
-      font-size: 12px;
+      font-size: 10px;
     }
 
     .fundPremiumNav strong{
       font-family: var(--mono);
-      font-size: 16px;
+      font-size: 12px;
       color: rgba(244,247,252,.98);
       font-variant-numeric: tabular-nums;
     }
@@ -2128,7 +2136,7 @@ export function getStyles() {
 
     .fundPremiumHoldHint{
       justify-self: end;
-      margin-top: -6px;
+      margin-top: -2px;
       font-family: var(--mono);
       font-size: 10px;
       color: rgba(200,214,236,.62);
@@ -3230,9 +3238,12 @@ export function getStyles() {
       }
 
       .fundPremiumMetaRight{
-        justify-items:start;
-        text-align:left;
+        justify-items:end;
+        text-align:right;
       }
+
+      .fundPremiumTile{ --fund-pct-size:30px; }
+      .watchlistCard{ --watchlist-pct-size:30px; }
 
       .sectorHeatMetaWithLatest{
         flex-direction: row;
@@ -3457,36 +3468,36 @@ export function getStyles() {
     }
 
     @media (max-width: 1200px){
-      .watchlistDaily .sectorHeatInfoStack{
+      .watchlistCard .sectorHeatInfoStack{
         container-type:inline-size;
         grid-template-columns: minmax(0, 1fr) max-content;
         column-gap: 8px;
       }
-      .watchlistDaily .sectorHeatMetaStar,
-      .watchlistDaily .sectorHeatExtraStar{
+      .watchlistCard .sectorHeatMetaStar,
+      .watchlistCard .sectorHeatExtraStar{
         grid-column: 1 / -1;
         grid-template-columns: subgrid;
         column-gap: 8px;
         font-size: min(12px, calc((100cqw - 8px) / var(--watchlist-info-units)));
       }
-      .watchlistDaily .sectorHeatMetaStar{
+      .watchlistCard .sectorHeatMetaStar{
         display:grid;
         align-items:baseline;
       }
-      .watchlistDaily .sectorHeatMetaStar > span:first-child{ white-space:nowrap; }
-      .watchlistDaily .sectorHeatMetaStar .sectorHeatTarget{
+      .watchlistCard .sectorHeatMetaStar > span:first-child{ white-space:nowrap; }
+      .watchlistCard .sectorHeatMetaStar .sectorHeatTarget{
         justify-self:start;
         justify-content:flex-start;
         text-align:left;
         font-size:inherit;
         letter-spacing:0;
       }
-      .watchlistDaily .sectorHeatExtraStar .sectorHeatExtraCurrent,
-      .watchlistDaily .sectorHeatExtraStar .sectorHeatExtraLatest{
+      .watchlistCard .sectorHeatExtraStar .sectorHeatExtraCurrent,
+      .watchlistCard .sectorHeatExtraStar .sectorHeatExtraLatest{
         justify-self:start;
         text-align:left;
       }
-      .watchlistDaily .sectorHeatExtraLatest{ font-size:inherit; }
+      .watchlistCard .sectorHeatExtraLatest{ font-size:inherit; }
     }
 
     @media (max-width: 680px){

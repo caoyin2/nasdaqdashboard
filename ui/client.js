@@ -1730,7 +1730,7 @@ export function getClientScript() {
             })
           : item;
       })).map(function (item) {
-        return Object.assign({}, item, { showSparkline: true, isWatchlistDaily: starsState.period === "1D", referenceLatestT: cached.asOfMs });
+        return Object.assign({}, item, { showSparkline: true, isWatchlistCard: true, referenceLatestT: cached.asOfMs });
       }) : null;
       var latestText = latestDataText(cached && cached.asOfMs);
       var statusClass = starsState.statusType === "err" ? "err" : "ok";
@@ -2170,7 +2170,7 @@ export function getClientScript() {
       var hasTargetPrice = Number.isFinite(item && item.priceTargetValue) && Number.isFinite(item && item.priceTargetPct);
       var isIndexOverview = !!(item && item.isIndexOverview);
       var isSectorDaily = !!(item && item.isSectorDaily);
-      var isWatchlistDaily = !!(item && item.isWatchlistDaily);
+      var isWatchlistCard = !!(item && item.isWatchlistCard);
       var hasSparkline = !!(item && item.showSparkline && (item.period !== "1D" || isIndexOverview) && getSparklineValues(item).length > 1);
       var targetHtml = hasTargetPrice
         ? '<span class="sectorHeatTarget"><span class="sectorHeatTargetLabel">\u76ee\u6807\u4ef7\uff1a' + fmtTargetPrice(item.priceTargetValue) + '</span><span class="sectorHeatTargetPct" style="' + targetToneStyle(item && item.priceTargetPct) + '"> (' + esc(fmtTargetPct(item.priceTargetPct)) + ')</span></span>'
@@ -2178,7 +2178,7 @@ export function getClientScript() {
       var percentHtml = '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>';
       var summaryHtml = isIndexOverview
         ? '<div class="indexHeatSummary" style="--index-pct-chars:' + signPct(item.changePct).length + '">' + percentHtml + '<span class="indexHeatBase">' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span></div>'
-        : percentHtml;
+        : (isWatchlistCard ? '<div class="watchlistChange" style="--watchlist-pct-chars:' + signPct(item.changePct).length + '">' + percentHtml + '</div>' : percentHtml);
       var mainHtml = hasSparkline
         ? [
             '<div class="sectorHeatMain">',
@@ -2199,7 +2199,7 @@ export function getClientScript() {
       var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT, item.timeValidationT);
       var latestTimeInlineHtml = '<span class="sectorHeatExtraLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)) + '</span>';
       var infoStyle = "";
-      if (isWatchlistDaily) {
+      if (isWatchlistCard) {
         // Reserve each column's widest value so aligned pairs fit narrow cards.
         var infoRows = [
           [(item.baseLabel || "\u8d77\u70b9") + " " + fmtPrice(item.baseClose), hasTargetPrice ? "\u76ee\u6807\u4ef7\uff1a" + fmtTargetPrice(item.priceTargetValue) + " (" + fmtTargetPct(item.priceTargetPct) + ")" : signPrice(item.change)],
@@ -2218,6 +2218,8 @@ export function getClientScript() {
       }
       var metaRightHtml = isSectorDaily
         ? '<span class="sectorHeatMetaLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)) + '</span>'
+        : isWatchlistCard
+        ? (hasTargetPrice ? targetHtml : '<strong>' + signPrice(item.change) + '</strong>')
         : hasSparkline
         ? (hasTargetPrice
           ? targetHtml
@@ -2236,7 +2238,7 @@ export function getClientScript() {
           : '<div class="' + metaClass + '"><span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>' + metaRightHtml + '</div>' + extraHtml + footerHtml);
 
       return [
-        '<article class="sectorHeatTile ' + tone + (isSectorDaily ? ' sectorHeatDaily' : '') + (isWatchlistDaily ? ' watchlistDaily' : '') + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
+        '<article class="sectorHeatTile ' + tone + (isSectorDaily ? ' sectorHeatDaily' : '') + (isWatchlistCard ? ' watchlistCard' : '') + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
           '<div class="sectorHeatHeader">',
             '<div class="starIdentity">',
               '<div class="starIconWrap">',
@@ -2383,16 +2385,20 @@ export function getClientScript() {
             '</div>',
             '<div class="sectorHeatPrice">' + fmtFundPrice(item.lastClose) + '</div>',
           '</div>',
-          '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>',
-          '<div class="sectorHeatMeta fundPremiumMeta">',
-            '<span>' + esc(item.baseLabel || "\u6628\u6536") + ' ' + fmtFundPrice(item.baseClose) + '</span>',
+          '<div class="fundPremiumMain">',
+            '<div class="fundPremiumChange" style="--fund-pct-chars:' + signPct(item.changePct).length + '">',
+              '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>',
+              '<strong class="sectorHeatDeltaInline fundPremiumDelta">' + signFundPrice(item.change) + '</strong>',
+            '</div>',
             '<div class="fundPremiumMetaRight">',
-              '<strong>' + signFundPrice(item.change) + '</strong>',
               '<span class="fundPremiumRate ' + premiumClass + '">' + esc(fundPremiumRateText(item.premiumPct)) + '</span>',
+              navHtml,
             '</div>',
           '</div>',
-          navHtml,
-          '<div class="sectorHeatLatest">' + esc(fundTradeDateText(item.tradeDate)) + '</div>',
+          '<div class="sectorHeatMeta fundPremiumMeta">',
+            '<span>' + esc(item.baseLabel || "\u6628\u6536") + ' ' + fmtFundPrice(item.baseClose) + '</span>',
+            '<span class="sectorHeatLatest">' + esc(fundTradeDateText(item.tradeDate)) + '</span>',
+          '</div>',
           errorHint,
           detailHint,
         '</article>'

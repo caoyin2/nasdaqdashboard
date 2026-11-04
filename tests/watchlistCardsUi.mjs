@@ -24,6 +24,7 @@ const stocks = [
 ].map((stock) => ({ ...stock, icon, latestT: stock.symbol === "ORCL" ? latest - 6 * 3600000 : latest, sparkline: [100, 102, 99, 103] }));
 function fixture(period, fundamentals) {
   return { ok: true, period, asOfMs: latest, items: stocks.map((stock) => ({ ...stock, period, baseLabel: period === "1D" ? "昨收" : "起点",
+    ...(period === "MAX" ? { changePct: 123456.78 } : {}),
     ...(!fundamentals ? { peRatioFwd: null, peRatioCurrent: null, peRatioFwdLoss: false, peRatioCurrentLoss: false,
       marketCapCN: null, priceTargetValue: null, priceTargetPct: null } : {}),
   })) };
@@ -55,50 +56,63 @@ try {
     await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
     await page.locator('#pageSeg [data-page="stars"]').click();
     await page.locator('#starTechPanel [data-symbol="ORCL"] .sectorHeatTarget').waitFor();
-    assert.equal(await page.locator("#starTechPanel .watchlistDaily").count(), stocks.length);
-    assert.equal(await page.locator("#starTechPanel .sectorHeatSparkline").count(), 0);
-    for (const stock of stocks.filter((item) => item.symbol !== "EMPTY")) {
-      const card = page.locator(`#starTechPanel [data-symbol="${stock.symbol}"]`);
-      assert.equal(await card.locator(".starIcon").getAttribute("src"), icon);
-      assert.equal(await card.locator(".cardTimeAnomaly").count(), stock.symbol === "ORCL" ? 1 : 0);
-      const layout = await card.evaluate((el) => {
-        const stack = el.querySelector(".sectorHeatInfoStack");
-        const bounds = stack.getBoundingClientRect();
-        const nodes = [...stack.querySelectorAll(".sectorHeatMetaStar > span, .sectorHeatExtraStar > span, .sectorHeatMetaStar > strong")];
-        const positions = nodes.map((node) => {
-          const rect = node.getBoundingClientRect();
+    async function assertCardLayout(period) {
+      assert.equal(await page.locator("#starTechPanel .watchlistCard").count(), stocks.length);
+      assert.equal(await page.locator("#starTechPanel .sectorHeatSparkline").count(), period === "1D" ? 0 : stocks.length);
+      for (const stock of stocks.filter((item) => item.symbol !== "EMPTY")) {
+        const card = page.locator(`#starTechPanel [data-symbol="${stock.symbol}"]`);
+        assert.equal(await card.locator(".starIcon").getAttribute("src"), icon);
+        assert.equal(await card.locator(".cardTimeAnomaly").count(), stock.symbol === "ORCL" ? 1 : 0);
+        const layout = await card.evaluate((el) => {
+          const stack = el.querySelector(".sectorHeatInfoStack");
+          const bounds = stack.getBoundingClientRect();
+          const nodes = [...stack.querySelectorAll(".sectorHeatMetaStar > span, .sectorHeatExtraStar > span, .sectorHeatMetaStar > strong")];
+          const positions = nodes.map((node) => {
+            const rect = node.getBoundingClientRect();
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            const textRects = [...range.getClientRects()].filter((text) => text.width > 0);
+            return { className: node.className, rect: rect.toJSON(), textLeft: Math.min(...textRects.map((text) => text.left)), fits: textRects.every((text) => text.left >= rect.left - 1 && text.right <= rect.right + 1 && text.left >= bounds.left - 1 && text.right <= bounds.right + 1) };
+          });
+          const percent = el.querySelector(".sectorHeatPct");
           const range = document.createRange();
-          range.selectNodeContents(node);
-          const textRects = [...range.getClientRects()].filter((text) => text.width > 0);
-          return { className: node.className, rect: rect.toJSON(), textLeft: Math.min(...textRects.map((text) => text.left)), fits: textRects.every((text) => text.left >= rect.left - 1 && text.right <= rect.right + 1 && text.left >= bounds.left - 1 && text.right <= bounds.right + 1) };
+          range.selectNodeContents(percent);
+          return { positions, font: getComputedStyle(nodes[0]).fontSize,
+            percentRight: range.getBoundingClientRect().right,
+            percentContainerRight: percent.parentElement.getBoundingClientRect().right,
+          };
         });
-        return { positions, base: positions[0], target: positions[1], font: getComputedStyle(nodes[0]).fontSize };
-      });
-      assert.equal(layout.positions.length, 6, "daily metrics must contain three complete pairs");
-      const rightColumnStarts = [1, 3, 5].map((index) => layout.positions[index].textLeft);
-      assert.ok(Math.max(...rightColumnStarts) - Math.min(...rightColumnStarts) < 1,
-        `${viewport.width} ${stock.symbol}: target, current PE and latest timestamp must start at the same column`);
-      for (let row = 0; row < 3; row++) {
-        const [left, right] = layout.positions.slice(row * 2, row * 2 + 2);
-        assert.ok(Math.abs(left.rect.bottom - right.rect.bottom) < 5, "paired values must share a row");
-        assert.ok(left.rect.right + 3 <= right.rect.left, "metric values overlap");
-        assert.ok(left.fits && right.fits, `${viewport.width} ${stock.symbol} row ${row + 1}: complete metric text is clipped`);
-        if (row) assert.ok(layout.positions[row * 2 - 1].rect.bottom <= left.rect.top, "metric rows overlap");
+        assert.equal(layout.positions.length, 6, "all periods must contain three complete metric pairs");
+        const rightColumnStarts = [1, 3, 5].map((index) => layout.positions[index].textLeft);
+        assert.ok(Math.max(...rightColumnStarts) - Math.min(...rightColumnStarts) < 1,
+          `${viewport.width} ${period} ${stock.symbol}: target, current PE and latest timestamp must start at the same column`);
+        for (let row = 0; row < 3; row++) {
+          const [left, right] = layout.positions.slice(row * 2, row * 2 + 2);
+          assert.ok(Math.abs(left.rect.bottom - right.rect.bottom) < 5, "paired values must share a row");
+          assert.ok(left.rect.right + 3 <= right.rect.left, "metric values overlap");
+          assert.ok(left.fits && right.fits, `${viewport.width} ${stock.symbol} row ${row + 1}: complete metric text is clipped`);
+          if (row) assert.ok(layout.positions[row * 2 - 1].rect.bottom <= left.rect.top, "metric rows overlap");
+        }
+        assert.ok(layout.percentRight <= layout.percentContainerRight + 1, "long period return overlaps the sparkline");
+        if (viewport.width > 1200) assert.equal(layout.font, "12px", "desktop metric typography changed");
+        assert.ok((await card.locator(".sectorHeatMetaStar > span").first().textContent()).startsWith(period === "1D" ? "昨收 " : "起点 "));
       }
-      if (viewport.width > 1200) assert.equal(layout.font, "12px", "desktop metric typography changed");
     }
-    await page.evaluate(() => document.querySelector("#starTechPanel").scrollIntoView());
-    await page.screenshot({ animations: "disabled", path: fileURLToPath(new URL(`${viewport.width}-daily.png`, outputDir)) });
-    await page.locator('#starTechPanel [data-star-p="1M"]').click();
-    await page.locator("#starTechPanel .sectorHeatSparkline").first().waitFor();
-    assert.equal(await page.locator("#starTechPanel .watchlistDaily").count(), 0, "non-daily layout must remain unchanged");
-    const display = await page.locator("#starTechPanel .sectorHeatMetaStar").first().evaluate((el) => getComputedStyle(el).display);
-    assert.equal(display, viewport.width <= 980 ? "flex" : "grid");
+    for (const period of ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "10Y", "MAX"]) {
+      await page.locator(`#starTechPanel [data-star-p="${period}"]`).click();
+      await page.locator("#starTechPanel .watchlistCard").first().waitFor();
+      await assertCardLayout(period);
+      if (["1D", "1M", "MAX"].includes(period)) {
+        await page.evaluate(() => document.querySelector("#starTechPanel").scrollIntoView());
+        await page.screenshot({ animations: "disabled", path: fileURLToPath(new URL(`${viewport.width}-${period}.png`, outputDir)) });
+      }
+    }
     await page.locator('#starTechPanel [data-star-p="1D"]').click();
-    await page.locator("#starTechPanel .watchlistDaily").first().waitFor();
+    await page.locator("#starTechPanel .watchlistCard").first().waitFor();
+    await assertCardLayout("1D");
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
     assert.deepEqual(errors, []);
-    console.log(`PASS ${viewport.width}: three paired daily metric rows, targets/PE/market cap/timestamps complete, anomalies/icons and non-daily layout preserved`);
+    console.log(`PASS ${viewport.width}: all 9 periods share three aligned metric rows, historical sparklines retained, complete data/anomalies/icons preserved`);
     await context.close();
   }
 } finally {

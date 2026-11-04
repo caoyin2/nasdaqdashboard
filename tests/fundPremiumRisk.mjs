@@ -41,8 +41,9 @@ const browser = await chromium.launch({
 
 try {
   for (const viewport of [
-    { width: 320, height: 740 }, { width: 390, height: 844 },
-    { width: 740, height: 320 }, { width: 1440, height: 900 },
+    { width: 320, height: 740 }, { width: 360, height: 800 }, { width: 390, height: 844 },
+    { width: 430, height: 932 }, { width: 740, height: 320 }, { width: 768, height: 1024 },
+    { width: 980, height: 800 }, { width: 1024, height: 768 }, { width: 1440, height: 900 },
   ]) {
     const context = await browser.newContext({ viewport, deviceScaleFactor: viewport.width <= 740 ? 2 : 1 });
     const page = await context.newPage();
@@ -132,8 +133,40 @@ try {
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "horizontal page overflow");
     const clipped = await page.locator(".fundPremiumHaltRisk").evaluateAll((elements) => elements.some((el) => el.scrollWidth > el.clientWidth + 1));
     assert.equal(clipped, false, "risk text clipped");
+    for (const card of await page.locator(".fundPremiumTile").all()) {
+      const layout = await card.evaluate((el) => {
+        const bounds = el.getBoundingClientRect();
+        const base = el.querySelector(".fundPremiumMeta > span:first-child").getBoundingClientRect();
+        const date = el.querySelector(".sectorHeatLatest").getBoundingClientRect();
+        const change = el.querySelector(".fundPremiumChange").getBoundingClientRect();
+        const premium = el.querySelector(".fundPremiumMetaRight").getBoundingClientRect();
+        const fits = [...el.querySelectorAll(".fundPremiumMain .sectorHeatPct, .fundPremiumDelta, .fundPremiumRate, .fundPremiumNav > *, .fundPremiumMeta > span")].every((node) => {
+          const rect = node.getBoundingClientRect();
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          return [...range.getClientRects()].every((text) => text.left >= rect.left - 1 && text.right <= rect.right + 1 && text.left >= bounds.left && text.right <= bounds.right);
+        });
+        return { base: base.toJSON(), date: date.toJSON(), change: change.toJSON(), premium: premium.toJSON(), fits };
+      });
+      assert.ok(Math.abs(layout.base.bottom - layout.date.bottom) < 5, "previous close and latest date must share one row");
+      assert.ok(layout.base.right + 4 <= layout.date.left, "previous close overlaps latest date");
+      assert.ok(layout.change.right + 4 <= layout.premium.left, "daily change overlaps premium or estimated NAV");
+      assert.ok(layout.fits, "compact fund card clips a value");
+      assert.equal(await card.locator(":scope > .sectorHeatLatest, :scope > .fundPremiumNav").count(), 0, "date or NAV must not retain a separate card row");
+    }
+    assert.ok(await page.locator('.fundPremiumTile[data-symbol="sh513300"]').evaluate((el) => el.getBoundingClientRect().height < 190), "regular ETF card is not compact");
+    assert.ok(await page.locator('.fundPremiumTile[data-symbol="sz161128"]').evaluate((el) => el.getBoundingClientRect().height < 220), "LOF card is not compact");
     await page.screenshot({ animations: "disabled", path: fileURLToPath(new URL(`${viewport.width}.png`, outputDir)) });
     await page.locator('.fundPremiumTile[data-symbol="sz161128"]').screenshot({ animations: "disabled", path: fileURLToPath(new URL(`lof-${viewport.width}.png`, outputDir)) });
+    if (viewport.width === 390) {
+      const lof = page.locator('.fundPremiumTile[data-symbol="sz161128"]');
+      await lof.hover();
+      await page.mouse.down();
+      await page.locator(".fundCalcModal").waitFor({ timeout: 5000 });
+      await page.mouse.up();
+      await page.locator('[data-fund-calc-close="button"]').click();
+      assert.equal(await page.locator(".fundCalcModal").count(), 0, "LOF details must still open and close after a long press");
+    }
 
     // Manual refresh clears the cache; a failed request must not invent warnings.
     quoteFails = true;
@@ -193,7 +226,7 @@ try {
     await refreshFunds();
     assert.equal(await page.locator(".fundPremiumRiskSummary").count(), 0, "empty list must not produce NaN percentages");
     assert.deepEqual(errors, []);
-    console.log(`PASS ${viewport.width}x${viewport.height}: classification, risk ratios, missing quotes, NAV, refresh, empty/full/unknown, layout`);
+    console.log(`PASS ${viewport.width}x${viewport.height}: compact paired card layout, complete NAV/premiums, classification/risk ratios, errors and refresh isolation`);
     await context.close();
   }
 } finally {
