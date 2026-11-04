@@ -71,6 +71,28 @@ try {
     await page.locator(".commonWeightRow").first().waitFor();
     assert.deepEqual(await page.locator("[data-weight-index]").evaluateAll((els) => els.map((el) => el.dataset.weightIndex)), ["COMMON", ...codes]);
     assert.equal(await page.locator(".commonWeightCell").count(), holdings.length * 3);
+    async function assertExportPlacement() {
+      assert.equal(await page.locator("[data-weight-export-all]").count(), 1);
+      const layout = await page.locator(".weightsPanel").evaluate((panel) => {
+        const bounds = panel.getBoundingClientRect();
+        const style = getComputedStyle(panel);
+        const head = panel.querySelector(".weightsHead").getBoundingClientRect();
+        const row = panel.querySelector(".weightsCacheRow").getBoundingClientRect();
+        const text = panel.querySelector(".weightsCacheText").getBoundingClientRect();
+        const button = panel.querySelector(".weightExportButton").getBoundingClientRect();
+        return { right: bounds.right - parseFloat(style.borderRightWidth) - parseFloat(style.paddingRight),
+          headTop: head.top, rowRight: row.right, textRight: text.right, textTop: text.top, textBottom: text.bottom,
+          buttonLeft: button.left, buttonRight: button.right, buttonTop: button.top, buttonBottom: button.bottom };
+      });
+      assert.ok(Math.abs(layout.buttonRight - layout.right) < 0.75, "export button must align with the panel's inner right edge");
+      if (viewport.width <= 980) {
+        assert.ok(Math.abs(layout.buttonRight - layout.rowRight) < 0.75, "mobile export must stay at the end of the cache row");
+        assert.ok(layout.buttonLeft >= layout.textRight + 4, "mobile export overlaps the refresh countdown");
+        assert.ok(layout.buttonTop <= layout.textBottom && layout.buttonBottom >= layout.textTop, "mobile export must share the countdown row");
+      } else {
+        assert.ok(Math.abs(layout.buttonTop - layout.headTop) < 0.75, "desktop export must retain its header position");
+      }
+    }
     async function assertCommonHighlight() {
       const backgrounds = await page.locator(".weightsPanel, .commonWeightRow").evaluateAll((els) =>
         els.map((el) => getComputedStyle(el).backgroundImage));
@@ -90,16 +112,16 @@ try {
           assert.equal(await cell.locator("strong").textContent(), item.weights[i].toFixed(2) + "%");
           const style = await cell.evaluate((el) => ({
             text: getComputedStyle(el.querySelector("strong")).color,
-            bar: getComputedStyle(el.querySelector("i")).backgroundColor,
+            bar: getComputedStyle(el.querySelector("i")).backgroundImage,
             label: el.querySelector("strong").getAttribute("aria-label"),
           }));
           if (winners.includes(code)) {
             assert.equal(style.text, "rgb(255, 113, 136)");
-            assert.equal(style.bar, "rgb(255, 93, 117)");
+            assert.equal(style.bar, "linear-gradient(90deg, rgb(255, 54, 94), rgb(255, 139, 158))");
             assert.ok(style.label.includes("最高权重"));
           } else {
             assert.notEqual(style.text, "rgb(255, 113, 136)");
-            assert.notEqual(style.bar, "rgb(255, 93, 117)");
+            assert.equal(style.bar, "linear-gradient(90deg, rgb(34, 124, 255), rgb(0, 217, 242))");
           }
         }
       }
@@ -114,6 +136,7 @@ try {
       }
     }
     await assertCommonHighlight();
+    await assertExportPlacement();
     assert.ok(!(await page.locator("#indexWeightsPanel").textContent()).includes("OLD_FOUR_INDEX_RESULT"));
     assert.equal(requests.filter((url) => url.pathname === "/api/index-weights-common").length, 1);
     assert.equal(requests.find((url) => url.pathname === "/api/index-weights-common").searchParams.get("v"), "weights-ui-11");
@@ -134,12 +157,14 @@ try {
       assert.deepEqual(await page.locator(".weightCard").evaluateAll((els) => els.map((el) => el.dataset.symbol)), expectedItems.map((item) => item.symbol));
       assert.deepEqual(await page.locator(".weightValue strong").allTextContents(), expectedItems.map((item) => item.weightPct.toFixed(2) + "%"));
       assert.equal(await page.locator(".weightBarFill").count(), holdings.length);
+      await assertExportPlacement();
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
       await page.screenshot({ animations: "disabled", path: fileURLToPath(new URL(`${viewport.width}-${code}.png`, outputDir)) });
     }
     await page.locator('[data-weight-index="COMMON"]').click();
     await page.locator(".commonWeightRow").first().waitFor();
     await assertCommonHighlight();
+    await assertExportPlacement();
     const beforeRefresh = requests.length;
     await page.locator("#globalRefreshBtn").click();
     assert.equal(requests.length, beforeRefresh, "top refresh must not fetch weight data");
@@ -149,8 +174,22 @@ try {
     await assertCommonHighlight();
     assert.equal(requests.filter((url) => url.pathname === "/api/index-weights-common").length, 1, "24-hour cache was not reused");
     assert.equal(requests.filter((url) => url.pathname === "/api/index-weights").length, 0, "individual weights were not hydrated from cache");
+    await page.evaluate(() => {
+      for (const key of Object.keys(localStorage).filter((key) => key.startsWith("nasdaqDashboard.indexWeights.weights-ui-11."))) {
+        const cached = JSON.parse(localStorage.getItem(key));
+        cached.expiresAt = Date.now() + (23 * 60 + 59) * 60000;
+        localStorage.setItem(key, JSON.stringify(cached));
+      }
+    });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.locator('#pageSeg [data-page="weights"]').click();
+    await page.locator(".commonWeightRow").first().waitFor();
+    assert.ok((await page.locator(".weightsCacheText").textContent()).includes("23小时59分钟"));
+    await assertExportPlacement();
+    assert.equal(requests.filter((url) => url.pathname === "/api/index-weights-common").length, 1);
+    if (viewport.width <= 980) await page.locator(".weightsCacheRow").screenshot({ animations: "disabled", path: fileURLToPath(new URL(`${viewport.width}-cache-row.png`, outputDir)) });
     assert.deepEqual(errors, []);
-    console.log(`PASS ${viewport.width}: per-stock maxima, ties, zero/small weights, three-column comparison, individual panels, export, 24-hour cache`);
+    console.log(`PASS ${viewport.width}: red/blue gradients, maxima, comparison, mobile/desktop export placement, 24-hour cache`);
     await context.close();
   }
 } finally {

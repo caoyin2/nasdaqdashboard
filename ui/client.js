@@ -528,7 +528,7 @@ export function getClientScript() {
     var fundPremiumLongPressTimer = null;
 
     function getPanelTitle(page) {
-      if (page === "stars") return "\u9762\u677f\uff1a\u660e\u661f\u79d1\u6280\u516c\u53f8";
+      if (page === "stars") return "\u9762\u677f\uff1a\u81ea\u9009\u80a1\u5217\u8868";
       if (page === "weights") return "\u9762\u677f\uff1a\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd";
       if (page === "sectors") return "\u9762\u677f\uff1a\u6807\u666e500\u677f\u5757ETF";
       if (page === "fundPremiums") return "\u9762\u677f\uff1a\u57fa\u91d1\u6298\u6ea2\u4ef7";
@@ -1738,15 +1738,15 @@ export function getClientScript() {
       var modalHtml = starListState.open
         ? [
             '<div class="starManageOverlay" data-star-manage-close="overlay">',
-              '<div class="starManageModal" role="dialog" aria-modal="true" aria-label="\u660e\u661f\u79d1\u6280\u80a1\u5217\u8868\u7ba1\u7406">',
+              '<div class="starManageModal" role="dialog" aria-modal="true" aria-label="\u81ea\u9009\u80a1\u5217\u8868\u7ba1\u7406">',
                 '<div class="starManageHead">',
                   '<div class="starManageTitle">',
-                    '<strong>\u7ba1\u7406\u660e\u661f\u79d1\u6280\u80a1</strong>',
+                    '<strong>\u7ba1\u7406\u81ea\u9009\u80a1\u5217\u8868</strong>',
                     '<span>\u5217\u8868\u4f18\u5148\u5b58\u5728 Worker KV \uff08index:star-tech:list\uff09</span>',
                   '</div>',
                   '<button class="starManageClose" type="button" data-star-manage-close="button">\u5173\u95ed</button>',
                 '</div>',
-                '<div class="starManageStatus ' + manageStatusClass + '">' + esc(manageStatus || "\u53ef\u5728\u8fd9\u91cc\u6dfb\u52a0\u6216\u5220\u9664\u660e\u661f\u79d1\u6280\u80a1\u3002") + '</div>',
+                '<div class="starManageStatus ' + manageStatusClass + '">' + esc(manageStatus || "\u53ef\u5728\u8fd9\u91cc\u6dfb\u52a0\u6216\u5220\u9664\u81ea\u9009\u80a1\u3002") + '</div>',
                 '<form class="starManageForm" id="starManageForm">',
                   '<div class="starManageField">',
                     '<label for="starManageSymbol">Symbol</label>',
@@ -1777,14 +1777,14 @@ export function getClientScript() {
         : "";
       var gridHtml = items && items.length
         ? '<div class="sectorHeatGrid">' + items.map(function (item) { return sectorHeatTileHTML(item, maxAbs); }).join("") + '</div>'
-        : '<div class="starPanelEmpty">\u70b9\u51fb\u4e0a\u65b9\u5468\u671f\u6309\u94ae\u540e\u52a0\u8f7d\u5bf9\u5e94\u6570\u636e\u3002<br />\u4e3a\u4e86\u63a7\u5236\u8bf7\u6c42\u91cf\uff0c\u660e\u661f\u79d1\u6280\u516c\u53f8\u9762\u677f\u4e0d\u4f1a\u5728\u9875\u9762\u521d\u59cb\u65f6\u4e00\u6b21\u6027\u8bfb\u53d6\u5168\u90e8\u5468\u671f\u3002</div>';
+        : '<div class="starPanelEmpty">\u70b9\u51fb\u4e0a\u65b9\u5468\u671f\u6309\u94ae\u540e\u52a0\u8f7d\u5bf9\u5e94\u6570\u636e\u3002<br />\u4e3a\u4e86\u63a7\u5236\u8bf7\u6c42\u91cf\uff0c\u81ea\u9009\u80a1\u5217\u8868\u4e0d\u4f1a\u5728\u9875\u9762\u521d\u59cb\u65f6\u4e00\u6b21\u6027\u8bfb\u53d6\u5168\u90e8\u5468\u671f\u3002</div>';
 
       root.innerHTML = [
         '<div class="card starPanel">',
           '<div class="starPanelHead">',
             '<div class="starPanelTitle">',
-              '<span>\u6309\u5468\u671f\u67e5\u770b\u660e\u661f\u79d1\u6280\u516c\u53f8\u80a1\u4ef7\u8868\u73b0</span>',
-              '<strong>\u660e\u661f\u79d1\u6280\u516c\u53f8</strong>',
+              '<span>\u6309\u5468\u671f\u67e5\u770b\u81ea\u9009\u80a1\u8868\u73b0</span>',
+              '<strong>\u81ea\u9009\u80a1\u5217\u8868</strong>',
             '</div>',
             '<div class="starPanelTools">',
               '<div class="starPeriodSeg" id="starPeriodSeg">',
@@ -2710,6 +2710,11 @@ export function getClientScript() {
       ].join("");
     }
 
+    function weightCacheControlsHTML(payload) {
+      var countdown = payload ? weightCacheRefreshText(payload) : "\u672c\u5730\u7f13\u5b58\uff1a--";
+      return '<div class="weightsCacheRow"><span class="weightsCacheText">' + esc(countdown) + '</span>' + weightExportButtonHTML() + '</div>';
+    }
+
     async function exportDetailedWeights() {
       if (weightsState.exporting) return;
 
@@ -2836,16 +2841,13 @@ export function getClientScript() {
               '<span>' + esc(COMMON_WEIGHT_INDEX_OPTIONS.map(function (option) { return option.code; }).join(' / ')) + '</span>',
               '<strong>\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd\u5bf9\u7167</strong>',
             '</div>',
-            '<div class="weightsHeadTools">',
-              weightExportButtonHTML(),
-            '</div>',
           '</div>',
           weightIndexSegHTML(weightsState.activeIndex),
           '<div class="weightsMeta">',
             '<div class="weightsStatus ' + statusClass + '">' + esc(weightsState.commonStatusText) + '</div>',
             weightSourceBadgesHTML(COMMON_WEIGHTS_CODE),
             payload ? '<div>\u5171\u540c\u6210\u4efd\u80a1\uff1a<strong>' + esc(String(payload.itemCount || 0)) + '</strong></div>' : '',
-            payload ? '<div>' + esc(weightCacheRefreshText(payload)) + '</div>' : '',
+            weightCacheControlsHTML(payload),
           '</div>',
           listHtml,
         '</div>'
@@ -2878,9 +2880,6 @@ export function getClientScript() {
               '<span>' + esc(weightsState.activeIndex) + '</span>',
               '<strong>' + esc(indexTitle) + '</strong>',
             '</div>',
-            '<div class="weightsHeadTools">',
-              weightExportButtonHTML(),
-            '</div>',
           '</div>',
           weightIndexSegHTML(weightsState.activeIndex),
           '<div class="weightsMeta">',
@@ -2888,7 +2887,7 @@ export function getClientScript() {
             weightSourceBadgesHTML(weightsState.activeIndex),
             items ? '<div>\u6210\u4efd\u80a1\uff1a<strong>' + esc(String(items.length)) + '</strong></div>' : '',
             showDataDate ? '<div>\u6e05\u5355\u65e5\u671f\uff1a<strong>' + esc(formatBasketDate(cached.basketDate)) + '</strong></div>' : '',
-            cached ? '<div>' + esc(weightCacheRefreshText(cached)) + '</div>' : '',
+            weightCacheControlsHTML(cached),
           '</div>',
           listHtml,
         '</div>'
@@ -3131,7 +3130,7 @@ export function getClientScript() {
           return null;
         }
         if (timedOut) {
-          throw new Error("\u660e\u661f\u79d1\u6280\u516c\u53f8\u9762\u677f\u8bf7\u6c42\u8d85\u65f6\uff0815\u79d2\uff09");
+          throw new Error("\u81ea\u9009\u80a1\u5217\u8868\u8bf7\u6c42\u8d85\u65f6\uff0815\u79d2\uff09");
         }
         throw error;
       } finally {
@@ -3171,7 +3170,7 @@ export function getClientScript() {
         ensureStarForwardPe();
       } catch (error) {
         console.error("star tech load failed:", error);
-        starsState.statusText = error && error.message ? error.message : "\u660e\u661f\u79d1\u6280\u516c\u53f8\u9762\u677f\u52a0\u8f7d\u5931\u8d25";
+        starsState.statusText = error && error.message ? error.message : "\u81ea\u9009\u80a1\u5217\u8868\u52a0\u8f7d\u5931\u8d25";
         starsState.statusType = "err";
         renderStarPanel();
       }
@@ -3208,7 +3207,7 @@ export function getClientScript() {
           return null;
         }
         if (timedOut) {
-          throw new Error("\u660e\u661f\u79d1\u6280\u516c\u53f8\u4f30\u503c\u6307\u6807\u8bf7\u6c42\u8d85\u65f6\uff0815\u79d2\uff09");
+          throw new Error("\u81ea\u9009\u80a1\u4f30\u503c\u6307\u6807\u8bf7\u6c42\u8d85\u65f6\uff0815\u79d2\uff09");
         }
         throw error;
       } finally {
@@ -3620,7 +3619,7 @@ export function getClientScript() {
         if (currentPage === "stars") {
           starsState.cache.clear();
           resetStarForwardPeState();
-          starsState.statusText = "\u5df2\u6e05\u7a7a\u5f53\u524d\u9762\u677f\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u660e\u661f\u79d1\u6280\u80a1\u6570\u636e...";
+          starsState.statusText = "\u5df2\u6e05\u7a7a\u5f53\u524d\u9762\u677f\u7f13\u5b58\uff0c\u6b63\u5728\u91cd\u65b0\u83b7\u53d6\u81ea\u9009\u80a1\u6570\u636e...";
           starsState.statusType = "ok";
           renderStarPanel();
           await loadStarPeriod(starsState.period, { force: true });
@@ -3700,7 +3699,10 @@ export function getClientScript() {
 
       if (pageSeg) {
         pageSeg.querySelectorAll("button[data-page]").forEach(function (node) {
-          node.classList.toggle("active", node.getAttribute("data-page") === page);
+          var isActive = node.getAttribute("data-page") === page;
+          node.classList.toggle("active", isActive);
+          if (isActive) node.setAttribute("aria-current", "page");
+          else node.removeAttribute("aria-current");
         });
       }
 

@@ -97,13 +97,13 @@ export function getHtml() {
       </div>
     </div>
 
-    <div class="pageSeg" id="pageSeg" aria-label="\u9875\u9762\u5207\u6362">
-      <button class="active" data-page="overview">\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f</button>
-      <button data-page="fundPremiums">\u57fa\u91d1\u6298\u6ea2\u4ef7</button>
-      <button data-page="stars">\u660e\u661f\u79d1\u6280\u516c\u53f8</button>
-      <button data-page="weights">\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd</button>
-      <button data-page="sectors">\u6807\u666e500\u677f\u5757ETF</button>
-    </div>
+    <nav class="pageSeg" id="pageSeg" aria-label="\u529f\u80fd\u9009\u62e9">
+      <button class="active" data-page="overview" type="button" aria-current="page">\u79d1\u6280\u7c7b\u6307\u6570\u4fe1\u606f</button>
+      <button data-page="fundPremiums" type="button">\u57fa\u91d1\u6298\u6ea2\u4ef7</button>
+      <button data-page="stars" type="button">\u81ea\u9009\u80a1\u5217\u8868</button>
+      <button data-page="weights" type="button">\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd</button>
+      <button data-page="sectors" type="button">\u6807\u666e500\u677f\u5757ETF</button>
+    </nav>
 
     <div class="pages" id="pages">
       <section class="page page-active" data-page="overview">

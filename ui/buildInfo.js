@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.81",
+  version: "v1.3.82",
   shortSha: "",
   fullSha: "",
-  message: "Refine blue weight panels and highlight highest allocations",
+  message: "Update watchlist labels, mobile export and weight gradients",
 };

@@ -342,6 +342,8 @@ export function getStyles() {
       box-shadow: inset 0 0 0 1px rgba(0,174,239,.25);
     }
 
+    .pageSeg button:focus-visible{ outline: 2px solid #69d6ff; outline-offset: -2px; }
+
     .card{
       background: var(--card);
       border: 1px solid var(--border);
@@ -2498,6 +2500,7 @@ export function getStyles() {
     }
 
     .weightsPanel{
+      position:relative;
       padding: 20px;
       display:grid;
       grid-template-columns: minmax(0, 1fr);
@@ -2514,6 +2517,8 @@ export function getStyles() {
       justify-content:space-between;
       gap: 16px;
       flex-wrap:wrap;
+      padding-right: 150px;
+      min-height: 34px;
     }
 
     .weightsTitle{
@@ -2560,15 +2565,13 @@ export function getStyles() {
     .weightsMeta .err{ color: rgba(255,77,109,.90); }
     .weightsMeta .panelSourceBadges{ justify-content: flex-start; }
 
-    .weightsHeadTools{
-      display:grid;
-      justify-items:end;
-      gap: 9px;
-      min-width: 0;
-      margin-left:auto;
-    }
+    .weightsCacheRow{ display:flex; align-items:center; gap: 8px; margin-left:auto; min-width: 0; }
+    .weightsCacheText{ min-width: 0; overflow-wrap: anywhere; }
 
     .weightExportButton{
+      position:absolute;
+      top: 20px;
+      right: 20px;
       min-width: 126px;
       min-height: 34px;
       display:inline-flex;
@@ -2738,7 +2741,7 @@ export function getStyles() {
     }
 
     .commonWeightCell.isMaxWeight strong{ color: #ff7188; font-weight: 800; text-shadow: 0 0 12px rgba(255,77,109,.24); }
-    .commonWeightCell.isMaxWeight .commonWeightBar i{ background: #ff5d75; box-shadow: 0 0 12px rgba(255,77,109,.22); }
+    .commonWeightCell.isMaxWeight .commonWeightBar i{ background: linear-gradient(90deg, #ff365e, #ff8b9e); box-shadow: 0 0 12px rgba(255,77,109,.22); }
 
     .weightCard{
       position: relative;
@@ -3290,11 +3293,14 @@ export function getStyles() {
       .weightsHead{
         align-items: center;
         gap: 12px;
+        padding-right: 0;
+        min-height: 0;
       }
 
-      .weightsHeadTools{
-        justify-items:end;
-      }
+      .weightsCacheRow{ flex: 1 1 100%; justify-content:space-between; margin-left: 0; }
+      .weightsCacheText{ font-size: 11px; line-height: 1.45; }
+      .weightExportButton{ position:static; flex: 0 0 auto; margin-left:auto; min-width: 106px; min-height: 32px; padding: 7px; gap: 6px; font-size: 11px; }
+      .weightExportButton svg{ width: 14px; height: 14px; }
 
       .weightsTitle strong{
         font-size: 18px;
