@@ -3456,6 +3456,32 @@ export function getStyles() {
       }
     }
 
+    @media (max-width: 1200px){
+      .watchlistDaily .sectorHeatInfoStack{ container-type:inline-size; }
+      .watchlistDaily .sectorHeatMetaStar,
+      .watchlistDaily .sectorHeatExtraStar{
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: 8px;
+        font-size: min(12px, calc((100cqw - 8px) / var(--watchlist-info-units)));
+      }
+      .watchlistDaily .sectorHeatMetaStar{
+        display:grid;
+        align-items:baseline;
+      }
+      .watchlistDaily .sectorHeatMetaStar > span:first-child{ white-space:nowrap; }
+      .watchlistDaily .sectorHeatMetaStar .sectorHeatTarget{
+        justify-self:end;
+        font-size:inherit;
+        letter-spacing:0;
+      }
+      .watchlistDaily .sectorHeatExtraStar .sectorHeatExtraCurrent,
+      .watchlistDaily .sectorHeatExtraStar .sectorHeatExtraLatest{
+        justify-self:end;
+        text-align:right;
+      }
+      .watchlistDaily .sectorHeatExtraLatest{ font-size:inherit; }
+    }
+
     @media (max-width: 680px){
       .weightsList{ grid-template-columns: 1fr; }
       .weightsIndexSeg{ display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }

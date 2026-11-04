@@ -1730,7 +1730,7 @@ export function getClientScript() {
             })
           : item;
       })).map(function (item) {
-        return Object.assign({}, item, { showSparkline: true, referenceLatestT: cached.asOfMs });
+        return Object.assign({}, item, { showSparkline: true, isWatchlistDaily: starsState.period === "1D", referenceLatestT: cached.asOfMs });
       }) : null;
       var latestText = latestDataText(cached && cached.asOfMs);
       var statusClass = starsState.statusType === "err" ? "err" : "ok";
@@ -2170,6 +2170,7 @@ export function getClientScript() {
       var hasTargetPrice = Number.isFinite(item && item.priceTargetValue) && Number.isFinite(item && item.priceTargetPct);
       var isIndexOverview = !!(item && item.isIndexOverview);
       var isSectorDaily = !!(item && item.isSectorDaily);
+      var isWatchlistDaily = !!(item && item.isWatchlistDaily);
       var hasSparkline = !!(item && item.showSparkline && (item.period !== "1D" || isIndexOverview) && getSparklineValues(item).length > 1);
       var targetHtml = hasTargetPrice
         ? '<span class="sectorHeatTarget"><span class="sectorHeatTargetLabel">\u76ee\u6807\u4ef7\uff1a' + fmtTargetPrice(item.priceTargetValue) + '</span><span class="sectorHeatTargetPct" style="' + targetToneStyle(item && item.priceTargetPct) + '"> (' + esc(fmtTargetPct(item.priceTargetPct)) + ')</span></span>'
@@ -2197,6 +2198,19 @@ export function getClientScript() {
         + (hasSparkline && !hasValuationMetrics ? ' sectorHeatMetaWithLatest' : '');
       var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT, item.timeValidationT);
       var latestTimeInlineHtml = '<span class="sectorHeatExtraLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)) + '</span>';
+      var infoStyle = "";
+      if (isWatchlistDaily) {
+        // Estimate mixed CJK/monospace width so all three pairs fit narrow cards.
+        var infoRows = [
+          (item.baseLabel || "\u8d77\u70b9") + " " + fmtPrice(item.baseClose) + " " + (hasTargetPrice ? "\u76ee\u6807\u4ef7\uff1a" + fmtTargetPrice(item.priceTargetValue) + " (" + fmtTargetPct(item.priceTargetPct) + ")" : signPrice(item.change)),
+          "\u524d\u77bbPE: " + fmtPeRatio(item.peRatioFwd, item.peRatioFwdLoss) + " \u5f53\u524dPE: " + fmtPeRatio(item.peRatioCurrent, item.peRatioCurrentLoss),
+          "\u5f53\u524d\u5e02\u503c: " + marketCapText + " " + cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)
+        ];
+        var infoUnits = Math.max.apply(null, infoRows.map(function (row) {
+          return Array.from(row).reduce(function (units, char) { return units + (char.charCodeAt(0) > 255 ? 1 : 0.64); }, 0);
+        }));
+        infoStyle = ' style="--watchlist-info-units:' + infoUnits.toFixed(2) + '"';
+      }
       var metaRightHtml = isSectorDaily
         ? '<span class="sectorHeatMetaLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)) + '</span>'
         : hasSparkline
@@ -2213,11 +2227,11 @@ export function getClientScript() {
       var infoStackHtml = isIndexOverview
         ? '<div class="sectorHeatMeta indexHeatMeta"><strong>' + signPrice(item.change) + '</strong>' + latestTimeInlineHtml + '</div>'
         : (hasValuationMetrics
-          ? '<div class="sectorHeatInfoStack"><div class="' + metaClass + '"><span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>' + metaRightHtml + '</div>' + extraHtml + '</div>'
+          ? '<div class="sectorHeatInfoStack"' + infoStyle + '><div class="' + metaClass + '"><span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>' + metaRightHtml + '</div>' + extraHtml + '</div>'
           : '<div class="' + metaClass + '"><span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>' + metaRightHtml + '</div>' + extraHtml + footerHtml);
 
       return [
-        '<article class="sectorHeatTile ' + tone + (isSectorDaily ? ' sectorHeatDaily' : '') + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
+        '<article class="sectorHeatTile ' + tone + (isSectorDaily ? ' sectorHeatDaily' : '') + (isWatchlistDaily ? ' watchlistDaily' : '') + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
           '<div class="sectorHeatHeader">',
             '<div class="starIdentity">',
               '<div class="starIconWrap">',

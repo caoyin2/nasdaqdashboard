@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.87",
+  version: "v1.3.88",
   shortSha: "",
   fullSha: "",
-  message: "Compact daily S&P 500 sector cards",
+  message: "Align mobile daily watchlist metrics in three rows",
 };
