@@ -2698,6 +2698,9 @@ export function getClientScript() {
       var label = weightsState.exporting
         ? "正在准备..."
         : (feedback ? (isError ? "重试导出" : "已复制") : "导出详细权重");
+      var compactLabel = weightsState.exporting
+        ? "准备中"
+        : (feedback ? (isError ? "重试" : "已复制") : "导出权重");
       var title = weightsState.exporting
         ? "正在整理所有指数的完整权重表"
         : (feedback || "复制所有指数的完整权重表到剪贴板");
@@ -2705,14 +2708,15 @@ export function getClientScript() {
       return [
         '<button class="weightExportButton" type="button" data-weight-export-all="1" title="' + esc(title) + '" aria-label="' + esc(title) + '"' + (weightsState.exporting ? ' disabled aria-busy="true"' : '') + '>',
           '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15 9V5.8c0-.99-.81-1.8-1.8-1.8H5.8C4.81 4 4 4.81 4 5.8v7.4c0 .99.81 1.8 1.8 1.8H9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-          '<span>' + esc(label) + '</span>',
+          '<span class="weightExportLabel">' + esc(label) + '</span>',
+          '<span class="weightExportCompactLabel">' + esc(compactLabel) + '</span>',
         '</button>'
       ].join("");
     }
 
-    function weightCacheControlsHTML(payload) {
+    function weightCacheInfoHTML(payload) {
       var countdown = payload ? weightCacheRefreshText(payload) : "\u672c\u5730\u7f13\u5b58\uff1a--";
-      return '<div class="weightsCacheRow"><span class="weightsCacheText">' + esc(countdown) + '</span>' + weightExportButtonHTML() + '</div>';
+      return '<div class="weightsCacheRow"><span class="weightsCacheText">' + esc(countdown) + '</span></div>';
     }
 
     async function exportDetailedWeights() {
@@ -2841,13 +2845,14 @@ export function getClientScript() {
               '<span>' + esc(COMMON_WEIGHT_INDEX_OPTIONS.map(function (option) { return option.code; }).join(' / ')) + '</span>',
               '<strong>\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd\u5bf9\u7167</strong>',
             '</div>',
+            weightExportButtonHTML(),
           '</div>',
           weightIndexSegHTML(weightsState.activeIndex),
           '<div class="weightsMeta">',
             '<div class="weightsStatus ' + statusClass + '">' + esc(weightsState.commonStatusText) + '</div>',
             weightSourceBadgesHTML(COMMON_WEIGHTS_CODE),
             payload ? '<div>\u5171\u540c\u6210\u4efd\u80a1\uff1a<strong>' + esc(String(payload.itemCount || 0)) + '</strong></div>' : '',
-            weightCacheControlsHTML(payload),
+            weightCacheInfoHTML(payload),
           '</div>',
           listHtml,
         '</div>'
@@ -2880,6 +2885,7 @@ export function getClientScript() {
               '<span>' + esc(weightsState.activeIndex) + '</span>',
               '<strong>' + esc(indexTitle) + '</strong>',
             '</div>',
+            weightExportButtonHTML(),
           '</div>',
           weightIndexSegHTML(weightsState.activeIndex),
           '<div class="weightsMeta">',
@@ -2887,7 +2893,7 @@ export function getClientScript() {
             weightSourceBadgesHTML(weightsState.activeIndex),
             items ? '<div>\u6210\u4efd\u80a1\uff1a<strong>' + esc(String(items.length)) + '</strong></div>' : '',
             showDataDate ? '<div>\u6e05\u5355\u65e5\u671f\uff1a<strong>' + esc(formatBasketDate(cached.basketDate)) + '</strong></div>' : '',
-            weightCacheControlsHTML(cached),
+            weightCacheInfoHTML(cached),
           '</div>',
           listHtml,
         '</div>'

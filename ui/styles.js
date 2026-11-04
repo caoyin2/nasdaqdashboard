@@ -2512,13 +2512,10 @@ export function getStyles() {
     }
 
     .weightsHead{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
+      display:grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items:end;
       gap: 16px;
-      flex-wrap:wrap;
-      padding-right: 150px;
-      min-height: 34px;
     }
 
     .weightsTitle{
@@ -2569,9 +2566,6 @@ export function getStyles() {
     .weightsCacheText{ min-width: 0; overflow-wrap: anywhere; }
 
     .weightExportButton{
-      position:absolute;
-      top: 20px;
-      right: 20px;
       min-width: 126px;
       min-height: 34px;
       display:inline-flex;
@@ -2612,6 +2606,8 @@ export function getStyles() {
       height: 15px;
       flex: 0 0 auto;
     }
+
+    .weightExportCompactLabel{ display:none; }
 
     .weightsIndexSeg{
       display:inline-flex;
@@ -3291,16 +3287,15 @@ export function getStyles() {
       }
 
       .weightsHead{
-        align-items: center;
-        gap: 12px;
-        padding-right: 0;
-        min-height: 0;
+        gap: 8px;
       }
 
       .weightsCacheRow{ flex: 1 1 100%; justify-content:space-between; margin-left: 0; }
       .weightsCacheText{ font-size: 11px; line-height: 1.45; }
-      .weightExportButton{ position:static; flex: 0 0 auto; margin-left:auto; min-width: 106px; min-height: 32px; padding: 7px; gap: 6px; font-size: 11px; }
+      .weightExportButton{ min-width: 88px; min-height: 32px; padding: 7px; gap: 6px; font-size: 11px; }
       .weightExportButton svg{ width: 14px; height: 14px; }
+      .weightExportLabel{ display:none; }
+      .weightExportCompactLabel{ display:inline; }
 
       .weightsTitle strong{
         font-size: 18px;

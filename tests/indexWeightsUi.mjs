@@ -77,21 +77,22 @@ try {
         const bounds = panel.getBoundingClientRect();
         const style = getComputedStyle(panel);
         const head = panel.querySelector(".weightsHead").getBoundingClientRect();
-        const row = panel.querySelector(".weightsCacheRow").getBoundingClientRect();
-        const text = panel.querySelector(".weightsCacheText").getBoundingClientRect();
+        const title = panel.querySelector(".weightsTitle strong").getBoundingClientRect();
         const button = panel.querySelector(".weightExportButton").getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(panel.querySelector(".weightsTitle strong"));
         return { right: bounds.right - parseFloat(style.borderRightWidth) - parseFloat(style.paddingRight),
-          headTop: head.top, rowRight: row.right, textRight: text.right, textTop: text.top, textBottom: text.bottom,
+          headRight: head.right, titleRight: title.right, titleTop: title.top, titleBottom: title.bottom,
+          titleLines: range.getClientRects().length, common: panel.classList.contains("commonWeightsPanel"),
+          inHeader: !!panel.querySelector(".weightsHead .weightExportButton"),
           buttonLeft: button.left, buttonRight: button.right, buttonTop: button.top, buttonBottom: button.bottom };
       });
       assert.ok(Math.abs(layout.buttonRight - layout.right) < 0.75, "export button must align with the panel's inner right edge");
-      if (viewport.width <= 980) {
-        assert.ok(Math.abs(layout.buttonRight - layout.rowRight) < 0.75, "mobile export must stay at the end of the cache row");
-        assert.ok(layout.buttonLeft >= layout.textRight + 4, "mobile export overlaps the refresh countdown");
-        assert.ok(layout.buttonTop <= layout.textBottom && layout.buttonBottom >= layout.textTop, "mobile export must share the countdown row");
-      } else {
-        assert.ok(Math.abs(layout.buttonTop - layout.headTop) < 0.75, "desktop export must retain its header position");
-      }
+      assert.ok(layout.inHeader, "export must remain beside the panel title");
+      assert.ok(Math.abs(layout.buttonRight - layout.headRight) < 0.75);
+      assert.ok(layout.buttonLeft >= layout.titleRight + 4, "export overlaps the panel title");
+      assert.ok(Math.abs(layout.buttonBottom - layout.titleBottom) < 0.75, "export must align with the title line");
+      if (layout.common) assert.equal(layout.titleLines, 1, "common title must not wrap beside the export button");
     }
     async function assertCommonHighlight() {
       const backgrounds = await page.locator(".weightsPanel, .commonWeightRow").evaluateAll((els) =>
@@ -187,7 +188,7 @@ try {
     assert.ok((await page.locator(".weightsCacheText").textContent()).includes("23小时59分钟"));
     await assertExportPlacement();
     assert.equal(requests.filter((url) => url.pathname === "/api/index-weights-common").length, 1);
-    if (viewport.width <= 980) await page.locator(".weightsCacheRow").screenshot({ animations: "disabled", path: fileURLToPath(new URL(`${viewport.width}-cache-row.png`, outputDir)) });
+    if (viewport.width <= 980) await page.locator(".weightsHead").screenshot({ animations: "disabled", path: fileURLToPath(new URL(`${viewport.width}-export-head.png`, outputDir)) });
     assert.deepEqual(errors, []);
     console.log(`PASS ${viewport.width}: red/blue gradients, maxima, comparison, mobile/desktop export placement, 24-hour cache`);
     await context.close();
