@@ -2746,42 +2746,40 @@ export function getClientScript() {
 
     function weightCardHTML(item, maxWeight, rank) {
       var safeMax = Number.isFinite(maxWeight) && maxWeight > 0 ? maxWeight : 1;
-      var intensity = clamp(item.weightPct / safeMax, 0, 1);
-      var bg = "rgba(32,118,255," + (0.08 + intensity * 0.30).toFixed(3) + ")";
-      var border = "rgba(105,214,255," + (0.18 + intensity * 0.26).toFixed(3) + ")";
-      var glow = "rgba(38,106,255," + (0.12 + intensity * 0.22).toFixed(3) + ")";
+      var width = Number.isFinite(item.weightPct) ? clamp(item.weightPct / safeMax, 0, 1) * 100 : 0;
 
       return [
-        '<article class="weightCard" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 16px 32px ' + glow + '; --weight-glow-soft:' + glow + ';">',
-          '<div class="weightRankBadge">' + esc(String(rank)) + '</div>',
+        '<article class="weightCard" data-symbol="' + esc(item.symbol) + '">',
           '<div class="weightCardTop">',
+            '<div class="weightRankBadge">' + esc(String(rank)) + '</div>',
             '<div class="weightIconWrap">',
               item.iconLight
                 ? '<img class="weightIcon" src="' + esc(item.iconLight) + '" alt="' + esc(item.nameEn) + '" loading="lazy" data-search-symbol="' + esc(item.symbol) + '" data-search-refresh-state="idle" />'
                 : '<div class="weightIcon" aria-hidden="true"></div>',
             '</div>',
             '<div class="weightNameBox">',
-              '<div class="weightName">' + esc(item.nameEn || item.symbol) + '</div>',
+              '<div class="weightName" title="' + esc(item.nameEn || item.symbol) + '">' + esc(item.nameEn || item.symbol) + '</div>',
               '<div class="weightSymbol">' + esc(item.symbol) + '</div>',
             '</div>',
           '</div>',
           '<div class="weightValue">',
+            '<span>\u6307\u6570\u6743\u91cd</span>',
             '<strong>' + fmt(item.weightPct, 2) + '%</strong>',
           '</div>',
+          '<div class="weightBar" aria-hidden="true"><div class="weightBarFill" style="width:' + width.toFixed(2) + '%"></div></div>',
         '</article>'
       ].join("");
     }
 
-    function commonWeightRowHTML(item, rank, maxTotal, maxCellWeight) {
-      var safeGlowMax = Number.isFinite(maxTotal) && maxTotal > 0 ? maxTotal : 1;
+    function commonWeightRowHTML(item, rank, maxCellWeight) {
       var safeCellMax = Number.isFinite(maxCellWeight) && maxCellWeight > 0 ? maxCellWeight : 1;
-      var total = Number.isFinite(item.totalWeightPct) ? item.totalWeightPct : 0;
-      var intensity = clamp(total / safeGlowMax, 0, 1);
-      var glow = "rgba(38,106,255," + (0.10 + intensity * 0.20).toFixed(3) + ")";
       var weights = item.weights || {};
+      var highestWeight = Math.max.apply(null, COMMON_WEIGHT_INDEX_OPTIONS.map(function (option) {
+        return Number.isFinite(weights[option.code]) ? weights[option.code] : -Infinity;
+      }));
 
       return [
-        '<article class="commonWeightRow" style="--common-weight-glow:' + glow + ';">',
+        '<article class="commonWeightRow" data-symbol="' + esc(item.symbol) + '">',
           '<div class="commonWeightRank">' + esc(String(rank)) + '</div>',
           '<div class="commonWeightIdentity">',
             '<div class="weightIconWrap">',
@@ -2790,18 +2788,20 @@ export function getClientScript() {
                 : '<div class="weightIcon" aria-hidden="true"></div>',
             '</div>',
             '<div class="weightNameBox">',
-              '<div class="weightName">' + esc(item.nameEn || item.symbol) + '</div>',
+              '<div class="weightName" title="' + esc(item.nameEn || item.symbol) + '">' + esc(item.nameEn || item.symbol) + '</div>',
               '<div class="weightSymbol">' + esc(item.symbol) + '</div>',
             '</div>',
           '</div>',
           '<div class="commonWeightCells">',
             COMMON_WEIGHT_INDEX_OPTIONS.map(function (option) {
               var value = Number.isFinite(weights[option.code]) ? weights[option.code] : null;
-              var width = Number.isFinite(value) ? clamp(value / safeCellMax, 0.035, 1) * 100 : 0;
+              var width = Number.isFinite(value) && value > 0 ? clamp(value / safeCellMax, 0.035, 1) * 100 : 0;
+              var isHighest = Number.isFinite(value) && highestWeight > 0 && Math.abs(value - highestWeight) < 1e-9;
+              var valueText = Number.isFinite(value) ? fmt(value, 2) + '%' : '--';
               return [
-                '<div class="commonWeightCell">',
-                  '<span>' + esc(option.label) + '</span>',
-                  '<strong>' + (Number.isFinite(value) ? fmt(value, 2) + '%' : '--') + '</strong>',
+                '<div class="commonWeightCell' + (isHighest ? ' isMaxWeight' : '') + '" data-index="' + esc(option.code) + '" title="' + esc(option.label) + '\uff1a' + esc(valueText) + (isHighest ? '\uff08\u6700\u9ad8\u6743\u91cd\uff09' : '') + '">',
+                  '<span>' + esc(option.code) + '</span>',
+                  '<strong aria-label="' + esc(option.code) + ' ' + esc(valueText) + (isHighest ? '\uff0c\u6700\u9ad8\u6743\u91cd' : '') + '">' + valueText + '</strong>',
                   '<div class="commonWeightBar"><i style="width:' + width.toFixed(2) + '%"></i></div>',
                 '</div>'
               ].join("");
@@ -2814,7 +2814,6 @@ export function getClientScript() {
     function commonWeightsPanelHTML() {
       var payload = weightsState.commonCache;
       var items = payload && Array.isArray(payload.items) ? payload.items.slice() : null;
-      var maxTotal = items && items.length ? items[0].totalWeightPct : 0;
       var maxCellWeight = 0;
       if (items && items.length) {
         items.forEach(function (item) {
@@ -2827,27 +2826,27 @@ export function getClientScript() {
       }
       var statusClass = weightsState.commonStatusType === "err" ? "err" : "ok";
       var listHtml = items && items.length
-        ? '<div class="commonWeightList">' + items.map(function (item, index) { return commonWeightRowHTML(item, index + 1, maxTotal, maxCellWeight); }).join("") + '</div>'
+        ? '<div class="commonWeightList">' + items.map(function (item, index) { return commonWeightRowHTML(item, index + 1, maxCellWeight); }).join("") + '</div>'
         : '<div class="weightsEmpty">\u8fdb\u5165\u8be5\u9762\u677f\u540e\u4f1a\u4e00\u6b21\u6027\u6bd4\u5bf9 ' + esc(commonIndexLabelsText()) + '\uff0c\u53ea\u663e\u793a\u6240\u6709\u6307\u6570\u90fd\u5305\u542b\u7684\u6210\u4efd\u80a1\u3002</div>';
 
       return [
         '<div class="card weightsPanel commonWeightsPanel">',
           '<div class="weightsHead">',
             '<div class="weightsTitle">',
-              '<span>\u53ea\u4fdd\u7559\u6240\u6709\u6307\u6570\u5171\u540c\u5305\u542b\u7684\u6210\u4efd\u80a1</span>',
+              '<span>' + esc(COMMON_WEIGHT_INDEX_OPTIONS.map(function (option) { return option.code; }).join(' / ')) + '</span>',
               '<strong>\u5171\u540c\u6210\u4efd\u80a1\u6743\u91cd\u5bf9\u7167</strong>',
             '</div>',
             '<div class="weightsHeadTools">',
               weightExportButtonHTML(),
-              '<div class="weightsMeta">',
-                '<div class="' + statusClass + '">' + esc(weightsState.commonStatusText) + '</div>',
-                weightSourceBadgesHTML(COMMON_WEIGHTS_CODE),
-                payload ? '<div>\u5171\u540c\u6210\u4efd\u80a1\uff1a<strong>' + esc(String(payload.itemCount || 0)) + '</strong></div>' : '',
-                payload ? '<div>' + esc(weightCacheRefreshText(payload)) + '</div>' : '',
-              '</div>',
             '</div>',
           '</div>',
           weightIndexSegHTML(weightsState.activeIndex),
+          '<div class="weightsMeta">',
+            '<div class="weightsStatus ' + statusClass + '">' + esc(weightsState.commonStatusText) + '</div>',
+            weightSourceBadgesHTML(COMMON_WEIGHTS_CODE),
+            payload ? '<div>\u5171\u540c\u6210\u4efd\u80a1\uff1a<strong>' + esc(String(payload.itemCount || 0)) + '</strong></div>' : '',
+            payload ? '<div>' + esc(weightCacheRefreshText(payload)) + '</div>' : '',
+          '</div>',
           listHtml,
         '</div>'
       ].join("");
@@ -2876,23 +2875,21 @@ export function getClientScript() {
         '<div class="card weightsPanel">',
           '<div class="weightsHead">',
             '<div class="weightsTitle">',
-              '<span>\u6839\u636e\u6700\u65b0\u6743\u91cd\u6587\u4ef6\u63a8\u5bfc\u6210\u5206\u80a1\u6743\u91cd</span>',
-              '<strong>\u79d1\u6280\u7c7b\u6307\u6570\u6743\u91cd</strong>',
+              '<span>' + esc(weightsState.activeIndex) + '</span>',
+              '<strong>' + esc(indexTitle) + '</strong>',
             '</div>',
             '<div class="weightsHeadTools">',
               weightExportButtonHTML(),
-              '<div class="weightsMeta">',
-                '<div class="' + statusClass + '">' + esc(weightsState.statusText) + '</div>',
-                weightSourceBadgesHTML(weightsState.activeIndex),
-                '<div>\u6307\u6570\uff1a<strong>' + esc(indexTitle) + '</strong></div>',
-                showDataDate
-                  ? '<div>\u6e05\u5355\u65e5\u671f\uff1a<strong>' + esc(formatBasketDate(cached.basketDate)) + '</strong></div>'
-                  : '',
-                cached ? '<div>' + esc(weightCacheRefreshText(cached)) + '</div>' : '',
-              '</div>',
             '</div>',
           '</div>',
           weightIndexSegHTML(weightsState.activeIndex),
+          '<div class="weightsMeta">',
+            '<div class="weightsStatus ' + statusClass + '">' + esc(weightsState.statusText) + '</div>',
+            weightSourceBadgesHTML(weightsState.activeIndex),
+            items ? '<div>\u6210\u4efd\u80a1\uff1a<strong>' + esc(String(items.length)) + '</strong></div>' : '',
+            showDataDate ? '<div>\u6e05\u5355\u65e5\u671f\uff1a<strong>' + esc(formatBasketDate(cached.basketDate)) + '</strong></div>' : '',
+            cached ? '<div>' + esc(weightCacheRefreshText(cached)) + '</div>' : '',
+          '</div>',
           listHtml,
         '</div>'
       ].join("");

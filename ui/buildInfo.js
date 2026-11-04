@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.80",
+  version: "v1.3.81",
   shortSha: "",
   fullSha: "",
-  message: "Expand the fund suspension risk bar",
+  message: "Refine blue weight panels and highlight highest allocations",
 };

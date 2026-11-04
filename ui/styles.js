@@ -2498,13 +2498,14 @@ export function getStyles() {
     }
 
     .weightsPanel{
-      padding: 18px;
+      padding: 20px;
       display:grid;
-      gap: 14px;
-      background:
-        radial-gradient(900px 320px at 0% 0%, rgba(0,224,255,.12), transparent 58%),
-        radial-gradient(900px 320px at 100% 0%, rgba(64,156,255,.10), transparent 58%),
-        linear-gradient(180deg, rgba(10,15,26,.88), rgba(12,18,30,.78));
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+      border-radius: 8px;
+      border-color: #254765;
+      background: linear-gradient(125deg, rgba(10,35,57,.96), rgba(10,17,31,.98) 48%, rgba(13,28,49,.96));
+      box-shadow: inset 0 1px 0 rgba(95,198,255,.07);
     }
 
     .weightsHead{
@@ -2512,34 +2513,42 @@ export function getStyles() {
       align-items:flex-start;
       justify-content:space-between;
       gap: 16px;
+      flex-wrap:wrap;
     }
 
     .weightsTitle{
       display:grid;
       gap: 4px;
+      min-width: 0;
+      flex: 1 1 180px;
     }
 
     .weightsTitle strong{
-      font-size: 22px;
-      line-height: 1.1;
+      font-size: 20px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
       color: rgba(244,247,252,.98);
     }
 
     .weightsTitle span{
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
     }
 
     .weightsMeta{
-      display:grid;
-      justify-items:end;
-      gap: 6px;
-      text-align:right;
+      display:flex;
+      align-items:center;
+      flex-wrap:wrap;
+      gap: 10px 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #24415e;
       font-family: var(--mono);
       font-size: 12px;
       color: var(--muted);
     }
+
+    .weightsStatus{ flex: 1 1 100%; overflow-wrap: anywhere; }
 
     .weightsMeta strong{
       color: rgba(244,247,252,.98);
@@ -2549,26 +2558,28 @@ export function getStyles() {
 
     .weightsMeta .ok{ color: rgba(0,224,255,.85); }
     .weightsMeta .err{ color: rgba(255,77,109,.90); }
-    .weightsMeta .panelSourceBadges{ justify-content: flex-end; }
+    .weightsMeta .panelSourceBadges{ justify-content: flex-start; }
 
     .weightsHeadTools{
       display:grid;
       justify-items:end;
       gap: 9px;
       min-width: 0;
+      margin-left:auto;
     }
 
     .weightExportButton{
+      min-width: 126px;
       min-height: 34px;
       display:inline-flex;
       align-items:center;
       justify-content:center;
       gap: 7px;
       padding: 7px 10px;
-      border: 1px solid rgba(105,214,255,.30);
+      border: 1px solid rgba(105,214,255,.36);
       border-radius: 7px;
-      background: rgba(0,224,255,.10);
-      color: rgba(211,244,255,.98);
+      background: rgba(32,118,255,.14);
+      color: #c0efff;
       cursor:pointer;
       font-family: var(--mono);
       font-size: 12px;
@@ -2578,8 +2589,8 @@ export function getStyles() {
     }
 
     .weightExportButton:hover{
-      background: rgba(0,224,255,.18);
-      border-color: rgba(105,214,255,.56);
+      background: rgba(32,118,255,.24);
+      border-color: #69d6ff;
       color: #fff;
     }
 
@@ -2603,9 +2614,9 @@ export function getStyles() {
       display:inline-flex;
       gap: 6px;
       padding: 4px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.04);
-      border: 1px solid rgba(31,43,61,.85);
+      border-radius: 6px;
+      background: rgba(11,27,48,.78);
+      border: 1px solid #284d70;
       width: fit-content;
       max-width: 100%;
       overflow-x: auto;
@@ -2618,7 +2629,7 @@ export function getStyles() {
       border:0;
       cursor:pointer;
       padding: 8px 12px;
-      border-radius: 999px;
+      border-radius: 4px;
       background: transparent;
       color: rgba(230,237,247,.72);
       font-family: var(--mono);
@@ -2629,9 +2640,11 @@ export function getStyles() {
 
     .weightsIndexSeg button.active{
       color: rgba(255,255,255,.96);
-      background: rgba(0,224,255,.16);
-      box-shadow: inset 0 0 0 1px rgba(0,224,255,.26);
+      background: linear-gradient(110deg, rgba(32,118,255,.28), rgba(0,199,238,.16));
+      box-shadow: inset 0 0 0 1px #397caf;
     }
+
+    .weightsIndexSeg button:focus-visible{ outline: 2px solid #69d6ff; outline-offset: -2px; }
 
     .weightsList{
       display:grid;
@@ -2647,37 +2660,32 @@ export function getStyles() {
     .commonWeightRow{
       position: relative;
       display:grid;
-      grid-template-columns: 42px minmax(220px, 1.05fr) minmax(360px, 2.2fr);
+      grid-template-columns: 28px minmax(180px, .9fr) minmax(0, 2.4fr);
       align-items:center;
       gap: 14px;
       padding: 14px;
-      border-radius: 14px;
-      border: 1px solid rgba(31,43,61,.85);
-      background:
-        linear-gradient(90deg, var(--common-weight-glow, rgba(38,106,255,.12)), transparent 34%),
-        rgba(255,255,255,.035);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
-      overflow: hidden;
+      min-width: 0;
+      border-radius: 8px;
+      border: 1px solid #2b4b6d;
+      background: linear-gradient(90deg, rgba(27,80,146,.40), rgba(13,26,48,.88) 38%);
+      box-shadow: inset 0 1px 0 rgba(105,214,255,.04);
     }
 
     .commonWeightRank{
-      width: 34px;
-      height: 34px;
-      border-radius: 999px;
+      width: 24px;
+      height: 28px;
       display:grid;
       place-items:center;
-      background: rgba(32,118,255,.12);
-      border: 1px solid rgba(105,214,255,.22);
-      color: rgba(156,231,255,.98);
+      color: #91d5f5;
       font-family: var(--mono);
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 500;
     }
 
     .commonWeightIdentity{
       display:flex;
       align-items:center;
-      gap: 12px;
+      gap: 10px;
       min-width: 0;
     }
 
@@ -2690,68 +2698,60 @@ export function getStyles() {
 
     .commonWeightCell{
       min-width: 0;
-      padding: 9px 10px;
-      border-radius: 11px;
-      border: 1px solid rgba(255,255,255,.07);
-      background: rgba(5,10,18,.44);
+      padding: 4px 12px;
+      border-left: 1px solid #294965;
       display:grid;
-      gap: 6px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items:center;
+      gap: 10px 8px;
       font-family: var(--mono);
     }
 
+    .commonWeightCell:first-child{ border-left: 0; padding-left: 0; }
+
     .commonWeightCell span{
       font-size: 11px;
-      color: rgba(183,202,230,.76);
+      color: #a8c4df;
       white-space: nowrap;
     }
 
     .commonWeightCell strong{
-      font-size: 17px;
+      font-size: 20px;
       line-height: 1;
       color: rgba(244,247,252,.96);
       font-variant-numeric: tabular-nums;
     }
 
     .commonWeightBar{
-      height: 5px;
-      border-radius: 999px;
+      grid-column: 1 / -1;
+      height: 6px;
+      border-radius: 2px;
       overflow:hidden;
-      background: rgba(255,255,255,.06);
+      background: rgba(90,141,196,.20);
     }
 
     .commonWeightBar i{
       display:block;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, rgba(32,118,255,.95), rgba(0,224,255,.95));
-      box-shadow: 0 0 14px rgba(32,118,255,.24);
+      background: linear-gradient(90deg, #227cff, #00d9f2);
     }
+
+    .commonWeightCell.isMaxWeight strong{ color: #ff7188; font-weight: 800; text-shadow: 0 0 12px rgba(255,77,109,.24); }
+    .commonWeightCell.isMaxWeight .commonWeightBar i{ background: #ff5d75; box-shadow: 0 0 12px rgba(255,77,109,.22); }
 
     .weightCard{
       position: relative;
       overflow: hidden;
-      border-radius: 14px;
-      border: 1px solid rgba(31,43,61,.85);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
-        rgba(13,20,32,.76);
+      border-radius: 8px;
+      border: 1px solid #2c557c;
+      background: linear-gradient(125deg, rgba(22,71,124,.48), rgba(13,31,57,.92));
+      box-shadow: inset 0 1px 0 rgba(95,198,255,.07);
       padding: 16px;
       display:grid;
-      gap: 14px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
-      min-height: 188px;
-    }
-
-    .weightCard::after{
-      content:"";
-      position:absolute;
-      inset:auto -16% -46% auto;
-      width: 110px;
-      height: 110px;
-      border-radius: 50%;
-      background: var(--weight-glow-soft, rgba(64,156,255,.16));
-      filter: blur(10px);
-      pointer-events:none;
+      gap: 12px;
+      min-height: 148px;
+      align-content:space-between;
     }
 
     .weightCardTop{
@@ -2759,46 +2759,37 @@ export function getStyles() {
       z-index: 1;
       display:flex;
       align-items:center;
-      gap: 14px;
+      gap: 10px;
       min-width: 0;
-      padding-right: 50px;
     }
 
     .weightRankBadge{
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      z-index: 2;
-      min-width: 34px;
-      padding: 7px 9px;
-      border-radius: 999px;
-      background: rgba(0,224,255,.12);
-      border: 1px solid rgba(0,224,255,.22);
-      color: rgba(156,231,255,.98);
+      min-width: 20px;
+      height: 24px;
+      flex: 0 0 auto;
+      color: #91d5f5;
       font-family: var(--mono);
       font-size: 12px;
-      font-weight: 700;
-      line-height: 1;
+      font-weight: 500;
+      line-height: 24px;
       text-align: center;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
       pointer-events: none;
     }
 
     .weightIconWrap{
-      width: 52px;
-      height: 52px;
-      border-radius: 14px;
-      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
-      border: 1px solid rgba(255,255,255,.14);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      background: linear-gradient(145deg, rgba(84,150,215,.20), rgba(52,97,155,.14));
+      border: 1px solid #355d80;
       display:grid;
       place-items:center;
       flex: 0 0 auto;
     }
 
     .weightIcon{
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       object-fit: contain;
       display:block;
       filter: brightness(2.38) saturate(1.42) contrast(1.14);
@@ -2806,10 +2797,11 @@ export function getStyles() {
 
     .weightName{
       min-width: 0;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
       color: rgba(244,247,252,.98);
-      line-height: 1.25;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -2835,7 +2827,7 @@ export function getStyles() {
       z-index: 1;
       display:flex;
       align-items:flex-end;
-      justify-content:flex-start;
+      justify-content:space-between;
       gap: 12px;
       font-family: var(--mono);
     }
@@ -2847,32 +2839,27 @@ export function getStyles() {
     }
 
     .weightValue strong{
-      font-size: 36px;
+      font-size: 28px;
       line-height: 1;
-      color: rgba(124,232,255,.99);
+      color: #94e6ff;
       font-variant-numeric: tabular-nums;
-      text-shadow:
-        0 0 10px rgba(90,214,255,.34),
-        0 0 22px rgba(0,224,255,.28),
-        0 0 36px rgba(64,156,255,.24);
+      text-shadow: 0 0 14px rgba(38,172,255,.20);
     }
 
     .weightBar{
       position: relative;
       z-index: 1;
       width: 100%;
-      height: 8px;
-      border-radius: 999px;
+      height: 5px;
+      border-radius: 2px;
       overflow: hidden;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.05);
+      background: rgba(90,141,196,.20);
     }
 
     .weightBarFill{
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, rgba(0,224,255,.94), rgba(64,156,255,.98));
-      box-shadow: 0 0 18px rgba(0,224,255,.22);
+      background: linear-gradient(90deg, #227cff, #00d9f2);
     }
 
     .weightsEmpty{
@@ -3301,12 +3288,12 @@ export function getStyles() {
       }
 
       .weightsHead{
-        flex-direction: column;
-        align-items: stretch;
+        align-items: center;
+        gap: 12px;
       }
 
       .weightsHeadTools{
-        justify-items:start;
+        justify-items:end;
       }
 
       .weightsTitle strong{
@@ -3314,8 +3301,7 @@ export function getStyles() {
       }
 
       .weightsMeta{
-        justify-items: start;
-        text-align: left;
+        gap: 10px 14px;
       }
 
       .weightsMeta .panelSourceBadges{ justify-content: flex-start; }
@@ -3325,12 +3311,12 @@ export function getStyles() {
       }
 
       .weightsList{
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
       }
 
       .commonWeightRow{
-        grid-template-columns: 34px minmax(0, 1fr);
+        grid-template-columns: 24px minmax(0, 1fr);
         gap: 10px;
         padding: 12px;
       }
@@ -3341,8 +3327,12 @@ export function getStyles() {
 
       .commonWeightCells{
         grid-column: 1 / -1;
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
       }
+
+      .commonWeightCell{ grid-template-columns: minmax(0, 1fr); padding: 4px 6px; gap: 8px; }
+      .commonWeightCell strong{ font-size: 16px; }
 
       .weightCard{
         padding: 14px;
@@ -3351,21 +3341,16 @@ export function getStyles() {
       }
 
       .weightCardTop{
-        gap: 12px;
-        padding-right: 44px;
+        gap: 10px;
       }
 
       .weightRankBadge{
-        top: 10px;
-        right: 10px;
-        min-width: 30px;
-        padding: 6px 8px;
-        font-size: 11px;
+        font-size: 12px;
       }
 
       .weightIconWrap{
-        width: 46px;
-        height: 46px;
+        width: 40px;
+        height: 40px;
       }
 
       .weightIcon{
@@ -3379,7 +3364,7 @@ export function getStyles() {
       }
 
       .weightValue strong{
-        font-size: 30px;
+        font-size: 28px;
       }
 
       .starCard{
@@ -3455,6 +3440,11 @@ export function getStyles() {
         justify-self: start;
         text-align: left;
       }
+    }
+
+    @media (max-width: 680px){
+      .weightsList{ grid-template-columns: 1fr; }
+      .weightsIndexSeg{ display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
   `;
