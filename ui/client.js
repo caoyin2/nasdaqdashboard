@@ -2809,8 +2809,8 @@ export function getClientScript() {
               var valueText = Number.isFinite(value) ? fmt(value, 2) + '%' : '--';
               return [
                 '<div class="commonWeightCell' + (isHighest ? ' isMaxWeight' : '') + '" data-index="' + esc(option.code) + '" title="' + esc(option.label) + '\uff1a' + esc(valueText) + (isHighest ? '\uff08\u6700\u9ad8\u6743\u91cd\uff09' : '') + '">',
-                  '<span>' + esc(option.code) + '</span>',
-                  '<strong aria-label="' + esc(option.code) + ' ' + esc(valueText) + (isHighest ? '\uff0c\u6700\u9ad8\u6743\u91cd' : '') + '">' + valueText + '</strong>',
+                  '<span>' + esc(option.label) + '</span>',
+                  '<strong aria-label="' + esc(option.label) + ' ' + esc(valueText) + (isHighest ? '\uff0c\u6700\u9ad8\u6743\u91cd' : '') + '">' + valueText + '</strong>',
                   '<div class="commonWeightBar"><i style="width:' + width.toFixed(2) + '%"></i></div>',
                 '</div>'
               ].join("");

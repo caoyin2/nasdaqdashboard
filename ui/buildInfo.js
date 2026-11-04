@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.83",
+  version: "v1.3.84",
   shortSha: "",
   fullSha: "",
-  message: "Align weight export with panel headings",
+  message: "Show Chinese index names in common weight cards",
 };

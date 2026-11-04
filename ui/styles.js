@@ -3332,7 +3332,7 @@ export function getStyles() {
         gap: 6px;
       }
 
-      .commonWeightCell{ grid-template-columns: minmax(0, 1fr); padding: 4px 6px; gap: 8px; }
+      .commonWeightCell{ grid-template-columns: minmax(0, 1fr); padding: 4px; gap: 8px; }
       .commonWeightCell strong{ font-size: 16px; }
 
       .weightCard{

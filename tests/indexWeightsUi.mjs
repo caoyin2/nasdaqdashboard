@@ -8,6 +8,7 @@ const baseUrl = process.env.WEIGHTS_TEST_URL || "http://127.0.0.1:8787";
 const outputDir = new URL("../.wrangler/three-index-weights/", import.meta.url);
 await mkdir(outputDir, { recursive: true });
 const codes = ["NDXTMC", "SP500-45", "NDX"];
+const indexLabels = { NDXTMC: "纳指科技加权", "SP500-45": "标普信息科技", NDX: "纳斯达克100" };
 const holdings = [
   { symbol: "NVDA", nameEn: "NVIDIA", weights: [20, 19, 18] },
   { symbol: "AAPL", nameEn: "Apple", weights: [9, 12, 8] },
@@ -110,12 +111,14 @@ try {
           `${viewport.width}: wrong maximum index for ${item.symbol}`);
         for (const [i, code] of codes.entries()) {
           const cell = row.locator(`.commonWeightCell[data-index="${code}"]`);
+          assert.equal(await cell.locator(":scope > span").textContent(), indexLabels[code], "common index labels must be Chinese");
           assert.equal(await cell.locator("strong").textContent(), item.weights[i].toFixed(2) + "%");
           const style = await cell.evaluate((el) => ({
             text: getComputedStyle(el.querySelector("strong")).color,
             bar: getComputedStyle(el.querySelector("i")).backgroundImage,
             label: el.querySelector("strong").getAttribute("aria-label"),
           }));
+          assert.ok(style.label.includes(indexLabels[code]), "accessible weight label must use the Chinese index name");
           if (winners.includes(code)) {
             assert.equal(style.text, "rgb(255, 113, 136)");
             assert.equal(style.bar, "linear-gradient(90deg, rgb(255, 54, 94), rgb(255, 139, 158))");
