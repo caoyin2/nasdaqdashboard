@@ -2200,15 +2200,20 @@ export function getClientScript() {
       var latestTimeInlineHtml = '<span class="sectorHeatExtraLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)) + '</span>';
       var infoStyle = "";
       if (isWatchlistDaily) {
-        // Estimate mixed CJK/monospace width so all three pairs fit narrow cards.
+        // Reserve each column's widest value so aligned pairs fit narrow cards.
         var infoRows = [
-          (item.baseLabel || "\u8d77\u70b9") + " " + fmtPrice(item.baseClose) + " " + (hasTargetPrice ? "\u76ee\u6807\u4ef7\uff1a" + fmtTargetPrice(item.priceTargetValue) + " (" + fmtTargetPct(item.priceTargetPct) + ")" : signPrice(item.change)),
-          "\u524d\u77bbPE: " + fmtPeRatio(item.peRatioFwd, item.peRatioFwdLoss) + " \u5f53\u524dPE: " + fmtPeRatio(item.peRatioCurrent, item.peRatioCurrentLoss),
-          "\u5f53\u524d\u5e02\u503c: " + marketCapText + " " + cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)
+          [(item.baseLabel || "\u8d77\u70b9") + " " + fmtPrice(item.baseClose), hasTargetPrice ? "\u76ee\u6807\u4ef7\uff1a" + fmtTargetPrice(item.priceTargetValue) + " (" + fmtTargetPct(item.priceTargetPct) + ")" : signPrice(item.change)],
+          ["\u524d\u77bbPE: " + fmtPeRatio(item.peRatioFwd, item.peRatioFwdLoss), "\u5f53\u524dPE: " + fmtPeRatio(item.peRatioCurrent, item.peRatioCurrentLoss)],
+          ["\u5f53\u524d\u5e02\u503c: " + marketCapText, cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)]
         ];
-        var infoUnits = Math.max.apply(null, infoRows.map(function (row) {
-          return Array.from(row).reduce(function (units, char) { return units + (char.charCodeAt(0) > 255 ? 1 : 0.64); }, 0);
-        }));
+        var infoColumnUnits = [0, 0];
+        infoRows.forEach(function (row) {
+          row.forEach(function (text, column) {
+            var units = Array.from(text).reduce(function (sum, char) { return sum + (char.charCodeAt(0) > 255 ? 1 : 0.64); }, 0);
+            infoColumnUnits[column] = Math.max(infoColumnUnits[column], units);
+          });
+        });
+        var infoUnits = infoColumnUnits[0] + infoColumnUnits[1];
         infoStyle = ' style="--watchlist-info-units:' + infoUnits.toFixed(2) + '"';
       }
       var metaRightHtml = isSectorDaily

@@ -3457,10 +3457,15 @@ export function getStyles() {
     }
 
     @media (max-width: 1200px){
-      .watchlistDaily .sectorHeatInfoStack{ container-type:inline-size; }
+      .watchlistDaily .sectorHeatInfoStack{
+        container-type:inline-size;
+        grid-template-columns: minmax(0, 1fr) max-content;
+        column-gap: 8px;
+      }
       .watchlistDaily .sectorHeatMetaStar,
       .watchlistDaily .sectorHeatExtraStar{
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-column: 1 / -1;
+        grid-template-columns: subgrid;
         column-gap: 8px;
         font-size: min(12px, calc((100cqw - 8px) / var(--watchlist-info-units)));
       }
@@ -3470,14 +3475,16 @@ export function getStyles() {
       }
       .watchlistDaily .sectorHeatMetaStar > span:first-child{ white-space:nowrap; }
       .watchlistDaily .sectorHeatMetaStar .sectorHeatTarget{
-        justify-self:end;
+        justify-self:start;
+        justify-content:flex-start;
+        text-align:left;
         font-size:inherit;
         letter-spacing:0;
       }
       .watchlistDaily .sectorHeatExtraStar .sectorHeatExtraCurrent,
       .watchlistDaily .sectorHeatExtraStar .sectorHeatExtraLatest{
-        justify-self:end;
-        text-align:right;
+        justify-self:start;
+        text-align:left;
       }
       .watchlistDaily .sectorHeatExtraLatest{ font-size:inherit; }
     }

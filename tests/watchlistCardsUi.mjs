@@ -70,11 +70,14 @@ try {
           const range = document.createRange();
           range.selectNodeContents(node);
           const textRects = [...range.getClientRects()].filter((text) => text.width > 0);
-          return { className: node.className, rect: rect.toJSON(), fits: textRects.every((text) => text.left >= rect.left - 1 && text.right <= rect.right + 1 && text.left >= bounds.left - 1 && text.right <= bounds.right + 1) };
+          return { className: node.className, rect: rect.toJSON(), textLeft: Math.min(...textRects.map((text) => text.left)), fits: textRects.every((text) => text.left >= rect.left - 1 && text.right <= rect.right + 1 && text.left >= bounds.left - 1 && text.right <= bounds.right + 1) };
         });
         return { positions, base: positions[0], target: positions[1], font: getComputedStyle(nodes[0]).fontSize };
       });
       assert.equal(layout.positions.length, 6, "daily metrics must contain three complete pairs");
+      const rightColumnStarts = [1, 3, 5].map((index) => layout.positions[index].textLeft);
+      assert.ok(Math.max(...rightColumnStarts) - Math.min(...rightColumnStarts) < 1,
+        `${viewport.width} ${stock.symbol}: target, current PE and latest timestamp must start at the same column`);
       for (let row = 0; row < 3; row++) {
         const [left, right] = layout.positions.slice(row * 2, row * 2 + 2);
         assert.ok(Math.abs(left.rect.bottom - right.rect.bottom) < 5, "paired values must share a row");
