@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.86",
+  version: "v1.3.87",
   shortSha: "",
   fullSha: "",
-  message: "Match index sparklines to the selected period",
+  message: "Compact daily S&P 500 sector cards",
 };

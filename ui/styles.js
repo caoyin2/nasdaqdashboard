@@ -1796,6 +1796,12 @@ export function getStyles() {
       white-space: nowrap;
     }
 
+    .sectorHeatTile.sectorHeatDaily{ min-height: 0; }
+    .sectorHeatDailyMain{ display:flex; align-items:baseline; justify-content:space-between; gap: 10px; }
+    .sectorHeatMeta.sectorHeatDailyMeta{ flex-direction:row; align-items:baseline; gap: 8px; }
+    .sectorHeatDailyMeta > span:first-child{ white-space:nowrap; }
+    .sectorHeatDailyMeta .sectorHeatMetaLatest{ margin-left:0; min-width:0; font-size:10px; }
+
     .sectorHeatInfoStack{
       display:grid;
       gap: 6px;

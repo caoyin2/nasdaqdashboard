@@ -2169,6 +2169,7 @@ export function getClientScript() {
       var hasValuationMetrics = hasForwardPe || hasCurrentPe || hasMarketCap;
       var hasTargetPrice = Number.isFinite(item && item.priceTargetValue) && Number.isFinite(item && item.priceTargetPct);
       var isIndexOverview = !!(item && item.isIndexOverview);
+      var isSectorDaily = !!(item && item.isSectorDaily);
       var hasSparkline = !!(item && item.showSparkline && (item.period !== "1D" || isIndexOverview) && getSparklineValues(item).length > 1);
       var targetHtml = hasTargetPrice
         ? '<span class="sectorHeatTarget"><span class="sectorHeatTargetLabel">\u76ee\u6807\u4ef7\uff1a' + fmtTargetPrice(item.priceTargetValue) + '</span><span class="sectorHeatTargetPct" style="' + targetToneStyle(item && item.priceTargetPct) + '"> (' + esc(fmtTargetPct(item.priceTargetPct)) + ')</span></span>'
@@ -2187,18 +2188,23 @@ export function getClientScript() {
               '</div>',
             '</div>'
           ].join("")
-        : (isIndexOverview ? '<div class="sectorHeatMain">' + summaryHtml + '</div>' : percentHtml);
+        : (isSectorDaily
+          ? '<div class="sectorHeatDailyMain">' + percentHtml + '<strong class="sectorHeatDeltaInline">' + signPrice(item.change) + '</strong></div>'
+          : (isIndexOverview ? '<div class="sectorHeatMain">' + summaryHtml + '</div>' : percentHtml));
       var metaClass = 'sectorHeatMeta'
         + (hasValuationMetrics ? ' sectorHeatMetaStar' : '')
+        + (isSectorDaily ? ' sectorHeatDailyMeta' : '')
         + (hasSparkline && !hasValuationMetrics ? ' sectorHeatMetaWithLatest' : '');
       var latestTimeClass = cardLatestTimeClass(item.latestT, item.referenceLatestT, item.timeValidationT);
       var latestTimeInlineHtml = '<span class="sectorHeatExtraLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)) + '</span>';
-      var metaRightHtml = hasSparkline
+      var metaRightHtml = isSectorDaily
+        ? '<span class="sectorHeatMetaLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)) + '</span>'
+        : hasSparkline
         ? (hasTargetPrice
           ? targetHtml
           : (hasValuationMetrics ? "" : '<span class="sectorHeatMetaLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)) + '</span>'))
         : (hasTargetPrice ? targetHtml : '<strong>' + signPrice(item.change) + '</strong>');
-      var footerHtml = hasSparkline
+      var footerHtml = hasSparkline || isSectorDaily
         ? ""
         : (hasValuationMetrics ? "" : '<div class="sectorHeatLatest' + latestTimeClass + '">' + esc(cardLatestTimeText(item.latestT, item.referenceLatestT, item.timeValidationT)) + '</div>');
       var extraHtml = hasValuationMetrics
@@ -2211,7 +2217,7 @@ export function getClientScript() {
           : '<div class="' + metaClass + '"><span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>' + metaRightHtml + '</div>' + extraHtml + footerHtml);
 
       return [
-        '<article class="sectorHeatTile ' + tone + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
+        '<article class="sectorHeatTile ' + tone + (isSectorDaily ? ' sectorHeatDaily' : '') + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
           '<div class="sectorHeatHeader">',
             '<div class="starIdentity">',
               '<div class="starIconWrap">',
@@ -2419,7 +2425,7 @@ export function getClientScript() {
     function renderSectorView(items) {
       var maxAbs = sectorMaxAbsChange(items);
       return '<div class="sectorHeatGrid">' + items.map(function (item) {
-        return sectorHeatTileHTML(Object.assign({}, item, { showSparkline: true }), maxAbs);
+        return sectorHeatTileHTML(Object.assign({}, item, { showSparkline: true, isSectorDaily: item.period === "1D" }), maxAbs);
       }).join("") + '</div>';
     }
 
