@@ -364,9 +364,11 @@ export function getClientScript() {
       var lastY = span <= 0
         ? height / 2
         : padY + (max - values[values.length - 1]) * ((height - padY * 2) / span);
+      var toneItem = Number.isFinite(item.sparklineChange) ? { change: item.sparklineChange } : item;
+      var label = item.isIndexOverview ? ' role="img" aria-label="\u5f53\u65e5\u8d70\u52bf" title="\u5f53\u65e5\u8d70\u52bf"' : '';
 
       return [
-        '<div class="' + className + " " + starToneClass(item) + '">',
+        '<div class="' + className + " " + starToneClass(toneItem) + '"' + label + '>',
           '<svg viewBox="0 0 ' + width + ' ' + height + '" aria-hidden="true" focusable="false">',
             '<polyline points="' + points + '" />',
             '<circle cx="' + lastX.toFixed(2) + '" cy="' + lastY.toFixed(2) + '" r="2.6" />',
@@ -1294,7 +1296,12 @@ export function getClientScript() {
         changePct: item.cardChgPct,
         baseLabel: period === "1D" ? "\u6628\u6536" : "\u8d77\u70b9",
         period: period,
-        showSparkline: false,
+        isIndexOverview: true,
+        showSparkline: true,
+        sparkline: Array.isArray(item.sparkline)
+          ? item.sparkline
+          : (period === "1D" ? (item.line || []).map(function (point) { return point.close; }) : []),
+        sparklineChange: item.sparklineChange,
       };
     }
 
@@ -2162,21 +2169,26 @@ export function getClientScript() {
       var hasMarketCap = marketCapText !== "--";
       var hasValuationMetrics = hasForwardPe || hasCurrentPe || hasMarketCap;
       var hasTargetPrice = Number.isFinite(item && item.priceTargetValue) && Number.isFinite(item && item.priceTargetPct);
-      var hasSparkline = !!(item && item.showSparkline && item.period !== "1D" && getSparklineValues(item).length > 1);
+      var isIndexOverview = !!(item && item.isIndexOverview);
+      var hasSparkline = !!(item && item.showSparkline && (item.period !== "1D" || isIndexOverview) && getSparklineValues(item).length > 1);
       var targetHtml = hasTargetPrice
         ? '<span class="sectorHeatTarget"><span class="sectorHeatTargetLabel">\u76ee\u6807\u4ef7\uff1a' + fmtTargetPrice(item.priceTargetValue) + '</span><span class="sectorHeatTargetPct" style="' + targetToneStyle(item && item.priceTargetPct) + '"> (' + esc(fmtTargetPct(item.priceTargetPct)) + ')</span></span>'
         : "";
+      var percentHtml = '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>';
+      var summaryHtml = isIndexOverview
+        ? '<div class="indexHeatSummary" style="--index-pct-chars:' + signPct(item.changePct).length + '">' + percentHtml + '<span class="indexHeatBase">' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span></div>'
+        : percentHtml;
       var mainHtml = hasSparkline
         ? [
             '<div class="sectorHeatMain">',
-              '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>',
+              summaryHtml,
               '<div class="sectorHeatTrend">',
                 sparklineSvgHTML(item, "sectorHeatSparkline"),
-                '<strong class="sectorHeatDeltaInline">' + signPrice(item.change) + '</strong>',
+                isIndexOverview ? '' : '<strong class="sectorHeatDeltaInline">' + signPrice(item.change) + '</strong>',
               '</div>',
             '</div>'
           ].join("")
-        : '<div class="sectorHeatPct">' + signPct(item.changePct) + '</div>';
+        : (isIndexOverview ? '<div class="sectorHeatMain">' + summaryHtml + '</div>' : percentHtml);
       var metaClass = 'sectorHeatMeta'
         + (hasValuationMetrics ? ' sectorHeatMetaStar' : '')
         + (hasSparkline && !hasValuationMetrics ? ' sectorHeatMetaWithLatest' : '');
@@ -2193,9 +2205,11 @@ export function getClientScript() {
       var extraHtml = hasValuationMetrics
         ? '<div class="sectorHeatExtra sectorHeatExtraStar"><span class="sectorHeatExtraLabel sectorHeatExtraForward">\u524d\u77bbPE: ' + fmtPeRatio(item.peRatioFwd, item && item.peRatioFwdLoss) + '</span><span class="sectorHeatExtraLabel sectorHeatExtraCurrent">\u5f53\u524dPE: ' + fmtPeRatio(item.peRatioCurrent, item && item.peRatioCurrentLoss) + '</span><span class="sectorHeatExtraLabel sectorHeatExtraMarketCap">\u5f53\u524d\u5e02\u503c: ' + esc(marketCapText) + '</span>' + latestTimeInlineHtml + '</div>'
         : "";
-      var infoStackHtml = hasValuationMetrics
-        ? '<div class="sectorHeatInfoStack"><div class="' + metaClass + '"><span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>' + metaRightHtml + '</div>' + extraHtml + '</div>'
-        : '<div class="' + metaClass + '"><span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>' + metaRightHtml + '</div>' + extraHtml + footerHtml;
+      var infoStackHtml = isIndexOverview
+        ? '<div class="sectorHeatMeta indexHeatMeta"><strong>' + signPrice(item.change) + '</strong>' + latestTimeInlineHtml + '</div>'
+        : (hasValuationMetrics
+          ? '<div class="sectorHeatInfoStack"><div class="' + metaClass + '"><span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>' + metaRightHtml + '</div>' + extraHtml + '</div>'
+          : '<div class="' + metaClass + '"><span>' + esc(item.baseLabel || "\u8d77\u70b9") + ' ' + fmtPrice(item.baseClose) + '</span>' + metaRightHtml + '</div>' + extraHtml + footerHtml);
 
       return [
         '<article class="sectorHeatTile ' + tone + '" data-symbol="' + esc(item.symbol) + '" style="background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)), ' + bg + '; border-color:' + border + '; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.01), 0 16px 32px ' + glow + ';">',
@@ -3773,7 +3787,9 @@ export function getClientScript() {
           lastClose: item.lastClose,
           cardBaseClose: item.cardBaseClose,
           cardChg: item.cardChg,
-          cardChgPct: item.cardChgPct
+          cardChgPct: item.cardChgPct,
+          sparkline: item.sparkline,
+          sparklineChange: item.sparklineChange
         });
       });
 

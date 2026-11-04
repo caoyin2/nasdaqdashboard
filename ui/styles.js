@@ -1708,6 +1708,13 @@ export function getStyles() {
       min-height: 0;
     }
 
+    .indexHeatSummary{ display:grid; gap: 8px; min-width: 0; container-type:inline-size; }
+    .indexHeatSummary .sectorHeatPct{ font-size: min(36px, calc(100cqw / (var(--index-pct-chars) * .68))); white-space:nowrap; }
+    .indexHeatBase{ font-family: var(--mono); font-size: 12px; color: rgba(200,214,236,.88); }
+    .idxHeatGrid .indexHeatMeta{ flex-direction:row; align-items:baseline; gap: 8px; }
+    .idxHeatGrid .indexHeatMeta > strong{ flex: 0 0 auto; font-size: 12px; white-space:nowrap; }
+    .idxHeatGrid .indexHeatMeta .sectorHeatExtraLatest{ font-size: 10px; min-width: 0; }
+
     .sectorHeatTile{
       position: relative;
       overflow: hidden;

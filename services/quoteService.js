@@ -86,11 +86,12 @@ async function buildIndexItemFromSource(idx, i, period, searchMetaMap, source) {
     if (!Number.isFinite(baseClose)) baseClose = null;
   }
 
-  const barsForSeries = normalizeIndexDataSource(source) === "yahoo"
-    ? (period === "1D" ? bars1D : periodBarsRaw)
-    : (period === "1D"
-      ? patchBarsWithLatest1D(bars1D || [], quoteLastBar)
-      : patchBarsWithLatest1D(periodBarsRaw || [], quoteLastBar));
+  const isYahoo = normalizeIndexDataSource(source) === "yahoo";
+  const intradayBars = isYahoo ? bars1D : patchBarsWithLatest1D(bars1D, quoteLastBar);
+  const barsForSeries = period === "1D"
+    ? intradayBars
+    : (isYahoo ? periodBarsRaw : patchBarsWithLatest1D(periodBarsRaw, quoteLastBar));
+  const intradayBaseClose = Number.isFinite(quote?.prevClose) ? quote.prevClose : oneDayRaw.prevClose;
 
   return buildIndexItem(idx, i, searchMetaMap, source, {
     latestT,
@@ -98,6 +99,8 @@ async function buildIndexItemFromSource(idx, i, period, searchMetaMap, source) {
     lastClose,
     baseClose,
     barsForSeries,
+    intradayBars,
+    intradayBaseClose,
   });
 }
 
@@ -105,6 +108,9 @@ function buildIndexItem(idx, i, searchMetaMap, source, data) {
   const baseClose = data.baseClose;
   const lastClose = data.lastClose;
   const barsForSeries = data.barsForSeries || [];
+  const sparkline = (data.intradayBars || [])
+    .map((bar) => bar?.close)
+    .filter((close) => Number.isFinite(close));
 
   const line = Number.isFinite(baseClose) && baseClose !== 0
     ? barsForSeries.map((bar) => ({
@@ -146,6 +152,10 @@ function buildIndexItem(idx, i, searchMetaMap, source, data) {
     cardBaseClose: Number.isFinite(baseClose) ? baseClose : null,
     cardChg: Number.isFinite(cardChg) ? cardChg : null,
     cardChgPct: Number.isFinite(cardChgPct) ? cardChgPct : null,
+    sparkline: sparkline.length > 1 ? sparkline : null,
+    sparklineChange: Number.isFinite(lastClose) && Number.isFinite(data.intradayBaseClose)
+      ? lastClose - data.intradayBaseClose
+      : null,
     line,
   };
 }
