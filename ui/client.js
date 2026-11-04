@@ -365,7 +365,8 @@ export function getClientScript() {
         ? height / 2
         : padY + (max - values[values.length - 1]) * ((height - padY * 2) / span);
       var toneItem = Number.isFinite(item.sparklineChange) ? { change: item.sparklineChange } : item;
-      var label = item.isIndexOverview ? ' role="img" aria-label="\u5f53\u65e5\u8d70\u52bf" title="\u5f53\u65e5\u8d70\u52bf"' : '';
+      var sparklineLabel = item.isIndexOverview ? (PERIOD_LABELS[item.period] || item.period || "") + "\u8d70\u52bf" : "";
+      var label = sparklineLabel ? ' role="img" aria-label="' + esc(sparklineLabel) + '" title="' + esc(sparklineLabel) + '"' : '';
 
       return [
         '<div class="' + className + " " + starToneClass(toneItem) + '"' + label + '>',
@@ -1298,10 +1299,8 @@ export function getClientScript() {
         period: period,
         isIndexOverview: true,
         showSparkline: true,
-        sparkline: Array.isArray(item.sparkline)
-          ? item.sparkline
-          : (period === "1D" ? (item.line || []).map(function (point) { return point.close; }) : []),
-        sparklineChange: item.sparklineChange,
+        sparkline: (item.line || []).map(function (point) { return point.close; }),
+        sparklineChange: item.cardChg,
       };
     }
 
@@ -3787,9 +3786,7 @@ export function getClientScript() {
           lastClose: item.lastClose,
           cardBaseClose: item.cardBaseClose,
           cardChg: item.cardChg,
-          cardChgPct: item.cardChgPct,
-          sparkline: item.sparkline,
-          sparklineChange: item.sparklineChange
+          cardChgPct: item.cardChgPct
         });
       });
 

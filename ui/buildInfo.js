@@ -1,6 +1,6 @@
 export const BUILD_INFO = {
-  version: "v1.3.85",
+  version: "v1.3.86",
   shortSha: "",
   fullSha: "",
-  message: "Add daily index sparklines and align latest timestamps",
+  message: "Match index sparklines to the selected period",
 };

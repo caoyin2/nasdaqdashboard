@@ -49,14 +49,14 @@ test("daily index sparkline reuses the existing 1D requests without changing quo
   }
 });
 
-test("long-period index cards retain the intraday sparkline and existing historical line", async (t) => {
+test("long-period index sparklines follow the selected historical line", async (t) => {
   const requests = mockYahoo(t);
   const payload = await buildQuotePayload("1M", env, "yahoo");
   assert.equal(requests.length, INDEXES.length * 2);
   for (const item of payload.items) {
-    assert.deepEqual(item.sparkline, [100, 102, 103]);
+    assert.deepEqual(item.sparkline, [50, 75, 90]);
     assert.deepEqual(item.line.map((point) => point.close), [50, 75, 90]);
-    assert.equal(item.sparklineChange, 3);
+    assert.equal(item.sparklineChange, 53);
     assert.equal(item.cardBaseClose, 50);
     assert.equal(item.cardChg, 53);
     assert.equal(item.cardChgPct, 106);

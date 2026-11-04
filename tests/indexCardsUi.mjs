@@ -13,12 +13,13 @@ const patterns = [[100, 101, 99, 102], [100, 99, 98, 97], [100, 100, 100], [100]
 function quoteFixture(source, period, legacy) {
   return { ok: true, source, period, asOfMs: latest,
     items: INDEXES.filter((item) => !item.dataSources || item.dataSources.includes(source)).map((item, i) => {
-      const close = period === "MAX" ? 24920.12 : 102;
+      const closes = period === "1D" ? patterns[i] : (period === "1M" ? [100, 90, 110, 95] : [20, 1000, 22000, 24920.12]);
+      const close = closes.at(-1);
       const base = period === "MAX" ? 20 : 100;
       return { ...item, latestT: item.symbol === "MSCIUSA50" ? latest + 6 * 3600000 : latest,
         timeValidationT: item.symbol === "NDXTMC" ? latest - 6 * 3600000 : latest,
         lastClose: close, cardBaseClose: base, cardChg: close - base, cardChgPct: (close / base - 1) * 100,
-        line: [100, 102, 99, close].map((value, n) => ({ t: latest - (3 - n) * 60000, close: value, pct: (value / base - 1) * 100 })),
+        line: closes.map((value, n) => ({ t: latest - (closes.length - 1 - n) * 60000, close: value, pct: (value / base - 1) * 100 })),
         ...(!legacy ? { sparkline: patterns[i], sparklineChange: patterns[i].at(-1) - 100 } : {}),
       };
     }),
@@ -63,8 +64,8 @@ try {
         for (const item of expected) {
           const card = page.locator(`#idxCards .sectorHeatTile[data-symbol="${item.symbol}"]`);
           assert.equal(await card.locator(".sectorHeatLatest").count(), 0, "timestamp must not remain in a separate footer");
-          assert.equal(await card.locator(".indexHeatMeta strong").textContent(), "+" + item.cardChg.toFixed(2));
-          assert.equal(await card.locator(".sectorHeatSparkline").count(), item.sparkline.length > 1 ? 1 : 0);
+          assert.equal(await card.locator(".indexHeatMeta strong").textContent(), (item.cardChg >= 0 ? "+" : "") + item.cardChg.toFixed(2));
+          assert.equal(await card.locator(".sectorHeatSparkline").count(), item.line.length > 1 ? 1 : 0);
           assert.equal(await card.locator(".indexHeatMeta .cardTimeAnomaly").count(), item.symbol === "NDXTMC" ? 1 : 0);
           const layout = await card.evaluate((el) => {
             const bounds = el.getBoundingClientRect();
@@ -86,7 +87,14 @@ try {
         }
         const wave = page.locator('#idxCards [data-symbol="SP500-45"] .sectorHeatSparkline');
         const shape = await wave.locator("polyline").getAttribute("points");
-        assert.equal(shape, "2.00,27.00 40.67,15.00 79.33,39.00 118.00,3.00", "sparkline must keep its intraday shape across selected periods");
+        const expectedShapes = {
+          "1D": "2.00,27.00 40.67,15.00 79.33,39.00 118.00,3.00",
+          "1M": "2.00,21.00 40.67,39.00 79.33,3.00 118.00,30.00",
+          MAX: "2.00,39.00 40.67,37.58 79.33,7.22 118.00,3.00",
+        };
+        assert.equal(shape, expectedShapes[period], "sparkline must follow the selected period, not a cached intraday series");
+        assert.equal(await wave.getAttribute("aria-label"), PERIOD_LABELS[period] + "走势");
+        assert.ok((await wave.getAttribute("class")).includes(period === "1M" ? "down" : "up"), "sparkline color must follow the selected-period change");
         indexStyle = await wave.locator("polyline").evaluate((el) => ({ stroke: getComputedStyle(el).stroke, width: getComputedStyle(el).strokeWidth }));
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
         if (period === "1D") await page.locator("#idxCards .sectorHeatTile").first().screenshot({ animations: "disabled", path: fileURLToPath(new URL(`${viewport.width}-${source}-day-card.png`, outputDir)) });
@@ -104,9 +112,9 @@ try {
     legacy = true;
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.locator("#idxCards .indexHeatMeta").first().waitFor();
-    assert.equal(await page.locator("#idxCards .sectorHeatSparkline").count(), 5, "legacy daily payload should reuse its existing daily line");
+    assert.equal(await page.locator("#idxCards .sectorHeatSparkline").count(), 4, "legacy payload should reuse its selected-period line without inventing missing points");
     assert.deepEqual(errors, []);
-    console.log(`PASS ${viewport.width}: both sources, intraday shape, date/change alignment, time validation, long percentages, watchlist isolation`);
+    console.log(`PASS ${viewport.width}: both sources, period-specific shapes/colors, date/change alignment, time validation, long percentages, watchlist isolation`);
     await context.close();
   }
 } finally {
